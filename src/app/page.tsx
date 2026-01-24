@@ -1,65 +1,159 @@
-import Image from "next/image";
+import { EventsSection } from "@/components/EventsSection";
+import { HeroCarousel } from "@/components/HeroCarousel";
+import { PlansSection, type PlanOption } from "@/components/PlansSection";
+import { DEFAULT_HERO_SLIDES, PLAN_PERKS_BY_KEY, type HeroSlide } from "@/constants/home";
+import type { EventHighlight } from "@/types/event";
 
-export default function Home() {
+type CarouselImage = { imageUrl: string; altText?: string | null };
+
+type ApiEvent = {
+  title: string;
+  date: string;
+  time: string;
+  description: string;
+  location: string | null;
+  thumbnailUrl: string | null;
+};
+
+type ApiPlan = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceCents: number;
+  promoPriceCents: number | null;
+  promoActive: boolean;
+  promoEndsAt: string | null;
+  popular: boolean;
+  durationDays: number | null;
+};
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  "http://localhost:3001";
+
+const buildApiUrl = (path: string) =>
+  `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+
+const fetchJson = async <T,>(path: string): Promise<T | null> => {
+  try {
+    const response = await fetch(buildApiUrl(path), {
+      next: { revalidate: 60 },
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+};
+
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeKey = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  maximumFractionDigits: 0,
+});
+
+const formatPlanPrice = (plan: ApiPlan) => {
+  const now = new Date();
+  const promoValid =
+    plan.promoActive &&
+    plan.promoPriceCents !== null &&
+    (!plan.promoEndsAt || new Date(plan.promoEndsAt) >= now);
+  const priceCents = promoValid ? plan.promoPriceCents : plan.priceCents;
+  const hasPrice = priceCents !== null && priceCents !== undefined;
+  const priceLabel = hasPrice
+    ? currencyFormatter.format(priceCents / 100)
+    : "Consulte";
+  const durationLabel =
+    plan.durationDays && plan.durationDays >= 28 && plan.durationDays <= 31
+      ? "mês"
+      : plan.durationDays
+        ? `${plan.durationDays} dias`
+        : "mês";
+  return `${priceLabel}/${durationLabel}`;
+};
+
+const resolvePlanPerks = (plan: ApiPlan) => {
+  const key = normalizeKey(plan.slug || plan.name);
+  return PLAN_PERKS_BY_KEY[key] ?? [];
+};
+
+const getCarouselSlides = async (): Promise<HeroSlide[]> => {
+  const images = await fetchJson<CarouselImage[]>("/system-settings/carousel");
+  if (!images?.length) {
+    return DEFAULT_HERO_SLIDES;
+  }
+  return images.map((image, index) => {
+    const fallback = DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length];
+    return {
+      src: image.imageUrl,
+      title: image.altText || fallback.title,
+      description: fallback.description,
+    };
+  });
+};
+
+const getEvents = async (): Promise<EventHighlight[]> => {
+  const today = formatDateInput(new Date());
+  const response = await fetchJson<ApiEvent[]>(`/events/public?from=${today}`);
+  if (!response) {
+    return [];
+  }
+  return response.map((event) => ({
+    title: event.title,
+    date: event.date,
+    time: event.time,
+    location: event.location ?? "Local a confirmar",
+    description: event.description ?? "Evento exclusivo JM Fitness.",
+    image: event.thumbnailUrl ?? "/gym1.jpg",
+  }));
+};
+
+const getPlans = async (): Promise<PlanOption[]> => {
+  const response = await fetchJson<ApiPlan[]>("/plans");
+  if (!response) {
+    return [];
+  }
+  return response.map((plan) => ({
+    title: plan.name,
+    price: formatPlanPrice(plan),
+    description: plan.description ?? "Plano desenvolvido para sua rotina.",
+    perks: resolvePlanPerks(plan),
+    featured: plan.popular ?? false,
+    badge: plan.popular ? "Mais procurado" : undefined,
+  }));
+};
+
+export default async function Home() {
+  const [slides, events, plans] = await Promise.all([
+    getCarouselSlides(),
+    getEvents(),
+    getPlans(),
+  ]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col gap-14 pb-6">
+      <HeroCarousel slides={slides} />
+      <EventsSection events={events} />
+      <PlansSection plans={plans} />
     </div>
   );
 }

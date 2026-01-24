@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #030303;
+  --foreground: #f9f5e0;
+  --card: #0b0b0b;
+  --border-glow: rgba(194, 165, 55, 0.4);
+  --border-dim: rgba(255, 255, 255, 0.08);
+  --muted: #1f1f1f;
+  --muted-foreground: #c7c1b0;
+  --shadow: rgba(0, 0, 0, 0.65);
+  --gradient-top: #040404;
+  --gradient-bottom: #111;
+  --gold-tone: #b58c21;
+  --gold-tone-dark: #8c6d16;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="light"] {
+  --background: #f7f3ea;
+  --foreground: #1a1a17;
+  --card: #fffdfa;
+  --border-glow: rgba(194, 165, 55, 0.35);
+  --border-dim: rgba(0, 0, 0, 0.12);
+  --muted: #f2eee7;
+  --muted-foreground: #6b5c3c;
+  --shadow: rgba(0, 0, 0, 0.2);
+  --gradient-top: #fffdfa;
+  --gradient-bottom: #ece4d4;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--gold);
+  color: #0b0b0b;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.5;
+    transform: translateX(-100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-[#030303] text-[#f9f5e0];
+  }
+}
+
+.scroll-glow {
+  box-shadow: 0 0 20px var(--border-glow);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--gold), var(--accent));
+  border-radius: 100px;
 }
