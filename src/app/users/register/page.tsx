@@ -52,7 +52,7 @@ export default function RegisterPage() {
   return (
     <AuthCard
       title="Criar conta"
-      description="Preencha seus dados para acessar o JM Fitness."
+      description="Preencha seus dados para acessar o nosso painel."
       footer={
         <>
           Ja possui conta?{" "}
