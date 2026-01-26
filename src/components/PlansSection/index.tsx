@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 export interface PlanOption {
+  id: string;
   title: string;
   price: string;
   description: string;
@@ -75,7 +76,9 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
                 </div>
 
                 <Link
-                  href="/users/login"
+                  href={`/users/login${
+                    plan.id ? `?planId=${encodeURIComponent(plan.id)}` : ""
+                  }`}
                   className="mt-auto inline-flex items-center justify-center rounded-full border border-[#C2A537]/50 bg-[#C2A537]/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] hover:bg-[#C2A537]/20"
                 >
                   Garantir vaga

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthCard } from "@/components/AuthCard";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
@@ -9,6 +9,11 @@ import { signInWithEmail, startSocialSignIn } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId =
+    searchParams.get("planId") ??
+    searchParams.get("plan_id") ??
+    undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +25,7 @@ export default function LoginPage() {
     setError(null);
     setSuccess(null);
 
-    const result = await startSocialSignIn("google");
+    const result = await startSocialSignIn("google", planId);
     if (!result.ok) {
       setError(result.error);
     }
@@ -58,7 +63,7 @@ export default function LoginPage() {
         <>
           Novo por aqui?{" "}
           <a
-            href="/users/register"
+            href={`/users/register${planId ? `?planId=${encodeURIComponent(planId)}` : ""}`}
             className="font-semibold text-[var(--gold-tone-dark)]"
           >
             Cadastre-se

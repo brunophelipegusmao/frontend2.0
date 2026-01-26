@@ -133,6 +133,7 @@ const getPlans = async (): Promise<PlanOption[]> => {
     return [];
   }
   return response.map((plan) => ({
+    id: plan.id,
     title: plan.name,
     price: formatPlanPrice(plan),
     description: plan.description ?? "Plano desenvolvido para sua rotina.",

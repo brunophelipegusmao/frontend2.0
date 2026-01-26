@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthCard } from "@/components/AuthCard";
 import { signUpWithEmail } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId =
+    searchParams.get("planId") ??
+    searchParams.get("plan_id") ??
+    undefined;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +42,12 @@ export default function RegisterPage() {
     }
 
     setIsSubmitting(true);
-    const result = await signUpWithEmail(trimmedName, trimmedEmail, password);
+    const result = await signUpWithEmail(
+      trimmedName,
+      trimmedEmail,
+      password,
+      planId,
+    );
     setIsSubmitting(false);
 
     if (!result.ok) {
@@ -56,7 +66,10 @@ export default function RegisterPage() {
       footer={
         <>
           Ja possui conta?{" "}
-          <a href="/users/login" className="font-semibold text-[var(--gold-tone-dark)]">
+          <a
+            href={`/users/login${planId ? `?planId=${encodeURIComponent(planId)}` : ""}`}
+            className="font-semibold text-[var(--gold-tone-dark)]"
+          >
             Entrar
           </a>
         </>

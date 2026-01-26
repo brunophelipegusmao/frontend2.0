@@ -45,10 +45,15 @@ const postAuth = async <T>(
 export const buildSocialSignInUrl = (provider: string) =>
   buildAuthUrl(`/sign-in/social?provider=${encodeURIComponent(provider)}`);
 
-export const startSocialSignIn = async (provider: string) => {
+export const startSocialSignIn = async (provider: string, planId?: string) => {
+  const payload: Record<string, unknown> = { provider };
+  if (planId) {
+    payload.planId = planId;
+  }
+
   const result = await postAuth<{ redirect?: boolean; url?: string }>(
     "sign-in/social",
-    { provider },
+    payload,
   );
 
   if (result.ok) {
@@ -64,8 +69,18 @@ export const startSocialSignIn = async (provider: string) => {
 export const signInWithEmail = (email: string, password: string) =>
   postAuth<{ token: string | null }>("sign-in/email", { email, password });
 
-export const signUpWithEmail = (name: string, email: string, password: string) =>
-  postAuth<{ token: string | null }>("sign-up/email", { name, email, password });
+export const signUpWithEmail = (
+  name: string,
+  email: string,
+  password: string,
+  planId?: string,
+) =>
+  postAuth<{ token: string | null }>("sign-up/email", {
+    name,
+    email,
+    password,
+    ...(planId ? { planId } : {}),
+  });
 
 export const requestPasswordReset = (email: string, redirectTo: string) =>
   postAuth<{ status: boolean; message?: string }>("request-password-reset", {
