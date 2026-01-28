@@ -6,14 +6,14 @@ import { Eye, EyeOff } from "lucide-react";
 import { AuthCard } from "@/components/AuthCard";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { signInWithEmail, startSocialSignIn } from "@/lib/auth";
+import { redirectBasedOnRole } from "@/lib/roleRedirect";
+import { redirectBasedOnRole } from "@/lib/roleRedirect";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId =
-    searchParams.get("planId") ??
-    searchParams.get("plan_id") ??
-    undefined;
+    searchParams.get("planId") ?? searchParams.get("plan_id") ?? undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,9 +25,30 @@ export default function LoginPage() {
     setError(null);
     setSuccess(null);
 
-    const result = await startSocialSignIn("google", planId);
+    const origin = window.location.origin;
+    const callbackURL = `${origin}/register`;
+    const completeProfileUrl = new URL("/complete-profile", origin);
+    if (planId) {
+      completeProfileUrl.searchParams.set("planId", planId);
+    }
+
+    const result = await startSocialSignIn("google", {
+      planId,
+      callbackURL,
+      newUserCallbackURL: completeProfileUrl.toString(),
+    });
+
     if (!result.ok) {
-      setError(result.error);
+      if (
+        result.error?.includes("State Mismatch") ||
+        result.error?.includes("Verification not found")
+      ) {
+        setError(
+          "Parece que o fluxo OAuth expirou. Recarregue a página e tente novamente clicando no botão Google sem abrir a URL de callback diretamente.",
+        );
+      } else {
+        setError(result.error);
+      }
     }
   };
 
@@ -52,7 +73,7 @@ export default function LoginPage() {
     }
 
     setSuccess("Login realizado com sucesso.");
-    router.push("/");
+    await redirectBasedOnRole(router);
   };
 
   return (

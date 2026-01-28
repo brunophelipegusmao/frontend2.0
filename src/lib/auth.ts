@@ -45,10 +45,26 @@ const postAuth = async <T>(
 export const buildSocialSignInUrl = (provider: string) =>
   buildAuthUrl(`/sign-in/social?provider=${encodeURIComponent(provider)}`);
 
-export const startSocialSignIn = async (provider: string, planId?: string) => {
+type SocialSignInOptions = {
+  planId?: string;
+  callbackURL?: string;
+  newUserCallbackURL?: string;
+};
+
+export const startSocialSignIn = async (
+  provider: string,
+  options: SocialSignInOptions = {},
+) => {
+  const { planId, callbackURL, newUserCallbackURL } = options;
   const payload: Record<string, unknown> = { provider };
   if (planId) {
     payload.planId = planId;
+  }
+  if (callbackURL) {
+    payload.callbackURL = callbackURL;
+  }
+  if (newUserCallbackURL) {
+    payload.newUserCallbackURL = newUserCallbackURL;
   }
 
   const result = await postAuth<{ redirect?: boolean; url?: string }>(

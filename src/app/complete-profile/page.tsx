@@ -2,6 +2,7 @@
 
 import { type FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { redirectBasedOnRole } from "@/lib/roleRedirect";
 import { AuthCard } from "@/components/AuthCard";
 
 const API_BASE_URL =
@@ -21,7 +22,6 @@ const completeProfile = async (payload: {
   name?: string;
   phone?: string;
   address?: string;
-  image?: string;
 }) => {
   const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
     method: "PATCH",
@@ -43,12 +43,29 @@ export default function CompleteProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const sanitizedCpf = useMemo(() => cpf.replace(/\D/g, ""), [cpf]);
+
+  const uploadAvatar = async (file: File) => {
+    const payload = new FormData();
+    payload.append("file", file);
+
+    const response = await fetch(`${API_BASE_URL}/users/me/avatar`, {
+      method: "POST",
+      credentials: "include",
+      body: payload,
+    });
+
+    if (!response.ok) {
+      throw new Error(await parseApiError(response));
+    }
+
+    return response.json();
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -62,15 +79,17 @@ export default function CompleteProfilePage() {
 
     setIsSubmitting(true);
     try {
+      if (imageFile) {
+        await uploadAvatar(imageFile);
+      }
       await completeProfile({
         cpf: sanitizedCpf,
         name: name.trim() || undefined,
         phone: phone.trim() || undefined,
         address: address.trim() || undefined,
-        image: image.trim() || undefined,
       });
       setSuccess("Perfil atualizado. Redirecionando...");
-      router.push("/");
+      await redirectBasedOnRole(router);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Algo inesperado aconteceu.");
     } finally {
@@ -150,15 +169,24 @@ export default function CompleteProfilePage() {
           />
         </label>
         <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]">
-          Imagem (URL)
+          Foto de perfil
           <input
-            type="url"
-            name="image"
-            placeholder="https://"
-            value={image}
-            onChange={(event) => setImage(event.target.value)}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none"
+            type="file"
+            name="avatar"
+            accept="image/*"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              setImageFile(file ?? null);
+            }}
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none file:rounded-[16px] file:border-0 file:bg-[var(--card)] file:px-4 file:py-2 file:text-[var(--foreground)] file:uppercase file:tracking-[0.4rem]"
           />
+          {imageFile ? (
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Arquivo selecionado: {imageFile.name}
+            </p>
+          ) : (
+            <p className="text-[0.65rem] text-[var(--muted-foreground)]">Opcional</p>
+          )}
         </label>
         {error ? (
           <p className="text-sm text-red-400">{error}</p>
@@ -172,6 +200,9 @@ export default function CompleteProfilePage() {
         >
           {isSubmitting ? "Salvando..." : "Salvar e continuar"}
         </button>
+        <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+          Após o pagamento confirmado, completaremos também os dados de saúde.
+        </p>
       </form>
     </AuthCard>
   );
