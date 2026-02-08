@@ -7,7 +7,6 @@ import { AuthCard } from "@/components/AuthCard";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { signInWithEmail, startSocialSignIn } from "@/lib/auth";
 import { redirectBasedOnRole } from "@/lib/roleRedirect";
-import { redirectBasedOnRole } from "@/lib/roleRedirect";
 
 export default function LoginPage() {
   const router = useRouter();

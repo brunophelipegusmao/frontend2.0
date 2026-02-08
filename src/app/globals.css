@@ -2,7 +2,7 @@
 
 :root {
   --background: #030303;
-  --foreground: #f9f5e0;
+  --foreground: rgb(249, 245, 224);
   --card: #0b0b0b;
   --border-glow: rgba(194, 165, 55, 0.4);
   --border-dim: rgba(255, 255, 255, 0.08);
@@ -11,8 +11,8 @@
   --shadow: rgba(0, 0, 0, 0.65);
   --gradient-top: #040404;
   --gradient-bottom: #111;
-  --gold-tone: #b58c21;
-  --gold-tone-dark: #8c6d16;
+  --gold-tone: rgb(181, 140, 33);
+  --gold-tone-dark: rgb(140, 109, 22);
 }
 
 [data-theme="light"] {

@@ -13,6 +13,7 @@ const navItems = [
   { label: "INICIO", href: "/" },
   { label: "CHECKIN", href: "/checkin" },
   { label: "LOGIN", href: "/users/login" },
+  { label: "CADASTRO", href: "/users/register" },
   { label: "EVENTOS", href: "/events" },
   { label: "CONTATO", href: "/contacts" },
 ];
