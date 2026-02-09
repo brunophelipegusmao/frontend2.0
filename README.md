@@ -28,7 +28,7 @@ pnpm start
 Implementação PWA feita no frontend com:
 
 - `public/manifest.webmanifest`
-- ícones em `public/icons/`
+- ícones em `public/images/`
 - service worker em `public/sw.js`
 - registro do SW em `src/components/PWA/ServiceWorkerRegister.tsx`
 - botão de instalação em `src/components/PWA/InstallAppButton.tsx`
@@ -37,9 +37,9 @@ Implementação PWA feita no frontend com:
 
 Troque estes arquivos pelos definitivos quando quiser atualizar a marca:
 
-- `public/icons/icon-192x192.png`
-- `public/icons/icon-512x512.png`
-- `public/icons/apple-touch-icon.png`
+- `public/images/icon-wt.png`
+- `public/images/adaptive-icon.png`
+- `public/images/splash-icon.png`
 
 ## Como testar PWA localmente
 

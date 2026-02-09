@@ -1,4 +1,4 @@
-const SW_VERSION = "v1";
+const SW_VERSION = "v2";
 const SHELL_CACHE = `jm-shell-${SW_VERSION}`;
 const STATIC_CACHE = `jm-static-${SW_VERSION}`;
 
@@ -7,9 +7,9 @@ const SHELL_ASSETS = [
   "/manifest.webmanifest",
   "/favicon.svg",
   "/icon.svg",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
-  "/icons/apple-touch-icon.png"
+  "/images/icon-wt.png",
+  "/images/adaptive-icon.png",
+  "/images/splash-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -42,7 +42,7 @@ const isStaticAssetRequest = (request, url) => {
   }
 
   if (
-    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/images/") ||
     url.pathname === "/favicon.svg" ||
     url.pathname === "/icon.svg" ||
     url.pathname === "/manifest.webmanifest"
