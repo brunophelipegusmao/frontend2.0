@@ -7,9 +7,15 @@ import type { EventHighlight } from "@/types/event";
 type CarouselImage = { imageUrl: string; altText?: string | null };
 
 type ApiEvent = {
+  id?: string;
   title: string;
+  slug?: string;
+  path?: string;
   date: string;
+  status?: "draft" | "published" | "cancelled";
+  isFeatured?: boolean;
   time: string;
+  endTime?: string | null;
   description: string;
   location: string | null;
   thumbnailUrl: string | null;
@@ -113,18 +119,36 @@ const getCarouselSlides = async (): Promise<HeroSlide[]> => {
 
 const getEvents = async (): Promise<EventHighlight[]> => {
   const today = formatDateInput(new Date());
-  const response = await fetchJson<ApiEvent[]>(`/events/public?from=${today}`);
-  if (!response) {
+  const mapToHighlight = (events: ApiEvent[]) =>
+    events.map((event) => ({
+      id: event.id,
+      slug: event.slug,
+      status: event.status,
+      isFeatured: event.isFeatured === true,
+      path: event.path,
+      title: event.title,
+      date: event.date,
+      time: event.time,
+      location: event.location ?? "Local a confirmar",
+      description: event.description ?? "Evento exclusivo JM Fitness.",
+      image: event.thumbnailUrl ?? "/gym1.jpg",
+    }));
+
+  const cards = await fetchJson<ApiEvent[]>(
+    `/events/public/cards?from=${today}&includeCancelled=1`,
+  );
+  if (cards) {
+    return mapToHighlight(cards);
+  }
+
+  const fallback = await fetchJson<ApiEvent[]>(
+    `/events/public?from=${today}&includeCancelled=1`,
+  );
+  if (!fallback) {
     return [];
   }
-  return response.map((event) => ({
-    title: event.title,
-    date: event.date,
-    time: event.time,
-    location: event.location ?? "Local a confirmar",
-    description: event.description ?? "Evento exclusivo JM Fitness.",
-    image: event.thumbnailUrl ?? "/gym1.jpg",
-  }));
+
+  return mapToHighlight(fallback);
 };
 
 const getPlans = async (): Promise<PlanOption[]> => {

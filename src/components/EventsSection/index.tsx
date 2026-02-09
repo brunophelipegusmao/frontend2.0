@@ -9,24 +9,31 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
-export function EventsSection({ events }: { events: EventHighlight[] }) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+const parseDate = (value: string) => {
+  const directMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (directMatch) {
+    const year = Number(directMatch[1]);
+    const month = Number(directMatch[2]);
+    const day = Number(directMatch[3]);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+};
 
-  const upcomingEvent = events
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime(),
-    )
-    .find((event) => new Date(event.date).getTime() >= todayStart.getTime()) ??
-    events[events.length - 1];
+const isCancelledEvent = (event: EventHighlight) => event.status === "cancelled";
+
+export function EventsSection({ events }: { events: EventHighlight[] }) {
+  const upcomingEvent =
+    events.find((event) => event.isFeatured && !isCancelledEvent(event)) ??
+    events.find((event) => !isCancelledEvent(event)) ??
+    events[0] ??
+    null;
 
   if (!upcomingEvent) {
     return null;
   }
 
-  const eventDate = new Date(upcomingEvent.date);
+  const eventDate = parseDate(upcomingEvent.date);
 
   return (
     <section id="events" className="space-y-8">

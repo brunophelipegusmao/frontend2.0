@@ -68,11 +68,14 @@ type EventItem = {
   hideLocation: boolean;
   access: "open" | "registered_only";
   capacity: number | null;
+  confirmedRegistrations: number;
   paid: boolean;
   price: string;
+  priceCents: number | null;
   paymentMethod: string;
   allowGuests: boolean;
   requiresConfirmation: boolean;
+  isFeatured: boolean;
   status: "rascunho" | "publicado" | "cancelado";
 };
 
@@ -87,14 +90,32 @@ type EventApiRecord = {
   hideLocation: boolean;
   accessMode: "open" | "registered_only";
   capacity: number | null;
+  confirmedRegistrations?: number;
   allowGuests: boolean;
   requiresConfirmation: boolean;
   isPaid: boolean;
   priceCents: number | null;
   paymentMethod: string | null;
   thumbnailUrl: string | null;
+  isFeatured?: boolean;
   status: "draft" | "published" | "cancelled";
   isPublished?: boolean;
+};
+
+type EventRegistrationApiRecord = {
+  id: string;
+  status: "confirmed" | "cancelled" | "waitlisted" | "pending";
+  userId: string | null;
+  name: string | null;
+  email: string | null;
+  userName?: string | null;
+  userEmail?: string | null;
+  confirmedByUserId: string | null;
+  paymentMethod: string | null;
+  paymentAmountCents: number | null;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
 };
 
 const mockPayments = [
@@ -302,6 +323,16 @@ const EVENT_STATUS_LABEL_MAP: Record<EventApiRecord["status"], EventItem["status
   cancelled: "cancelado",
 };
 
+const REGISTRATION_STATUS_LABEL_MAP: Record<
+  EventRegistrationApiRecord["status"],
+  string
+> = {
+  confirmed: "Confirmado",
+  pending: "Pendente",
+  waitlisted: "Lista de espera",
+  cancelled: "Cancelado",
+};
+
 const mapApiStatusToUiStatus = (status: EventApiRecord["status"]) =>
   EVENT_STATUS_LABEL_MAP[status] ?? "rascunho";
 
@@ -330,13 +361,26 @@ const mapApiEventToItem = (event: EventApiRecord): EventItem => ({
   hideLocation: event.hideLocation,
   access: event.accessMode,
   capacity: event.capacity,
+  confirmedRegistrations: Number(event.confirmedRegistrations ?? 0),
   paid: event.isPaid,
   price: formatEventPrice(event.isPaid, event.priceCents),
+  priceCents: event.priceCents,
   paymentMethod: event.isPaid ? event.paymentMethod ?? "-" : "-",
   allowGuests: event.allowGuests,
   requiresConfirmation: event.requiresConfirmation,
+  isFeatured: event.isFeatured === true,
   status: mapApiStatusToUiStatus(event.status),
 });
+
+const formatCurrencyFromCents = (value?: number | null) => {
+  if (!value || value < 1) {
+    return "R$ 0,00";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value / 100);
+};
 
 const parseReaisToCents = (value: string) => {
   const normalized = value.trim().replace(/\./g, "").replace(",", ".");
@@ -541,11 +585,25 @@ export default function DashboardPage() {
   const [selectedEventDate, setSelectedEventDate] = useState<string | null>(
     null,
   );
+  const [managedEvent, setManagedEvent] = useState<EventItem | null>(null);
+  const [eventRegistrations, setEventRegistrations] = useState<
+    EventRegistrationApiRecord[]
+  >([]);
+  const [eventRegistrationsStatus, setEventRegistrationsStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [eventRegistrationsError, setEventRegistrationsError] = useState<
+    string | null
+  >(null);
+  const [confirmingPaymentRegistrationId, setConfirmingPaymentRegistrationId] =
+    useState<string | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventModalMode, setEventModalMode] = useState<"create" | "edit">(
     "create",
   );
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editingEventStatus, setEditingEventStatus] =
+    useState<EventItem["status"] | null>(null);
   const [eventForm, setEventForm] = useState({
     title: "",
     description: "",
@@ -561,6 +619,8 @@ export default function DashboardPage() {
     isPaid: false,
     priceCents: "",
     paymentMethod: "",
+    isFeatured: false,
+    publish: false,
   });
   const [eventImageFile, setEventImageFile] = useState<File | null>(null);
   const [isSavingEvent, setIsSavingEvent] = useState(false);
@@ -1500,6 +1560,7 @@ export default function DashboardPage() {
       new Date().toISOString().split("T")[0];
     setEventModalMode(mode);
     setEditingEventId(event?.id ?? null);
+    setEditingEventStatus(event?.status ?? null);
     setEventForm({
       title: event?.title ?? "",
       description: event?.description ?? "",
@@ -1518,6 +1579,8 @@ export default function DashboardPage() {
       isPaid: event?.paid ?? false,
       priceCents: event?.paid ? parsePriceToReais(event.price ?? "") : "",
       paymentMethod: event?.paid ? event?.paymentMethod ?? "" : "",
+      isFeatured: event?.isFeatured ?? false,
+      publish: event?.status === "publicado",
     });
     setEventImageFile(null);
     setIsEventModalOpen(true);
@@ -1555,6 +1618,7 @@ export default function DashboardPage() {
       isPaid: eventForm.isPaid,
       priceCents,
       paymentMethod,
+      isFeatured: eventForm.isFeatured,
     };
   };
 
@@ -1661,9 +1725,33 @@ export default function DashboardPage() {
         }
       }
 
+      const shouldPublish = eventForm.publish;
+      const currentlyPublished =
+        savedEvent.status === "published" || savedEvent.isPublished === true;
+      if (shouldPublish !== currentlyPublished) {
+        const publishAction = shouldPublish ? "publish" : "unpublish";
+        const publishActionLabel = shouldPublish ? "publicar" : "despublicar";
+        const publishResponse = await fetch(
+          `${API_BASE_URL}/events/${savedEvent.id}/${publishAction}`,
+          {
+            method: "POST",
+            credentials: "include",
+          },
+        );
+        if (!publishResponse.ok) {
+          throw new Error(
+            await parseApiError(
+              publishResponse,
+              `Evento salvo, mas nao foi possivel ${publishActionLabel}.`,
+            ),
+          );
+        }
+      }
+
       await loadEvents();
       setIsEventModalOpen(false);
       setEditingEventId(null);
+      setEditingEventStatus(null);
       setEventImageFile(null);
       showSaveFeedback(
         "success",
@@ -1700,6 +1788,7 @@ export default function DashboardPage() {
       await loadEvents();
       setIsEventModalOpen(false);
       setEditingEventId(null);
+      setEditingEventStatus(null);
       showSaveFeedback(
         "success",
         "Evento cancelado",
@@ -1730,13 +1819,21 @@ export default function DashboardPage() {
           await parseApiError(response, "Nao foi possivel apagar o evento."),
         );
       }
+      const result = (await response.json()) as {
+        status?: EventApiRecord["status"];
+        deletedAt?: string | null;
+      };
+      const wasCancelled = result.status === "cancelled" && !result.deletedAt;
       await loadEvents();
       setIsEventModalOpen(false);
       setEditingEventId(null);
+      setEditingEventStatus(null);
       showSaveFeedback(
         "success",
-        "Evento apagado",
-        "O evento foi apagado com sucesso.",
+        wasCancelled ? "Evento cancelado" : "Evento apagado",
+        wasCancelled
+          ? "O evento ja foi publicado anteriormente e foi cancelado."
+          : "O evento foi apagado com sucesso.",
       );
     } catch (err) {
       const message =
@@ -1780,6 +1877,131 @@ export default function DashboardPage() {
     }
   };
 
+  const loadEventRegistrations = useCallback(async (eventId: string) => {
+    setEventRegistrationsStatus("loading");
+    setEventRegistrationsError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/${eventId}/registrations`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel carregar os inscritos do evento.",
+          ),
+        );
+      }
+      const payload = (await response.json()) as EventRegistrationApiRecord[];
+      setEventRegistrations(payload);
+      setEventRegistrationsStatus("ready");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao carregar inscritos.";
+      setEventRegistrations([]);
+      setEventRegistrationsStatus("error");
+      setEventRegistrationsError(message);
+    }
+  }, []);
+
+  const openEventManagementModal = (event: EventItem) => {
+    setManagedEvent(event);
+    setConfirmingPaymentRegistrationId(null);
+    void loadEventRegistrations(event.id);
+  };
+
+  const closeEventManagementModal = () => {
+    setManagedEvent(null);
+    setEventRegistrations([]);
+    setEventRegistrationsStatus("idle");
+    setEventRegistrationsError(null);
+    setConfirmingPaymentRegistrationId(null);
+  };
+
+  const isRegistrationPaid = (registration: EventRegistrationApiRecord) =>
+    registration.status !== "cancelled" &&
+    Boolean(registration.paymentAmountCents && registration.paymentAmountCents > 0);
+
+  const handleConfirmRegistrationPayment = async (
+    registration: EventRegistrationApiRecord,
+  ) => {
+    if (!managedEvent || confirmingPaymentRegistrationId) {
+      return;
+    }
+
+    const paymentMethod =
+      registration.paymentMethod?.trim() ||
+      (managedEvent.paymentMethod !== "-" ? managedEvent.paymentMethod : null);
+    const paymentAmountCents =
+      registration.paymentAmountCents && registration.paymentAmountCents > 0
+        ? registration.paymentAmountCents
+        : managedEvent.priceCents;
+
+    if (managedEvent.paid) {
+      if (!paymentMethod) {
+        showSaveFeedback(
+          "error",
+          "Pagamento não confirmado",
+          "Defina a forma de pagamento no evento antes de confirmar.",
+        );
+        return;
+      }
+      if (!paymentAmountCents || paymentAmountCents < 1) {
+        showSaveFeedback(
+          "error",
+          "Pagamento não confirmado",
+          "Defina o valor do evento antes de confirmar o pagamento.",
+        );
+        return;
+      }
+    }
+
+    setConfirmingPaymentRegistrationId(registration.id);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/events/${managedEvent.id}/registrations/${registration.id}/confirm`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            managedEvent.paid
+              ? {
+                  paymentMethod,
+                  paymentAmountCents,
+                }
+              : {},
+          ),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel confirmar o pagamento do inscrito.",
+          ),
+        );
+      }
+
+      await loadEventRegistrations(managedEvent.id);
+      showSaveFeedback(
+        "success",
+        managedEvent.paid ? "Pagamento confirmado" : "Inscrição confirmada",
+        managedEvent.paid
+          ? "O pagamento do inscrito foi confirmado com sucesso."
+          : "A inscrição foi confirmada com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao confirmar pagamento do inscrito.";
+      showSaveFeedback("error", "Erro ao confirmar pagamento", message);
+    } finally {
+      setConfirmingPaymentRegistrationId(null);
+    }
+  };
+
   const filteredEvents = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1801,6 +2023,21 @@ export default function DashboardPage() {
     () => selectedDayEvents[0] ?? filteredEvents[0] ?? null,
     [selectedDayEvents, filteredEvents],
   );
+  const paidRegistrationsCount =
+    managedEvent?.paid === true
+      ? eventRegistrations.filter((registration) => isRegistrationPaid(registration))
+          .length
+      : 0;
+  const unpaidRegistrationsCount =
+    managedEvent?.paid === true
+      ? eventRegistrations.filter(
+          (registration) =>
+            registration.status !== "cancelled" && !isRegistrationPaid(registration),
+        ).length
+      : 0;
+  const cancelledRegistrationsCount = eventRegistrations.filter(
+    (registration) => registration.status === "cancelled",
+  ).length;
 
   const handleTabSelect = (tabId: TabId) => {
     setActiveTab(tabId);
@@ -2359,6 +2596,16 @@ export default function DashboardPage() {
                         </strong>
                       </span>
                       <span>
+                        Confirmadas:{" "}
+                        <strong className="text-[var(--foreground)]">
+                          {event.access === "open"
+                            ? "-"
+                            : `${event.confirmedRegistrations}${
+                                event.capacity !== null ? ` / ${event.capacity}` : ""
+                              }`}
+                        </strong>
+                      </span>
+                      <span>
                         Confirmacao:{" "}
                         <strong className="text-[var(--foreground)]">
                           {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
@@ -2384,13 +2631,27 @@ export default function DashboardPage() {
                           {event.allowGuests ? "Permitidos" : "Somente alunos"}
                         </strong>
                       </span>
+                      <span>
+                        Destaque:{" "}
+                        <strong className="text-[var(--foreground)]">
+                          {event.isFeatured ? "Sim" : "Nao"}
+                        </strong>
+                      </span>
                     </div>
-                    <button
-                      onClick={() => openEventModal("edit", event)}
-                      className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
-                    >
-                      Editar evento
-                    </button>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => openEventModal("edit", event)}
+                        className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                      >
+                        Editar evento
+                      </button>
+                      <button
+                        onClick={() => openEventManagementModal(event)}
+                        className="inline-flex h-9 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                      >
+                        Gerenciar
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2431,18 +2692,37 @@ export default function DashboardPage() {
                       {event.date} • {event.time} • {event.location}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    {event.paid ? "Pago" : "Gratuito"}
+                  <div className="flex items-center gap-2">
+                    {event.isFeatured && (
+                      <div className="rounded-xl border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]">
+                        Destaque
+                      </div>
+                    )}
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                      {event.paid ? "Pago" : "Gratuito"}
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                <div className="mt-4 grid gap-3 md:grid-cols-5">
                   <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
                     <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
                       Vagas
                     </p>
                     <p className="mt-1 text-[var(--foreground)]">
                       {event.capacity ?? "Livre"}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                      Confirmadas
+                    </p>
+                    <p className="mt-1 text-[var(--foreground)]">
+                      {event.access === "open"
+                        ? "-"
+                        : `${event.confirmedRegistrations}${
+                            event.capacity !== null ? ` / ${event.capacity}` : ""
+                          }`}
                     </p>
                   </div>
                   <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
@@ -2476,6 +2756,12 @@ export default function DashboardPage() {
                   >
                     <Pencil className="h-4 w-4" />
                     Editar
+                  </button>
+                  <button
+                    onClick={() => openEventManagementModal(event)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]"
+                  >
+                    Gerenciar
                   </button>
                   <button
                     onClick={() => handleTogglePublishEvent(event)}
@@ -2691,6 +2977,207 @@ export default function DashboardPage() {
               </div>
             </article>
           </section>
+        </div>
+      )}
+
+      {managedEvent && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                  Gerenciamento de inscrições
+                </p>
+                <h3 className="text-2xl font-semibold">{managedEvent.title}</h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  {managedEvent.date} • {managedEvent.time}
+                  {managedEvent.endTime ? ` - ${managedEvent.endTime}` : ""}
+                </p>
+              </div>
+              <button
+                onClick={closeEventManagementModal}
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.25em]">
+              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[var(--foreground)]">
+                {eventRegistrations.length} inscritos
+              </span>
+              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[var(--foreground)]">
+                {cancelledRegistrationsCount} cancelados
+              </span>
+              {managedEvent.paid && (
+                <>
+                  <span className="rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-3 py-1 text-[color:var(--success)]">
+                    {paidRegistrationsCount} pagos
+                  </span>
+                  <span className="rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-3 py-1 text-[color:var(--danger)]">
+                    {unpaidRegistrationsCount} não pagos
+                  </span>
+                </>
+              )}
+            </div>
+
+            {!managedEvent.paid && (
+              <p className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
+                Evento gratuito: não há confirmação de pagamento para os inscritos.
+              </p>
+            )}
+
+            {eventRegistrationsStatus === "loading" && (
+              <p className="mt-4 text-sm text-[var(--muted-foreground)]">
+                Carregando inscritos...
+              </p>
+            )}
+
+            {eventRegistrationsStatus === "error" && (
+              <div className="mt-4 space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
+                <p className="text-sm text-[color:var(--danger)]">
+                  {eventRegistrationsError ?? "Não foi possível carregar os inscritos."}
+                </p>
+                <button
+                  onClick={() => void loadEventRegistrations(managedEvent.id)}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {eventRegistrationsStatus === "ready" && eventRegistrations.length === 0 && (
+              <p className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
+                Este evento ainda não possui inscritos.
+              </p>
+            )}
+
+            {eventRegistrationsStatus === "ready" && eventRegistrations.length > 0 && (
+              <div className="mt-4 grid gap-3">
+                {eventRegistrations.map((registration) => {
+                  const displayName =
+                    registration.name?.trim() ||
+                    registration.userName?.trim() ||
+                    registration.userEmail?.trim() ||
+                    registration.email?.trim() ||
+                    (registration.userId
+                      ? `Usuário ${registration.userId.slice(0, 8)}`
+                      : "Inscrito");
+                  const displayEmail =
+                    registration.email?.trim() || registration.userEmail?.trim() || "-";
+                  const registrationStatusLabel =
+                    REGISTRATION_STATUS_LABEL_MAP[registration.status] ||
+                    registration.status;
+                  const registrationPaid = isRegistrationPaid(registration);
+                  const paymentStatusLabel = managedEvent.paid
+                    ? registration.status === "cancelled"
+                      ? "Cancelado"
+                      : registrationPaid
+                        ? "Pago"
+                        : "Não pago"
+                    : "Não se aplica";
+                  const canConfirmPayment =
+                    managedEvent.paid &&
+                    registration.status === "pending" &&
+                    !registrationPaid;
+                  const isConfirmingThisRegistration =
+                    confirmingPaymentRegistrationId === registration.id;
+                  const fallbackPaymentMethod =
+                    managedEvent.paymentMethod !== "-" ? managedEvent.paymentMethod : "-";
+                  const displayPaymentMethod =
+                    registration.paymentMethod?.trim() || fallbackPaymentMethod;
+                  const displayPaymentAmount = registrationPaid
+                    ? formatCurrencyFromCents(registration.paymentAmountCents)
+                    : formatCurrencyFromCents(managedEvent.priceCents);
+
+                  return (
+                    <article
+                      key={registration.id}
+                      className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h4 className="text-base font-semibold text-[var(--foreground)]">
+                            {displayName}
+                          </h4>
+                          <p className="text-sm text-[var(--muted-foreground)]">
+                            {displayEmail}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--foreground)]">
+                            {registrationStatusLabel}
+                          </span>
+                          <span
+                            className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] ${
+                              managedEvent.paid
+                                ? registrationPaid
+                                  ? "border-[color:var(--success-border)] bg-[color:var(--success-soft)] text-[color:var(--success)]"
+                                  : "border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                                : "border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            {paymentStatusLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-2 text-sm text-[var(--muted-foreground)] md:grid-cols-3">
+                        <p>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Valor:
+                          </span>{" "}
+                          {managedEvent.paid ? displayPaymentAmount : "-"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Método:
+                          </span>{" "}
+                          {managedEvent.paid ? displayPaymentMethod : "-"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Inscrição:
+                          </span>{" "}
+                          {new Intl.DateTimeFormat("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          }).format(new Date(registration.createdAt))}
+                        </p>
+                      </div>
+
+                      {managedEvent.paid && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() =>
+                              void handleConfirmRegistrationPayment(registration)
+                            }
+                            disabled={
+                              !canConfirmPayment || confirmingPaymentRegistrationId !== null
+                            }
+                            className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isConfirmingThisRegistration
+                              ? "Confirmando..."
+                              : registrationPaid
+                                ? "Pagamento confirmado"
+                                : canConfirmPayment
+                                  ? "Confirmar pagamento"
+                                  : registration.status === "waitlisted"
+                                    ? "Lista de espera"
+                                    : registration.status === "cancelled"
+                                      ? "Inscrição cancelada"
+                                      : "Aguardando confirmação"}
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -3788,6 +4275,8 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   setIsEventModalOpen(false);
+                  setEditingEventId(null);
+                  setEditingEventStatus(null);
                   setEventImageFile(null);
                 }}
                 className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
@@ -3987,6 +4476,33 @@ export default function DashboardPage() {
                 />
                 Evento pago
               </label>
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
+                <input
+                  type="checkbox"
+                  checked={eventForm.publish}
+                  disabled={editingEventStatus === "cancelado"}
+                  onChange={(event) =>
+                    setEventForm((prev) => ({
+                      ...prev,
+                      publish: event.target.checked,
+                    }))
+                  }
+                />
+                Publicar ao salvar
+              </label>
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
+                <input
+                  type="checkbox"
+                  checked={eventForm.isFeatured}
+                  onChange={(event) =>
+                    setEventForm((prev) => ({
+                      ...prev,
+                      isFeatured: event.target.checked,
+                    }))
+                  }
+                />
+                Definir como destaque
+              </label>
             </div>
 
             {eventForm.isPaid && (
@@ -4035,6 +4551,8 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   setIsEventModalOpen(false);
+                  setEditingEventId(null);
+                  setEditingEventStatus(null);
                   setEventImageFile(null);
                 }}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"

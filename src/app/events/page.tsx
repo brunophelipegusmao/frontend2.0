@@ -3,21 +3,42 @@ import Image from "next/image";
 import Link from "next/link";
 
 type PublicEvent = {
+  id?: string;
   title: string;
   slug: string;
+  path: string;
   description: string;
   date: string;
+  status?: "draft" | "published" | "cancelled";
+  isFeatured?: boolean;
   time: string;
   endTime: string | null;
   location: string | null;
   thumbnailUrl: string | null;
   accessMode: "open" | "registered_only";
   capacity: number | null;
+  confirmedRegistrations?: number;
   allowGuests: boolean;
   requiresConfirmation: boolean;
   isPaid: boolean;
   priceCents: number | null;
   paymentMethod: string | null;
+};
+
+type BirthdayEvent = {
+  title: string;
+  slug: string;
+  path: string;
+  description: string;
+  date: string;
+  time: string;
+  endTime: string | null;
+  location: string | null;
+  thumbnailUrl: string | null;
+};
+
+type EventsPageProps = {
+  searchParams?: Promise<{ birthMonth?: string }>;
 };
 
 const API_BASE_URL =
@@ -46,6 +67,58 @@ export const metadata: Metadata = {
 
 const buildApiUrl = (path: string) =>
   `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+
+const isBirthdaySlug = (slug: string) => slug.startsWith("aniversario-");
+
+const toEventPath = (slug: string) => `/events/event-${slug}`;
+const normalizeEventStatus = (value?: string | null) =>
+  value?.trim().toLowerCase() ?? "";
+const isCancelledEvent = (event: PublicEvent) => {
+  const normalizedStatus = normalizeEventStatus(event.status);
+  return normalizedStatus === "cancelled" || normalizedStatus === "cancelado";
+};
+const isEventFull = (event: PublicEvent) =>
+  event.capacity !== null &&
+  Number(event.confirmedRegistrations ?? 0) >= event.capacity;
+
+const monthRefRegex = /^(\d{4})-(0[1-9]|1[0-2])$/;
+
+const parseMonthRef = (monthRef?: string) => {
+  const now = new Date();
+  const fallback = {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+  };
+  if (!monthRef) {
+    return fallback;
+  }
+  const match = monthRefRegex.exec(monthRef.trim());
+  if (!match) {
+    return fallback;
+  }
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+  };
+};
+
+const toMonthRef = (year: number, month: number) =>
+  `${year}-${String(month).padStart(2, "0")}`;
+
+const shiftMonthRef = (monthRef: string, delta: number) => {
+  const parsed = parseMonthRef(monthRef);
+  const date = new Date(parsed.year, parsed.month - 1, 1);
+  date.setMonth(date.getMonth() + delta);
+  return toMonthRef(date.getFullYear(), date.getMonth() + 1);
+};
+
+const monthFromDate = (dateText: string) => {
+  const parsed = parseDate(dateText);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed.getMonth() + 1;
+};
 
 const parseDate = (value: string) => {
   const directMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
@@ -91,23 +164,116 @@ const formatEventPrice = (event: PublicEvent) => {
   return "Pago";
 };
 
-const getPublicEvents = async (): Promise<PublicEvent[]> => {
+const getBirthdayEventsOfMonth = async (
+  monthRef?: string,
+): Promise<BirthdayEvent[]> => {
+  const parsedMonth = parseMonthRef(monthRef);
+  const targetMonth = parsedMonth.month;
+  const normalizedMonthRef = toMonthRef(parsedMonth.year, parsedMonth.month);
+
+  const normalizeBirthdayList = (rows: Array<BirthdayEvent | PublicEvent>) =>
+    rows
+      .filter((event) => isBirthdaySlug(event.slug))
+      .filter((event) => monthFromDate(event.date) === targetMonth)
+      .map((event) => ({
+        title: event.title,
+        slug: event.slug,
+        path: "path" in event && event.path ? event.path : toEventPath(event.slug),
+        description: event.description,
+        date: event.date,
+        time: event.time,
+        endTime: event.endTime,
+        location: event.location,
+        thumbnailUrl: event.thumbnailUrl,
+      }));
+
   try {
-    const today = new Date();
-    const from = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(today.getDate()).padStart(2, "0")}`;
-    const response = await fetch(buildApiUrl(`/events/public?from=${from}`), {
+    const response = await fetch(
+      buildApiUrl(`/events/public/birthdays?month=${normalizedMonthRef}`),
+      {
+        next: { revalidate: 60 },
+      },
+    );
+    if (response.ok) {
+      const payload = (await response.json()) as BirthdayEvent[];
+      return normalizeBirthdayList(payload);
+    }
+  } catch {}
+
+  try {
+    const fallbackResponse = await fetch(buildApiUrl("/events/public"), {
       next: { revalidate: 60 },
     });
-    if (!response.ok) {
+    if (!fallbackResponse.ok) {
       return [];
     }
+    const payload = (await fallbackResponse.json()) as PublicEvent[];
+    return normalizeBirthdayList(payload);
+  } catch {
+    return [];
+  }
+};
 
-    const payload = (await response.json()) as PublicEvent[];
+const formatBirthdayDate = (event: BirthdayEvent) => {
+  const parsed = parseDate(event.date);
+  if (Number.isNaN(parsed.getTime())) {
+    return event.date;
+  }
+  return brDateFormatter.format(parsed);
+};
+
+const getPublicEvents = async (): Promise<PublicEvent[]> => {
+  const today = new Date();
+  const from = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}-${String(today.getDate()).padStart(2, "0")}`;
+
+  try {
+    const response = await fetch(
+      buildApiUrl(`/events/public/cards?from=${from}&includeCancelled=1`),
+      {
+        cache: "no-store",
+      },
+    );
+    if (response.ok) {
+      const payload = (await response.json()) as PublicEvent[];
+      return payload
+        .slice()
+        .filter((event) => !isBirthdaySlug(event.slug))
+        .map((event) => ({
+          ...event,
+          path: event.path || toEventPath(event.slug),
+        }))
+        .sort((a, b) => {
+          const aDate = safeEventDate(a)?.getTime() ?? 0;
+          const bDate = safeEventDate(b)?.getTime() ?? 0;
+          if (aDate !== bDate) {
+            return aDate - bDate;
+          }
+          return a.time.localeCompare(b.time);
+        });
+    }
+  } catch {}
+
+  try {
+    const fallbackResponse = await fetch(
+      buildApiUrl(`/events/public?from=${from}&includeCancelled=1`),
+      {
+        cache: "no-store",
+      },
+    );
+    if (!fallbackResponse.ok) {
+      return [];
+    }
+    const payload = (await fallbackResponse.json()) as PublicEvent[];
     return payload
       .slice()
+      .filter((event) => !isBirthdaySlug(event.slug))
+      .map((event) => ({
+        ...event,
+        path: toEventPath(event.slug),
+      }))
       .sort((a, b) => {
         const aDate = safeEventDate(a)?.getTime() ?? 0;
         const bDate = safeEventDate(b)?.getTime() ?? 0;
@@ -121,13 +287,42 @@ const getPublicEvents = async (): Promise<PublicEvent[]> => {
   }
 };
 
-export default async function EventsPage() {
-  const events = await getPublicEvents();
+export default async function EventsPage({ searchParams }: EventsPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const parsedSelectedMonth = parseMonthRef(resolvedSearchParams?.birthMonth);
+  const selectedBirthMonthRef = toMonthRef(
+    parsedSelectedMonth.year,
+    parsedSelectedMonth.month,
+  );
+  const previousBirthMonthRef = shiftMonthRef(selectedBirthMonthRef, -1);
+  const nextBirthMonthRef = shiftMonthRef(selectedBirthMonthRef, 1);
+  const birthdayMonthLabel = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(
+    new Date(parsedSelectedMonth.year, parsedSelectedMonth.month - 1, 1),
+  );
+
+  const [events, birthdayEvents] = await Promise.all([
+    getPublicEvents(),
+    getBirthdayEventsOfMonth(selectedBirthMonthRef),
+  ]);
 
   const totalEvents = events.length;
   const paidEvents = events.filter((event) => event.isPaid).length;
   const openEvents = events.filter((event) => event.accessMode === "open").length;
-  const featuredEvent = events[0] ?? null;
+  const featuredEvent =
+    events.find((event) => event.isFeatured && !isCancelledEvent(event)) ??
+    events.find((event) => !isCancelledEvent(event)) ??
+    null;
+  const featuredEventKey = featuredEvent?.id ?? featuredEvent?.slug ?? null;
+  const eventsForCards = events.filter((event) => {
+    if (!featuredEventKey) {
+      return true;
+    }
+    const eventKey = event.id ?? event.slug;
+    return eventKey !== featuredEventKey;
+  });
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
@@ -156,8 +351,68 @@ export default async function EventsPage() {
           </div>
         </header>
 
+        <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--gold-tone-dark)]">
+                Aniversariantes do mes
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
+                Celebrando {birthdayMonthLabel}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/events?birthMonth=${previousBirthMonthRef}`}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+              >
+                Anterior
+              </Link>
+              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-xs uppercase tracking-[0.24rem] text-[var(--foreground)]">
+                {birthdayEvents.length} aniversariantes
+              </span>
+              <Link
+                href={`/events?birthMonth=${nextBirthMonthRef}`}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+              >
+                Proximo
+              </Link>
+            </div>
+          </div>
+
+          {birthdayEvents.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
+              Nenhum aniversariante publicado para este mes.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {birthdayEvents.map((event) => (
+                <article
+                  key={event.slug}
+                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+                    {formatBirthdayDate(event)}
+                  </p>
+                  <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {event.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                    {event.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         {featuredEvent ? (
-          <article className="grid gap-5 overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_22px_52px_-28px_var(--shadow)] md:grid-cols-[1.2fr_1fr] md:p-6">
+          <article className="relative grid gap-5 overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_22px_52px_-28px_var(--shadow)] md:grid-cols-[1.2fr_1fr] md:p-6">
+            {isCancelledEvent(featuredEvent) && (
+              <span className="pointer-events-none absolute -right-16 top-6 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-20 py-1 text-[0.58rem] font-bold uppercase tracking-[0.28rem] text-white shadow-[0_12px_26px_-14px_var(--shadow)]">
+                CANCELADO
+              </span>
+            )}
             <div className="relative h-56 overflow-hidden rounded-2xl border border-[color:var(--border-dim)] sm:h-72">
               <Image
                 src={featuredEvent.thumbnailUrl || "/gym1.jpg"}
@@ -196,24 +451,48 @@ export default async function EventsPage() {
                   {formatEventPrice(featuredEvent)}
                 </p>
                 <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                  <span className="font-semibold">Inscricoes:</span>{" "}
+                  {featuredEvent.accessMode === "open"
+                    ? "Acesso livre"
+                    : `${Number(featuredEvent.confirmedRegistrations ?? 0)}${
+                        typeof featuredEvent.capacity === "number"
+                          ? ` / ${featuredEvent.capacity}`
+                          : ""
+                      } confirmadas`}
+                </p>
+                <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
                   <span className="font-semibold">Local:</span>{" "}
                   {featuredEvent.location || "Enviado apos confirmacao"}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/users/login"
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-6 text-sm font-semibold text-[var(--background)] transition hover:bg-[var(--gold-tone-dark)]"
-                >
-                  Entrar para se inscrever
-                </Link>
-                <Link
-                  href="/checkin"
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-6 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
-                >
-                  Fazer check-in
-                </Link>
+                {!isCancelledEvent(featuredEvent) && !isEventFull(featuredEvent) ? (
+                  <>
+                    <Link
+                      href={featuredEvent.path}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-6 text-sm font-semibold text-[var(--background)] transition hover:bg-[var(--gold-tone-dark)]"
+                    >
+                      Entrar para se inscrever
+                    </Link>
+                    <Link
+                      href={featuredEvent.path}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-6 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                    >
+                      Ver detalhes
+                    </Link>
+                  </>
+                ) : (
+                  <span
+                    className={`inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-semibold ${
+                      isCancelledEvent(featuredEvent)
+                        ? "border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                        : "border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)]"
+                    }`}
+                  >
+                    {isCancelledEvent(featuredEvent) ? "Evento cancelado" : "Evento lotado"}
+                  </span>
+                )}
               </div>
             </div>
           </article>
@@ -227,59 +506,99 @@ export default async function EventsPage() {
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--muted-foreground)]">
               Assim que a equipe publicar novos eventos, eles aparecerao aqui
-              automaticamente.
+              automaticamente. Eventos de aniversario aparecem apenas na secao
+              de aniversariantes.
             </p>
           </div>
         )}
 
-        {events.length > 0 && (
+        {eventsForCards.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
-              <article
-                key={`${event.slug}-${event.date}-${event.time}`}
-                className="group overflow-hidden rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] transition hover:-translate-y-1 hover:border-[var(--gold-tone-dark)] hover:shadow-[0_18px_38px_-22px_var(--shadow)]"
-              >
-                <div className="relative h-40 border-b border-[color:var(--border-dim)]">
-                  <Image
-                    src={event.thumbnailUrl || "/gym2.jpg"}
-                    alt={event.title}
-                    fill
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="space-y-3 p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)]">
-                      {event.accessMode === "open" ? "Aberto" : "Inscricao"}
+            {eventsForCards.map((event) => {
+              const isCancelled = isCancelledEvent(event);
+              const cardClasses = `group relative overflow-hidden rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] transition ${
+                isCancelled
+                  ? "cursor-default opacity-95"
+                  : "hover:-translate-y-1 hover:border-[var(--gold-tone-dark)] hover:shadow-[0_18px_38px_-22px_var(--shadow)]"
+              }`;
+              const cardContent = (
+                <>
+                  {isCancelled && (
+                    <span className="pointer-events-none absolute -right-14 top-5 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-16 py-1 text-[0.58rem] font-bold uppercase tracking-[0.25rem] text-white shadow-[0_10px_24px_-12px_var(--shadow)]">
+                      CANCELADO
                     </span>
-                    <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]">
-                      {event.isPaid ? "Pago" : "Gratuito"}
-                    </span>
-                    {event.allowGuests && (
-                      <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]">
-                        Convidados
+                  )}
+                  <div className="relative h-40 border-b border-[color:var(--border-dim)]">
+                    <Image
+                      src={event.thumbnailUrl || "/gym2.jpg"}
+                      alt={event.title}
+                      fill
+                      sizes="(max-width: 1024px) 50vw, 33vw"
+                      className={`object-cover transition duration-500 ${
+                        isCancelled ? "" : "group-hover:scale-105"
+                      }`}
+                    />
+                  </div>
+                  <div className="space-y-3 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)]">
+                        {event.accessMode === "open" ? "Aberto" : "Inscricao"}
                       </span>
-                    )}
+                      <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]">
+                        {event.isPaid ? "Pago" : "Gratuito"}
+                      </span>
+                      {event.allowGuests && (
+                        <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]">
+                          Convidados
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="line-clamp-2 text-lg font-semibold text-[var(--foreground)]">
+                      {event.title}
+                    </h3>
+
+                    <p className="line-clamp-2 text-sm text-[var(--muted-foreground)]">
+                      {event.description}
+                    </p>
+
+                    <div className="space-y-1 text-xs text-[var(--muted-foreground)]">
+                      <p>{formatEventDate(event)}</p>
+                      <p>{formatEventTime(event)}</p>
+                      <p>{event.location || "Local enviado apos confirmacao"}</p>
+                      <p>{formatEventPrice(event)}</p>
+                      <p>
+                        {event.accessMode === "open"
+                          ? "Acesso livre"
+                          : `${Number(event.confirmedRegistrations ?? 0)}${
+                              typeof event.capacity === "number"
+                                ? ` / ${event.capacity}`
+                                : ""
+                            } confirmadas`}
+                      </p>
+                    </div>
                   </div>
+                </>
+              );
 
-                  <h3 className="line-clamp-2 text-lg font-semibold text-[var(--foreground)]">
-                    {event.title}
-                  </h3>
+              if (isCancelled) {
+                return (
+                  <article key={`${event.slug}-${event.date}-${event.time}`} className={cardClasses}>
+                    {cardContent}
+                  </article>
+                );
+              }
 
-                  <p className="line-clamp-2 text-sm text-[var(--muted-foreground)]">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-1 text-xs text-[var(--muted-foreground)]">
-                    <p>{formatEventDate(event)}</p>
-                    <p>{formatEventTime(event)}</p>
-                    <p>{event.location || "Local enviado apos confirmacao"}</p>
-                    <p>{formatEventPrice(event)}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
+              return (
+                <Link
+                  key={`${event.slug}-${event.date}-${event.time}`}
+                  href={event.path}
+                  className={cardClasses}
+                >
+                  {cardContent}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

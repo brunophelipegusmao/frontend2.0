@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthCard } from "@/components/AuthCard";
@@ -8,17 +8,125 @@ import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { signInWithEmail, startSocialSignIn } from "@/lib/auth";
 import { API_BASE_URL, redirectBasedOnRole } from "@/lib/roleRedirect";
 
+type EventRegistrationResponse = {
+  status?: "pending" | "confirmed" | "waitlisted";
+};
+
+const parseApiError = async (response: Response, fallback: string) => {
+  try {
+    const data = (await response.json()) as {
+      message?: string | string[];
+      error?: string;
+    };
+    if (Array.isArray(data?.message) && data.message.length > 0) {
+      return data.message[0];
+    }
+    if (typeof data?.message === "string" && data.message.trim().length > 0) {
+      return data.message;
+    }
+    if (typeof data?.error === "string" && data.error.trim().length > 0) {
+      return data.error;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const sanitizeEventPath = (rawPath: string | null, eventSlug: string) => {
+  if (rawPath && rawPath.startsWith("/events/")) {
+    return rawPath;
+  }
+  return `/events/event-${eventSlug}`;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId =
     searchParams.get("planId") ?? searchParams.get("plan_id") ?? undefined;
+  const eventSlug = (searchParams.get("eventSlug") ?? "").trim();
+  const eventPath = searchParams.get("eventPath");
+  const shouldAutoRegisterEvent =
+    searchParams.get("registerAfterLogin") === "1" && eventSlug.length > 0;
+  const autoRegisterRef = useRef(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const completeEventRegistration = useCallback(async () => {
+    if (!shouldAutoRegisterEvent) {
+      await redirectBasedOnRole(router);
+      return;
+    }
+
+    const safeEventPath = sanitizeEventPath(eventPath, eventSlug);
+    const buildReturnPath = (status: string, message?: string) => {
+      const url = new URL(safeEventPath, window.location.origin);
+      url.searchParams.set("registrationStatus", status);
+      if (message && message.trim().length > 0) {
+        url.searchParams.set("registrationMessage", message);
+      }
+      return `${url.pathname}${url.search}`;
+    };
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/events/public/${encodeURIComponent(eventSlug)}/register`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          const message = await parseApiError(
+            response,
+            "Nao foi possivel concluir a inscricao no evento.",
+          );
+          const duplicateRegistration =
+            /ja esta inscrito/i.test(message) ||
+            /inscricao ja existente/i.test(message);
+          if (duplicateRegistration) {
+            router.replace(buildReturnPath("already"));
+            return;
+          }
+          router.replace(buildReturnPath("error", message));
+          return;
+        }
+        if (response.status === 401 || response.status === 403) {
+          router.replace(
+            buildReturnPath(
+              "auth_error",
+              "Sessao expirada. Entre novamente para se inscrever.",
+            ),
+          );
+          return;
+        }
+        const message = await parseApiError(
+          response,
+          "Nao foi possivel concluir a inscricao no evento.",
+        );
+        router.replace(buildReturnPath("error", message));
+        return;
+      }
+
+      const payload = (await response.json()) as EventRegistrationResponse;
+      const status = payload.status ?? "confirmed";
+      router.replace(buildReturnPath(status));
+    } catch {
+      router.replace(
+        buildReturnPath("error", "Falha ao comunicar com o servidor."),
+      );
+    }
+  }, [eventPath, eventSlug, router, shouldAutoRegisterEvent]);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +138,11 @@ export default function LoginPage() {
         if (!response.ok || !active) {
           return;
         }
+        if (shouldAutoRegisterEvent && !autoRegisterRef.current) {
+          autoRegisterRef.current = true;
+          await completeEventRegistration();
+          return;
+        }
         await redirectBasedOnRole(router);
       } catch {
         // ignore
@@ -39,14 +152,16 @@ export default function LoginPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [completeEventRegistration, router, shouldAutoRegisterEvent]);
 
   const handleGoogleLogin = async () => {
     setError(null);
     setSuccess(null);
 
     const origin = window.location.origin;
-    const callbackURL = `${origin}/users/login`;
+    const callbackURL = shouldAutoRegisterEvent
+      ? window.location.href
+      : `${origin}/users/login`;
     const completeProfileUrl = new URL("/complete-profile", origin);
     if (planId) {
       completeProfileUrl.searchParams.set("planId", planId);
@@ -92,6 +207,12 @@ export default function LoginPage() {
       return;
     }
 
+    if (shouldAutoRegisterEvent) {
+      setSuccess("Login realizado. Finalizando inscricao no evento...");
+      await completeEventRegistration();
+      return;
+    }
+
     setSuccess("Login realizado com sucesso.");
     await redirectBasedOnRole(router);
   };
@@ -112,6 +233,12 @@ export default function LoginPage() {
         </>
       }
     >
+      {shouldAutoRegisterEvent && (
+        <p className="mb-4 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
+          Entre na sua conta para concluir automaticamente a inscricao no evento.
+        </p>
+      )}
+
       <div className="mt-6 space-y-4 font-[var(--font-roboto)]">
         <GoogleLoginButton
           label="Entrar com Google"
