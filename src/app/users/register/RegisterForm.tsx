@@ -110,6 +110,7 @@ export function RegisterForm() {
       planId,
       callbackURL,
       newUserCallbackURL: completeProfileUrl.toString(),
+      requestSignUp: true,
     });
 
     if (!result.ok) {

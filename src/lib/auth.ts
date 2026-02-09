@@ -49,13 +49,14 @@ type SocialSignInOptions = {
   planId?: string;
   callbackURL?: string;
   newUserCallbackURL?: string;
+  requestSignUp?: boolean;
 };
 
 export const startSocialSignIn = async (
   provider: string,
   options: SocialSignInOptions = {},
 ) => {
-  const { planId, callbackURL, newUserCallbackURL } = options;
+  const { planId, callbackURL, newUserCallbackURL, requestSignUp } = options;
   const payload: Record<string, unknown> = { provider };
   if (planId) {
     payload.planId = planId;
@@ -65,6 +66,9 @@ export const startSocialSignIn = async (
   }
   if (newUserCallbackURL) {
     payload.newUserCallbackURL = newUserCallbackURL;
+  }
+  if (requestSignUp) {
+    payload.requestSignUp = true;
   }
 
   const result = await postAuth<{ redirect?: boolean; url?: string }>(
