@@ -14,23 +14,23 @@ export function Footer() {
   return (
     <footer
       id="contatos"
-      className="mt-16 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-12 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:px-6"
+      className="mt-10 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:px-6 sm:py-10"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.6rem] text-[var(--gold-tone-dark)]">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-2">
+          <p className="text-[0.6rem] uppercase tracking-[0.5rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
             JM Fitness Studio
           </p>
-          <p className="text-base font-semibold text-[var(--foreground)]">
+          <p className="text-sm font-semibold text-[var(--foreground)] sm:text-base">
             Rua General Câmara, 18, sala 311
             <br />25 de Agosto, Duque de Caxias - RJ
           </p>
-          <p className="text-[var(--gold-tone-dark)]">
+          <p className="text-xs text-[var(--gold-tone-dark)] sm:text-sm">
             (21) 98099-5749 • atendimento@jmfitness.com.br
           </p>
         </div>
 
-        <div className="space-y-3">
+        <div className="hidden space-y-3 md:block">
           <p className="text-xs uppercase tracking-[0.4rem] text-[var(--gold-tone-dark)]">
             Navegue
           </p>
@@ -47,7 +47,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="space-y-2 text-xs text-[var(--muted-foreground)]">
+        <div className="space-y-1 text-[0.65rem] text-[var(--muted-foreground)] sm:text-xs">
           <p>© {currentYear} JM Fitness Studio</p>
           <p>Projeto inspirado no branding oficial do estúdio.</p>
         </div>
