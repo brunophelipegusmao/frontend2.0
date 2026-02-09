@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend JM Fitness (Next.js)
 
-## Getting Started
+Frontend em Next.js (App Router) do projeto JM Fitness.
 
-First, run the development server:
+## Requisitos
+
+- Node 20+
+- pnpm
+
+## Rodar local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App local: `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build de produção local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm build
+pnpm start
+```
 
-## Learn More
+## PWA (Instalável)
 
-To learn more about Next.js, take a look at the following resources:
+Implementação PWA feita no frontend com:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `public/manifest.webmanifest`
+- ícones em `public/icons/`
+- service worker em `public/sw.js`
+- registro do SW em `src/components/PWA/ServiceWorkerRegister.tsx`
+- botão de instalação em `src/components/PWA/InstallAppButton.tsx`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Arquivos de ícone
 
-## Deploy on Vercel
+Troque estes arquivos pelos definitivos quando quiser atualizar a marca:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `public/icons/icon-192x192.png`
+- `public/icons/icon-512x512.png`
+- `public/icons/apple-touch-icon.png`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Como testar PWA localmente
+
+1. Rode em modo produção local:
+
+```bash
+pnpm build
+pnpm start
+```
+
+2. Abra `http://localhost:3000` no Chrome.
+3. Abra DevTools -> Application:
+- confira `Manifest`
+- confira `Service Workers` (registrado e ativo)
+
+Observação: Chrome permite PWA em `localhost` mesmo sem HTTPS.
+
+## Como auditar com Lighthouse
+
+1. Com `pnpm start` rodando, abra o site no Chrome.
+2. DevTools -> Lighthouse.
+3. Gere relatório com categoria `PWA`.
+4. Verifique itens de Installability e Service Worker.
+
+## Teste de instalação Android (Chrome)
+
+1. Acesse a URL HTTPS de produção (ou localhost para teste local).
+2. O navegador deve exibir opção de instalar (menu do Chrome).
+3. O botão `Instalar app` aparece no site quando `beforeinstallprompt` estiver disponível.
+4. Após instalar, abra o app e confirme modo standalone.
+
+## Teste iOS (Safari)
+
+Safari no iOS não suporta `beforeinstallprompt`.
+
+1. Abra a URL HTTPS no Safari.
+2. Toque em `Compartilhar`.
+3. Toque em `Adicionar à Tela de Início`.
+4. Confira ícone e abertura em tela cheia.
+
+## Observações de cache
+
+Estratégia de cache do SW é conservadora:
+
+- navegação: `network-first` com fallback de shell
+- estáticos do app: `stale-while-revalidate`
+- chamadas ao backend não são cacheadas pelo SW
+
+Quando precisar limpar totalmente:
+
+1. Remova o app instalado.
+2. No navegador, limpe `Site data`/`Storage`.
+3. Reabra o site para novo registro do SW.
+
+## Notas sobre backend
+
+Nenhuma alteração no backend é obrigatória para esta implementação PWA.
+
+Recomendado em produção:
+
+- Servir frontend em HTTPS.
+- Evitar mixed content (frontend HTTPS chamando backend HTTP).

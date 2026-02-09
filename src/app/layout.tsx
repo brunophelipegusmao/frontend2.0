@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import "./globals.css";
 
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { ServiceWorkerRegister } from "@/components/PWA/ServiceWorkerRegister";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 const roboto = Roboto({
@@ -58,6 +59,25 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "JM Fitness Studio",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b0b0f",
 };
 
 export default function RootLayout({
@@ -75,6 +95,7 @@ export default function RootLayout({
           }}
         >
           <ThemeProvider>
+            <ServiceWorkerRegister />
             <Header />
             <main className="flex flex-1 flex-col pt-[5.5rem] px-4 pb-10 sm:px-6 lg:px-10">
               {children}

@@ -8,6 +8,7 @@ import logoLight from "./logo-bl.svg";
 import logoDark from "./logo-wt.svg";
 import { useTheme } from "@/context/ThemeContext";
 import { Moon, Sun } from "lucide-react";
+import { InstallAppButton } from "@/components/PWA/InstallAppButton";
 
 const navItems = [
   { label: "INICIO", href: "/" },
@@ -52,6 +53,7 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <InstallAppButton className="hidden rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16rem] text-[var(--background)] md:inline-flex" />
             <button
               type="button"
               onClick={toggleTheme}
@@ -278,6 +280,9 @@ export function Header() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="space-y-2 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-center">
+            <div className="pb-1">
+              <InstallAppButton className="inline-flex rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16rem] text-[var(--background)] md:hidden" />
+            </div>
             {navItems.map((item) => (
               <Link
                 key={item.label}
