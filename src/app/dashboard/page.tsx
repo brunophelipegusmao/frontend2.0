@@ -22,6 +22,70 @@ import {
 
 type TabId = "users" | "events" | "financial" | "admin" | "system";
 
+type SystemSectionId = "studio" | "system" | "homepage";
+type SystemDay =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+type SystemOperatingHour = {
+  day: SystemDay;
+  start: string;
+  end: string;
+};
+type SystemSettingsApiRecord = {
+  id: string;
+  maintenanceMode: boolean;
+  maintenanceMessage: string | null;
+  operatingHours: Array<{
+    day: string;
+    segments: Array<{
+      start: string;
+      end: string;
+    }>;
+  }>;
+  contact: {
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    phone: string | null;
+    whatsappLink: string | null;
+  };
+  socialLinks: Record<string, string | null>;
+  carouselImages: Array<{
+    imageUrl: string;
+    altText?: string | null;
+  }>;
+};
+type SystemSettingsForm = {
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  operatingHours: SystemOperatingHour[];
+  contact: {
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phone: string;
+    whatsappLink: string;
+  };
+  socialLinks: {
+    instagram: string;
+    facebook: string;
+    youtube: string;
+    tiktok: string;
+    other: string;
+  };
+  carouselImages: Array<{
+    imageUrl: string;
+    altText: string;
+  }>;
+};
+
 const tabs: { id: TabId; label: string; description: string; icon: JSX.Element }[] =
   [
     {
@@ -55,6 +119,90 @@ const tabs: { id: TabId; label: string; description: string; icon: JSX.Element }
       icon: <Settings className="h-4 w-4" />,
     },
   ];
+
+const systemSections: Array<{
+  id: SystemSectionId;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "studio",
+    label: "Studio",
+    description: "Horarios, contatos e redes sociais.",
+  },
+  {
+    id: "system",
+    label: "Sistema",
+    description: "Modo manutencao e mensagem de indisponibilidade.",
+  },
+  {
+    id: "homepage",
+    label: "Homepage",
+    description: "Carrossel da home com imagem e texto opcional.",
+  },
+];
+
+const systemDays: SystemDay[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
+const systemDayLabel: Record<SystemDay, string> = {
+  monday: "Segunda",
+  tuesday: "Terca",
+  wednesday: "Quarta",
+  thursday: "Quinta",
+  friday: "Sexta",
+  saturday: "Sabado",
+  sunday: "Domingo",
+};
+
+const systemDefaultHourByDay: Record<
+  SystemDay,
+  {
+    start: string;
+    end: string;
+  }
+> = {
+  monday: { start: "06:00", end: "22:00" },
+  tuesday: { start: "06:00", end: "22:00" },
+  wednesday: { start: "06:00", end: "22:00" },
+  thursday: { start: "06:00", end: "22:00" },
+  friday: { start: "06:00", end: "22:00" },
+  saturday: { start: "08:00", end: "18:00" },
+  sunday: { start: "08:00", end: "14:00" },
+};
+
+const createDefaultSystemSettingsForm = (): SystemSettingsForm => ({
+  maintenanceMode: false,
+  maintenanceMessage: "",
+  operatingHours: systemDays.map((day) => ({
+    day,
+    start: systemDefaultHourByDay[day].start,
+    end: systemDefaultHourByDay[day].end,
+  })),
+  contact: {
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
+    whatsappLink: "",
+  },
+  socialLinks: {
+    instagram: "",
+    facebook: "",
+    youtube: "",
+    tiktok: "",
+    other: "",
+  },
+  carouselImages: [],
+});
 
 type EventItem = {
   id: string;
@@ -315,6 +463,59 @@ const parseApiError = async (response: Response, fallback: string) => {
   } catch {
     return fallback;
   }
+};
+
+const isSystemDay = (value: string): value is SystemDay =>
+  systemDays.includes(value as SystemDay);
+
+const mapSystemSettingsToForm = (
+  payload: SystemSettingsApiRecord,
+): SystemSettingsForm => {
+  const scheduleByDay = new Map<SystemDay, { start: string; end: string }>();
+  payload.operatingHours.forEach((entry) => {
+    if (!isSystemDay(entry.day)) {
+      return;
+    }
+    const firstSegment = Array.isArray(entry.segments) ? entry.segments[0] : null;
+    if (!firstSegment?.start || !firstSegment?.end) {
+      return;
+    }
+    scheduleByDay.set(entry.day, {
+      start: firstSegment.start,
+      end: firstSegment.end,
+    });
+  });
+
+  return {
+    maintenanceMode: payload.maintenanceMode,
+    maintenanceMessage: payload.maintenanceMessage ?? "",
+    operatingHours: systemDays.map((day) => ({
+      day,
+      start: scheduleByDay.get(day)?.start ?? systemDefaultHourByDay[day].start,
+      end: scheduleByDay.get(day)?.end ?? systemDefaultHourByDay[day].end,
+    })),
+    contact: {
+      address: payload.contact?.address ?? "",
+      city: payload.contact?.city ?? "",
+      state: payload.contact?.state ?? "",
+      zipCode: payload.contact?.zipCode ?? "",
+      phone: payload.contact?.phone ?? "",
+      whatsappLink: payload.contact?.whatsappLink ?? "",
+    },
+    socialLinks: {
+      instagram: payload.socialLinks?.instagram ?? "",
+      facebook: payload.socialLinks?.facebook ?? "",
+      youtube: payload.socialLinks?.youtube ?? "",
+      tiktok: payload.socialLinks?.tiktok ?? "",
+      other: payload.socialLinks?.other ?? "",
+    },
+    carouselImages: Array.isArray(payload.carouselImages)
+      ? payload.carouselImages.slice(0, 5).map((image) => ({
+          imageUrl: image.imageUrl ?? "",
+          altText: image.altText ?? "",
+        }))
+      : [],
+  };
 };
 
 const EVENT_STATUS_LABEL_MAP: Record<EventApiRecord["status"], EventItem["status"]> = {
@@ -700,6 +901,23 @@ export default function DashboardPage() {
   const [userFilter, setUserFilter] = useState<
     "ALL" | "ADMIN" | "STAFF" | "COACH" | "STUDENT" | "GUEST"
   >("ALL");
+  const [systemSection, setSystemSection] = useState<SystemSectionId>("studio");
+  const [systemSettingsForm, setSystemSettingsForm] =
+    useState<SystemSettingsForm>(() => createDefaultSystemSettingsForm());
+  const [systemSettingsStatus, setSystemSettingsStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [systemSettingsError, setSystemSettingsError] = useState<string | null>(
+    null,
+  );
+  const [isSavingStudioSettings, setIsSavingStudioSettings] = useState(false);
+  const [isSavingMaintenanceSettings, setIsSavingMaintenanceSettings] =
+    useState(false);
+  const [isSavingHomepageSettings, setIsSavingHomepageSettings] =
+    useState(false);
+  const [uploadingCarouselSlot, setUploadingCarouselSlot] = useState<
+    number | null
+  >(null);
 
   const currentTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTab),
@@ -831,6 +1049,34 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadSystemSettings = useCallback(async () => {
+    setSystemSettingsStatus("loading");
+    setSystemSettingsError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/system-settings`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel carregar as configuracoes do sistema.",
+          ),
+        );
+      }
+      const payload = (await response.json()) as SystemSettingsApiRecord;
+      setSystemSettingsForm(mapSystemSettingsToForm(payload));
+      setSystemSettingsStatus("ready");
+    } catch (err) {
+      setSystemSettingsStatus("error");
+      setSystemSettingsError(
+        err instanceof Error
+          ? err.message
+          : "Falha ao carregar configuracoes do sistema.",
+      );
+    }
+  }, []);
+
   const loadCheckinHistory = useCallback(async (userId: string) => {
     setCheckinHistoryStatus("loading");
     setCheckinHistoryError(null);
@@ -866,7 +1112,8 @@ export default function DashboardPage() {
     loadUsers();
     loadPlans();
     loadEvents();
-  }, [loadUsers, loadPlans, loadEvents]);
+    loadSystemSettings();
+  }, [loadUsers, loadPlans, loadEvents, loadSystemSettings]);
 
   useEffect(() => {
     if (!checkinUser) {
@@ -2044,6 +2291,358 @@ export default function DashboardPage() {
     setIsTabMenuOpen(false);
   };
 
+  const patchSystemSettings = useCallback(
+    async (payload: Record<string, unknown>, fallbackError: string) => {
+      const response = await fetch(`${API_BASE_URL}/system-settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(await parseApiError(response, fallbackError));
+      }
+      const data = (await response.json()) as SystemSettingsApiRecord;
+      setSystemSettingsForm(mapSystemSettingsToForm(data));
+      setSystemSettingsStatus("ready");
+      setSystemSettingsError(null);
+      return data;
+    },
+    [],
+  );
+
+  const parseOptionalUrlField = (value: string, fieldLabel: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    try {
+      return new URL(trimmed).toString();
+    } catch {
+      throw new Error(`${fieldLabel}: informe uma URL valida.`);
+    }
+  };
+
+  const handleOperatingHourChange = (
+    day: SystemDay,
+    field: "start" | "end",
+    value: string,
+  ) => {
+    setSystemSettingsForm((prev) => ({
+      ...prev,
+      operatingHours: prev.operatingHours.map((entry) =>
+        entry.day === day ? { ...entry, [field]: value } : entry,
+      ),
+    }));
+  };
+
+  const handleSystemContactChange = (
+    field: keyof SystemSettingsForm["contact"],
+    value: string,
+  ) => {
+    setSystemSettingsForm((prev) => ({
+      ...prev,
+      contact: {
+        ...prev.contact,
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSystemSocialChange = (
+    field: keyof SystemSettingsForm["socialLinks"],
+    value: string,
+  ) => {
+    setSystemSettingsForm((prev) => ({
+      ...prev,
+      socialLinks: {
+        ...prev.socialLinks,
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleCarouselCountChange = (nextCount: number) => {
+    const safeCount = Math.max(0, Math.min(5, Math.trunc(nextCount)));
+    setSystemSettingsForm((prev) => {
+      const nextImages = prev.carouselImages.slice(0, safeCount);
+      while (nextImages.length < safeCount) {
+        nextImages.push({ imageUrl: "", altText: "" });
+      }
+      return {
+        ...prev,
+        carouselImages: nextImages,
+      };
+    });
+  };
+
+  const handleCarouselFieldChange = (
+    index: number,
+    field: "imageUrl" | "altText",
+    value: string,
+  ) => {
+    setSystemSettingsForm((prev) => {
+      const nextImages = [...prev.carouselImages];
+      if (!nextImages[index]) {
+        nextImages[index] = { imageUrl: "", altText: "" };
+      }
+      nextImages[index] = {
+        ...nextImages[index],
+        [field]: value,
+      };
+      return {
+        ...prev,
+        carouselImages: nextImages,
+      };
+    });
+  };
+
+  const handleUploadCarouselImage = async (slotIndex: number, file?: File) => {
+    if (!file || uploadingCarouselSlot !== null) {
+      return;
+    }
+
+    setUploadingCarouselSlot(slotIndex);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(
+        `${API_BASE_URL}/system-settings/carousel/upload`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel enviar a imagem do carrossel.",
+          ),
+        );
+      }
+      const payload = (await response.json()) as { imageUrl: string };
+      handleCarouselFieldChange(slotIndex, "imageUrl", payload.imageUrl ?? "");
+      showSaveFeedback(
+        "success",
+        "Imagem enviada",
+        "A imagem foi enviada para o carrossel.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao enviar imagem do carrossel.";
+      showSaveFeedback("error", "Erro no upload", message);
+    } finally {
+      setUploadingCarouselSlot(null);
+    }
+  };
+
+  const handleSaveStudioSettings = async () => {
+    if (isSavingStudioSettings) {
+      return;
+    }
+
+    const timeRegex = /^\d{2}:\d{2}$/;
+    const invalidHour = systemSettingsForm.operatingHours.find(
+      (entry) =>
+        !timeRegex.test(entry.start) ||
+        !timeRegex.test(entry.end) ||
+        entry.start >= entry.end,
+    );
+    if (invalidHour) {
+      showSaveFeedback(
+        "error",
+        "Horario invalido",
+        `${systemDayLabel[invalidHour.day]}: use HH:MM com inicio menor que fim.`,
+      );
+      return;
+    }
+
+    let whatsappLink: string | undefined;
+    let instagram: string | undefined;
+    let facebook: string | undefined;
+    let youtube: string | undefined;
+    let tiktok: string | undefined;
+    let other: string | undefined;
+    try {
+      whatsappLink = parseOptionalUrlField(
+        systemSettingsForm.contact.whatsappLink,
+        "WhatsApp",
+      );
+      instagram = parseOptionalUrlField(
+        systemSettingsForm.socialLinks.instagram,
+        "Instagram",
+      );
+      facebook = parseOptionalUrlField(
+        systemSettingsForm.socialLinks.facebook,
+        "Facebook",
+      );
+      youtube = parseOptionalUrlField(
+        systemSettingsForm.socialLinks.youtube,
+        "YouTube",
+      );
+      tiktok = parseOptionalUrlField(
+        systemSettingsForm.socialLinks.tiktok,
+        "TikTok",
+      );
+      other = parseOptionalUrlField(
+        systemSettingsForm.socialLinks.other,
+        "Outro link",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Uma URL informada e invalida.";
+      showSaveFeedback("error", "Dados invalidos", message);
+      return;
+    }
+
+    const socialLinks: Record<string, string> = {};
+    if (instagram) socialLinks.instagram = instagram;
+    if (facebook) socialLinks.facebook = facebook;
+    if (youtube) socialLinks.youtube = youtube;
+    if (tiktok) socialLinks.tiktok = tiktok;
+    if (other) socialLinks.other = other;
+
+    const payload: Record<string, unknown> = {
+      operatingHours: systemSettingsForm.operatingHours.map((entry) => ({
+        day: entry.day,
+        segments: [
+          {
+            start: entry.start,
+            end: entry.end,
+          },
+        ],
+      })),
+      contact: {
+        address: systemSettingsForm.contact.address.trim(),
+        city: systemSettingsForm.contact.city.trim(),
+        state: systemSettingsForm.contact.state.trim(),
+        zipCode: systemSettingsForm.contact.zipCode.trim(),
+        phone: systemSettingsForm.contact.phone.trim(),
+        ...(whatsappLink ? { whatsappLink } : {}),
+      },
+    };
+
+    if (Object.keys(socialLinks).length > 0) {
+      payload.socialLinks = socialLinks;
+    }
+
+    setIsSavingStudioSettings(true);
+    try {
+      await patchSystemSettings(
+        payload,
+        "Nao foi possivel salvar as configuracoes do studio.",
+      );
+      showSaveFeedback(
+        "success",
+        "Studio atualizado",
+        "Horarios, contatos e redes sociais foram salvos.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao salvar studio.";
+      showSaveFeedback("error", "Erro ao salvar", message);
+    } finally {
+      setIsSavingStudioSettings(false);
+    }
+  };
+
+  const handleSaveMaintenanceSettings = async () => {
+    const normalizedRole = (currentUser?.role ?? "").toUpperCase();
+    if (normalizedRole !== "MASTER") {
+      showSaveFeedback(
+        "error",
+        "Permissao insuficiente",
+        "Somente MASTER pode ativar ou desativar o modo manutencao.",
+      );
+      return;
+    }
+
+    if (isSavingMaintenanceSettings) {
+      return;
+    }
+    setIsSavingMaintenanceSettings(true);
+    try {
+      await patchSystemSettings(
+        {
+          maintenanceMode: systemSettingsForm.maintenanceMode,
+          maintenanceMessage: systemSettingsForm.maintenanceMessage.trim() || null,
+        },
+        "Nao foi possivel salvar o modo manutencao.",
+      );
+      showSaveFeedback(
+        "success",
+        "Sistema atualizado",
+        "Configuracoes de manutencao foram salvas.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao salvar configuracoes do sistema.";
+      showSaveFeedback("error", "Erro ao salvar", message);
+    } finally {
+      setIsSavingMaintenanceSettings(false);
+    }
+  };
+
+  const handleSaveHomepageSettings = async () => {
+    if (isSavingHomepageSettings) {
+      return;
+    }
+
+    const normalizedImages: Array<{ imageUrl: string; altText?: string }> = [];
+    for (let index = 0; index < systemSettingsForm.carouselImages.length; index += 1) {
+      const image = systemSettingsForm.carouselImages[index];
+      const imageUrl = image.imageUrl.trim();
+      if (!imageUrl) {
+        showSaveFeedback(
+          "error",
+          "Imagem obrigatoria",
+          `Preencha a imagem do slide ${index + 1}.`,
+        );
+        return;
+      }
+      try {
+        new URL(imageUrl);
+      } catch {
+        showSaveFeedback(
+          "error",
+          "URL invalida",
+          `Slide ${index + 1}: informe uma URL valida.`,
+        );
+        return;
+      }
+      normalizedImages.push({
+        imageUrl,
+        ...(image.altText.trim() ? { altText: image.altText.trim() } : {}),
+      });
+    }
+
+    setIsSavingHomepageSettings(true);
+    try {
+      await patchSystemSettings(
+        { carouselImages: normalizedImages },
+        "Nao foi possivel salvar o carrossel da homepage.",
+      );
+      showSaveFeedback(
+        "success",
+        "Homepage atualizada",
+        "As imagens do carrossel foram salvas.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao salvar a homepage.";
+      showSaveFeedback("error", "Erro ao salvar", message);
+    } finally {
+      setIsSavingHomepageSettings(false);
+    }
+  };
+
   useEffect(() => {
     const year = eventMonth.getFullYear();
     const month = eventMonth.getMonth();
@@ -2111,6 +2710,8 @@ export default function DashboardPage() {
   const canViewPrivateNotes = ["MASTER", "ADMIN", "COACH"].includes(
     (currentUser?.role ?? "").toUpperCase(),
   );
+  const isCurrentUserMaster = (currentUser?.role ?? "").toUpperCase() === "MASTER";
+  const canManageMaintenance = isCurrentUserMaster;
   const modalLabelClass =
     "space-y-2 text-sm font-medium text-[var(--foreground)]";
   const modalInputClass =
@@ -2917,66 +3518,377 @@ export default function DashboardPage() {
       {activeTab === "system" && (
         <div className="space-y-6">
           <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-            <h2 className="text-2xl font-semibold">Modo manutencao</h2>
+            <h2 className="text-2xl font-semibold">Configurações do sistema</h2>
             <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              Ative para bloquear o sistema e exibir uma mensagem personalizada.
+              Studio, Sistema e Homepage com persistência no backend.
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Ativar
-              </button>
-              <input
-                placeholder="Mensagem de manutencao"
-                className="min-w-[220px] flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
-              />
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {systemSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => setSystemSection(section.id)}
+                  className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] transition ${
+                    systemSection === section.id
+                      ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                      : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                  }`}
+                >
+                  {section.label}
+                </button>
+              ))}
             </div>
+            <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              {systemSections.find((section) => section.id === systemSection)
+                ?.description ?? ""}
+            </p>
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-2">
-            <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-              <div className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                <Clock className="h-4 w-4" /> Horario de operacao
-              </div>
-              <div className="mt-3 grid gap-3">
-                {["Segunda", "Terca", "Quarta", "Quinta", "Sexta"].map((day) => (
-                  <div
-                    key={day}
-                    className="flex items-center gap-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm"
-                  >
-                    <span className="w-24 text-[var(--muted-foreground)]">{day}</span>
-                    <input
-                      defaultValue="06:00 - 22:00"
-                      className="flex-1 rounded-lg border border-[color:var(--border-dim)] bg-[color:var(--card)] px-2 py-1 text-xs text-[var(--foreground)]"
-                    />
+          {systemSettingsStatus === "loading" && (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Carregando configurações...
+            </p>
+          )}
+
+          {systemSettingsStatus === "error" && (
+            <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
+              <p className="text-sm text-[color:var(--danger)]">
+                {systemSettingsError ??
+                  "Nao foi possivel carregar as configuracoes do sistema."}
+              </p>
+              <button
+                onClick={() => void loadSystemSettings()}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {systemSettingsStatus !== "loading" && (
+            <>
+              {systemSection === "studio" && (
+                <section className="grid gap-4 lg:grid-cols-2">
+                  <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                    <div className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                      <Clock className="h-4 w-4" /> Horarios de operacao
+                    </div>
+                    <div className="mt-3 grid gap-3">
+                      {systemSettingsForm.operatingHours.map((entry) => (
+                        <div
+                          key={entry.day}
+                          className="grid gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-3 sm:grid-cols-[110px_1fr_1fr] sm:items-center"
+                        >
+                          <span className="text-sm text-[var(--muted-foreground)]">
+                            {systemDayLabel[entry.day]}
+                          </span>
+                          <input
+                            type="time"
+                            value={entry.start}
+                            onChange={(event) =>
+                              handleOperatingHourChange(
+                                entry.day,
+                                "start",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-lg border border-[color:var(--border-dim)] bg-[color:var(--card)] px-2 py-2 text-sm text-[var(--foreground)]"
+                          />
+                          <input
+                            type="time"
+                            value={entry.end}
+                            onChange={(event) =>
+                              handleOperatingHourChange(
+                                entry.day,
+                                "end",
+                                event.target.value,
+                              )
+                            }
+                            className="rounded-lg border border-[color:var(--border-dim)] bg-[color:var(--card)] px-2 py-2 text-sm text-[var(--foreground)]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                    <div className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                      <Globe className="h-4 w-4" /> Contato e redes sociais
+                    </div>
+                    <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+                      <input
+                        value={systemSettingsForm.contact.phone}
+                        onChange={(event) =>
+                          handleSystemContactChange("phone", event.target.value)
+                        }
+                        placeholder="Telefone"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.contact.whatsappLink}
+                        onChange={(event) =>
+                          handleSystemContactChange(
+                            "whatsappLink",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Link WhatsApp (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.contact.address}
+                        onChange={(event) =>
+                          handleSystemContactChange("address", event.target.value)
+                        }
+                        placeholder="Endereco"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)] md:col-span-2"
+                      />
+                      <input
+                        value={systemSettingsForm.contact.city}
+                        onChange={(event) =>
+                          handleSystemContactChange("city", event.target.value)
+                        }
+                        placeholder="Cidade"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.contact.state}
+                        onChange={(event) =>
+                          handleSystemContactChange("state", event.target.value)
+                        }
+                        placeholder="Estado"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.contact.zipCode}
+                        onChange={(event) =>
+                          handleSystemContactChange("zipCode", event.target.value)
+                        }
+                        placeholder="CEP"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.socialLinks.instagram}
+                        onChange={(event) =>
+                          handleSystemSocialChange("instagram", event.target.value)
+                        }
+                        placeholder="Instagram (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.socialLinks.facebook}
+                        onChange={(event) =>
+                          handleSystemSocialChange("facebook", event.target.value)
+                        }
+                        placeholder="Facebook (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.socialLinks.youtube}
+                        onChange={(event) =>
+                          handleSystemSocialChange("youtube", event.target.value)
+                        }
+                        placeholder="YouTube (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.socialLinks.tiktok}
+                        onChange={(event) =>
+                          handleSystemSocialChange("tiktok", event.target.value)
+                        }
+                        placeholder="TikTok (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
+                      />
+                      <input
+                        value={systemSettingsForm.socialLinks.other}
+                        onChange={(event) =>
+                          handleSystemSocialChange("other", event.target.value)
+                        }
+                        placeholder="Outro link (https://...)"
+                        className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)] md:col-span-2"
+                      />
+                    </div>
+                  </article>
+
+                  <div className="lg:col-span-2">
+                    <button
+                      onClick={() => void handleSaveStudioSettings()}
+                      disabled={isSavingStudioSettings}
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingStudioSettings ? "Salvando..." : "Salvar studio"}
+                    </button>
                   </div>
-                ))}
-              </div>
-            </article>
+                </section>
+              )}
 
-            <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-              <div className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                <Globe className="h-4 w-4" /> Contato e redes
-              </div>
-              <div className="mt-3 space-y-3 text-sm">
-                <input
-                  placeholder="Telefone principal"
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
-                />
-                <input
-                  placeholder="WhatsApp"
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
-                />
-                <input
-                  placeholder="Instagram"
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
-                />
-                <input
-                  placeholder="Endereco"
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)]"
-                />
-              </div>
-            </article>
-          </section>
+              {systemSection === "system" && (
+                <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                  <h3 className="text-xl font-semibold">Modo manutencao</h3>
+                  <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                    Quando ativo, o backend aplica as regras de manutenção para as
+                    rotas configuradas.
+                  </p>
+                  {currentUser?.role && !isCurrentUserMaster && (
+                    <p className="mt-2 text-sm text-[color:var(--danger)]">
+                      Somente MASTER pode ativar ou desativar o modo manutenção.
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() =>
+                        setSystemSettingsForm((prev) => ({
+                          ...prev,
+                          maintenanceMode: !prev.maintenanceMode,
+                        }))
+                      }
+                      disabled={!canManageMaintenance}
+                      className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] ${
+                        systemSettingsForm.maintenanceMode
+                          ? "border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                          : "border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--muted-foreground)]"
+                      } disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      {systemSettingsForm.maintenanceMode ? "Ativado" : "Desativado"}
+                    </button>
+                  </div>
+                  <textarea
+                    value={systemSettingsForm.maintenanceMessage}
+                    onChange={(event) =>
+                      setSystemSettingsForm((prev) => ({
+                        ...prev,
+                        maintenanceMessage: event.target.value,
+                      }))
+                    }
+                    disabled={!canManageMaintenance}
+                    placeholder="Mensagem exibida durante manutenção"
+                    rows={4}
+                    className="mt-4 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-sm text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  <button
+                    onClick={() => void handleSaveMaintenanceSettings()}
+                    disabled={!canManageMaintenance || isSavingMaintenanceSettings}
+                    className="mt-4 inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingMaintenanceSettings
+                      ? "Salvando..."
+                      : "Salvar sistema"}
+                  </button>
+                </section>
+              )}
+
+              {systemSection === "homepage" && (
+                <section className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                  <h3 className="text-xl font-semibold">Carousel da homepage</h3>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Defina quantidade de slides, imagem e texto opcional de cada
+                    slide.
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                      Quantidade de imagens
+                    </label>
+                    <select
+                      value={systemSettingsForm.carouselImages.length}
+                      onChange={(event) =>
+                        handleCarouselCountChange(Number(event.target.value))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                      {[0, 1, 2, 3, 4, 5].map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {systemSettingsForm.carouselImages.length === 0 && (
+                    <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
+                      Nenhum slide configurado.
+                    </p>
+                  )}
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {systemSettingsForm.carouselImages.map((image, index) => (
+                      <article
+                        key={`carousel-slot-${index}`}
+                        className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                      >
+                        <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                          Slide {index + 1}
+                        </p>
+                        {image.imageUrl ? (
+                          <img
+                            src={image.imageUrl}
+                            alt={image.altText || `Slide ${index + 1}`}
+                            className="mt-3 h-36 w-full rounded-xl object-cover"
+                          />
+                        ) : (
+                          <div className="mt-3 flex h-36 w-full items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                            Sem imagem
+                          </div>
+                        )}
+                        <div className="mt-3 space-y-3">
+                          <input
+                            value={image.imageUrl}
+                            onChange={(event) =>
+                              handleCarouselFieldChange(
+                                index,
+                                "imageUrl",
+                                event.target.value,
+                              )
+                            }
+                            placeholder="URL da imagem"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                          />
+                          <input
+                            value={image.altText}
+                            onChange={(event) =>
+                              handleCarouselFieldChange(
+                                index,
+                                "altText",
+                                event.target.value,
+                              )
+                            }
+                            placeholder="Texto da imagem (opcional)"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                          />
+                          <div>
+                            <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
+                              {uploadingCarouselSlot === index
+                                ? "Enviando..."
+                                : "Enviar imagem"}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0];
+                                  event.target.value = "";
+                                  if (file) {
+                                    void handleUploadCarouselImage(index, file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => void handleSaveHomepageSettings()}
+                    disabled={isSavingHomepageSettings}
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingHomepageSettings ? "Salvando..." : "Salvar homepage"}
+                  </button>
+                </section>
+              )}
+            </>
+          )}
         </div>
       )}
 
