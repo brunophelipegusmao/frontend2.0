@@ -272,8 +272,6 @@ const mockPlans = [
   { id: "pl-03", name: "Plano Guest", price: "R$ 0", active: true },
 ];
 
-const checkinHistoryByUserId: Record<string, string[]> = {};
-
 type AdminUser = {
   id: string;
   name: string | null;
@@ -288,6 +286,13 @@ type AdminUser = {
   address: string | null;
   image: string | null;
   avatarUrl: string | null;
+};
+
+type CheckinRecord = {
+  id: number;
+  checkedInAt: string | Date;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 };
 
 const roleLabelMap: Record<AdminUser["role"], string> = {
@@ -438,6 +443,25 @@ const parseApiError = async (response: Response, fallback: string) => {
   }
 };
 
+const toCheckinDateKey = (value: string | Date) => {
+  const parsed = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+const formatCheckinDateTime = (value: string | Date) => {
+  const parsed = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(parsed.getTime())) {
+    return "Data invalida";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsed);
+};
+
 const toFormValue = (value?: string | number | null) => {
   if (value === null || value === undefined) {
     return "";
@@ -535,6 +559,18 @@ export default function DashboardPage() {
   const [events, setEvents] = useState(mockEvents);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [checkinUser, setCheckinUser] = useState<AdminUser | null>(null);
+  const [checkinHistoryByUser, setCheckinHistoryByUser] = useState<
+    Record<string, CheckinRecord[]>
+  >({});
+  const [checkinSelectedDate, setCheckinSelectedDate] = useState<string | null>(
+    null,
+  );
+  const [checkinHistoryStatus, setCheckinHistoryStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [checkinHistoryError, setCheckinHistoryError] = useState<string | null>(
+    null,
+  );
   const [checkinMonth, setCheckinMonth] = useState<Date>(() => new Date());
   const [eventMonth, setEventMonth] = useState<Date>(() => new Date());
   const [selectedEventDate, setSelectedEventDate] = useState<string | null>(
@@ -735,10 +771,54 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadCheckinHistory = useCallback(async (userId: string) => {
+    setCheckinHistoryStatus("loading");
+    setCheckinHistoryError(null);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/checkin/user/${userId}/history`,
+        { credentials: "include" },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel carregar o historico de check-in.",
+          ),
+        );
+      }
+      const data = (await response.json()) as CheckinRecord[];
+      const history = Array.isArray(data) ? data : [];
+      setCheckinHistoryByUser((prev) => ({ ...prev, [userId]: history }));
+      setCheckinHistoryStatus("ready");
+    } catch (err) {
+      setCheckinHistoryByUser((prev) => ({ ...prev, [userId]: [] }));
+      setCheckinHistoryStatus("error");
+      setCheckinHistoryError(
+        err instanceof Error
+          ? err.message
+          : "Falha ao carregar historico de check-in.",
+      );
+    }
+  }, []);
+
   useEffect(() => {
     loadUsers();
     loadPlans();
   }, [loadUsers, loadPlans]);
+
+  useEffect(() => {
+    if (!checkinUser) {
+      setCheckinHistoryStatus("idle");
+      setCheckinHistoryError(null);
+      setCheckinSelectedDate(null);
+      return;
+    }
+    const todayKey = toCheckinDateKey(new Date());
+    setCheckinSelectedDate(todayKey || null);
+    setCheckinMonth(new Date());
+    loadCheckinHistory(checkinUser.id);
+  }, [checkinUser, loadCheckinHistory]);
 
   useEffect(() => {
     let canceled = false;
@@ -1234,12 +1314,32 @@ export default function DashboardPage() {
     return days;
   }, [eventMonth]);
 
+  const checkinHistory = useMemo(() => {
+    if (!checkinUser) {
+      return [];
+    }
+    return checkinHistoryByUser[checkinUser.id] ?? [];
+  }, [checkinUser, checkinHistoryByUser]);
+
   const checkinDates = useMemo(() => {
     if (!checkinUser) {
       return new Set<string>();
     }
-    return new Set(checkinHistoryByUserId[checkinUser.id] ?? []);
-  }, [checkinUser]);
+    return new Set(
+      checkinHistory
+        .map((item) => toCheckinDateKey(item.checkedInAt))
+        .filter(Boolean),
+    );
+  }, [checkinUser, checkinHistory]);
+
+  const checkinsForSelectedDay = useMemo(() => {
+    if (!checkinSelectedDate) {
+      return [];
+    }
+    return checkinHistory.filter(
+      (item) => toCheckinDateKey(item.checkedInAt) === checkinSelectedDate,
+    );
+  }, [checkinHistory, checkinSelectedDate]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, EventItem[]>();
@@ -2515,17 +2615,24 @@ export default function DashboardPage() {
                       return <div key={`empty-${index}`} />;
                     }
                     const isChecked = checkinDates.has(day.date);
+                    const isSelected = checkinSelectedDate === day.date;
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={day.date}
-                        className={`flex h-10 items-center justify-center rounded-xl border text-xs font-semibold ${
+                        onClick={() => setCheckinSelectedDate(day.date)}
+                        className={`flex h-10 items-center justify-center rounded-xl border text-xs font-semibold transition ${
                           isChecked
                             ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/15 text-[var(--gold-tone-dark)]"
                             : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                        } ${
+                          isSelected
+                            ? "ring-2 ring-[var(--gold-tone)]/60"
+                            : "hover:border-[var(--gold-tone-dark)]/60"
                         }`}
                       >
                         {day.day}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -2536,28 +2643,48 @@ export default function DashboardPage() {
                   Lista de check-ins
                 </p>
                 <div className="mt-4 space-y-3">
-                  {(checkinHistoryByUserId[checkinUser.id] ?? [])
-                    .slice()
-                    .sort((a, b) => (a < b ? 1 : -1))
-                    .map((date) => (
-                      <div
-                        key={date}
-                        className="flex items-center justify-between rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm"
-                      >
-                        <span className="font-semibold text-[var(--foreground)]">
-                          {new Intl.DateTimeFormat("pt-BR").format(
-                            new Date(`${date}T00:00:00`),
-                          )}
-                        </span>
-                        <span className="text-xs text-[var(--muted-foreground)]">
-                          Confirmado
-                        </span>
-                      </div>
-                    ))}
-                  {(checkinHistoryByUserId[checkinUser.id] ?? []).length ===
-                    0 && (
+                  {checkinHistoryStatus === "loading" && (
                     <p className="text-sm text-[var(--muted-foreground)]">
-                      Nenhum check-in registrado.
+                      Carregando histórico...
+                    </p>
+                  )}
+                  {checkinHistoryStatus === "error" && (
+                    <p className="text-sm text-[color:var(--danger)]">
+                      {checkinHistoryError ??
+                        "Nao foi possivel carregar o historico."}
+                    </p>
+                  )}
+                  {checkinHistoryStatus === "ready" &&
+                    checkinsForSelectedDay
+                      .slice()
+                      .sort((a, b) => {
+                        const aTime = new Date(a.checkedInAt).getTime();
+                        const bTime = new Date(b.checkedInAt).getTime();
+                        return bTime - aTime;
+                      })
+                      .map((checkin) => (
+                        <div
+                          key={`${checkin.id}-${checkin.checkedInAt}`}
+                          className="flex items-center justify-between rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm"
+                        >
+                          <span className="font-semibold text-[var(--foreground)]">
+                            {formatCheckinDateTime(checkin.checkedInAt)}
+                          </span>
+                          <span className="text-xs text-[var(--muted-foreground)]">
+                            Confirmado
+                          </span>
+                        </div>
+                      ))}
+                  {checkinHistoryStatus === "ready" &&
+                    checkinSelectedDate &&
+                    checkinsForSelectedDay.length === 0 && (
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Nenhum check-in registrado para este dia.
+                    </p>
+                  )}
+                  {checkinHistoryStatus === "ready" && !checkinSelectedDate && (
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Selecione um dia no calendário para ver os check-ins.
                     </p>
                   )}
                 </div>

@@ -49,6 +49,7 @@ type SocialSignInOptions = {
   planId?: string;
   callbackURL?: string;
   newUserCallbackURL?: string;
+  errorCallbackURL?: string;
   requestSignUp?: boolean;
 };
 
@@ -66,6 +67,9 @@ export const startSocialSignIn = async (
   }
   if (newUserCallbackURL) {
     payload.newUserCallbackURL = newUserCallbackURL;
+  }
+  if (options.errorCallbackURL) {
+    payload.errorCallbackURL = options.errorCallbackURL;
   }
   if (requestSignUp) {
     payload.requestSignUp = true;

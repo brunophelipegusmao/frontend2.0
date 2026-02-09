@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, UserCheck } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
@@ -19,6 +19,7 @@ export default function CheckinPage() {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [autoCheckinDone, setAutoCheckinDone] = useState(false);
+  const autoCheckinRef = useRef(false);
   const [checkinFeedback, setCheckinFeedback] = useState<{
     open: boolean;
     status: "success" | "error";
@@ -129,10 +130,12 @@ export default function CheckinPage() {
     setStatusMessage("Check-in com Google iniciado. Conclua a autenticação.");
     const origin = window.location.origin;
     const callbackURL = `${origin}/checkin?autoCheckin=1`;
+    const errorCallbackURL = `${origin}/checkin?autoCheckin=error`;
     const completeProfileUrl = new URL("/complete-profile", origin);
 
     const result = await startSocialSignIn("google", {
       callbackURL,
+      errorCallbackURL,
       newUserCallbackURL: completeProfileUrl.toString(),
     });
 
@@ -144,10 +147,28 @@ export default function CheckinPage() {
 
   useEffect(() => {
     const shouldAutoCheckin = searchParams.get("autoCheckin") === "1";
+    const shouldShowError = searchParams.get("autoCheckin") === "error";
+    if (shouldShowError && !autoCheckinDone) {
+      setAutoCheckinDone(true);
+      setIsGoogleLoading(false);
+      const message =
+        "Conta do Google nao autorizada. Use CPF/e-mail ou fale com um administrador.";
+      setStatusMessage(message);
+      showCheckinFeedback(
+        "error",
+        "Erro no check-in",
+        `${message}. Direcione-se a um funcionário (staff).`,
+      );
+      router.replace("/checkin");
+      return;
+    }
     if (!shouldAutoCheckin || autoCheckinDone) {
       return;
     }
-    let active = true;
+    if (autoCheckinRef.current) {
+      return;
+    }
+    autoCheckinRef.current = true;
     setAutoCheckinDone(true);
     const run = async () => {
       try {
@@ -166,9 +187,6 @@ export default function CheckinPage() {
             ),
           );
         }
-        if (!active) {
-          return;
-        }
         setStatusMessage("Check-in confirmado com Google.");
         showCheckinFeedback(
           "success",
@@ -176,9 +194,6 @@ export default function CheckinPage() {
           "Check-in feito com sucesso. Vejo você suado 💪",
         );
       } catch (err) {
-        if (!active) {
-          return;
-        }
         const message =
           err instanceof Error
             ? err.message
@@ -190,16 +205,12 @@ export default function CheckinPage() {
           `${message}. Direcione-se a um funcionário (staff).`,
         );
       } finally {
-        if (active) {
-          setIsGoogleLoading(false);
-          router.replace("/checkin");
-        }
+        setIsGoogleLoading(false);
+        router.replace("/checkin");
       }
     };
     run();
-    return () => {
-      active = false;
-    };
+    return;
   }, [autoCheckinDone, router, searchParams]);
 
   return (
