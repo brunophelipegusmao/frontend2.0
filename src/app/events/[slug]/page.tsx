@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { EventRegistrationPanel } from "./EventRegistrationPanel";
 
 type PublicEventDetail = {
@@ -220,15 +221,17 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
           </Link>
         </div>
 
-        <EventRegistrationPanel
-          slug={event.slug}
-          eventPath={`/events/event-${event.slug}`}
-          accessMode={event.accessMode}
-          capacity={event.capacity}
-          confirmedRegistrations={Number(event.confirmedRegistrations ?? 0)}
-          allowGuests={event.allowGuests}
-          isCancelled={event.status === "cancelled"}
-        />
+        <Suspense fallback={null}>
+          <EventRegistrationPanel
+            slug={event.slug}
+            eventPath={`/events/event-${event.slug}`}
+            accessMode={event.accessMode}
+            capacity={event.capacity}
+            confirmedRegistrations={Number(event.confirmedRegistrations ?? 0)}
+            allowGuests={event.allowGuests}
+            isCancelled={event.status === "cancelled"}
+          />
+        </Suspense>
       </div>
     </section>
   );

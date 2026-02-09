@@ -18,6 +18,14 @@ import {
 } from "lucide-react";
 
 type TabId = "users" | "events" | "financial" | "admin" | "system";
+type DashboardRole =
+  | "MASTER"
+  | "ADMIN"
+  | "STAFF"
+  | "COACH"
+  | "STUDENT"
+  | "GUEST"
+  | "USER";
 
 type SystemSectionId = "studio" | "system" | "homepage";
 type SystemDay =
@@ -116,6 +124,47 @@ const tabs: { id: TabId; label: string; description: string; icon: ReactNode }[]
       icon: <Settings className="h-4 w-4" />,
     },
   ];
+
+const dashboardRoleLabelMap: Record<DashboardRole, string> = {
+  MASTER: "Administrador (Master)",
+  ADMIN: "Administrador",
+  STAFF: "Equipe",
+  COACH: "Coach",
+  STUDENT: "Aluno",
+  GUEST: "Convidado",
+  USER: "Usuário",
+};
+
+const dashboardRoleOptions: DashboardRole[] = [
+  "MASTER",
+  "ADMIN",
+  "STAFF",
+  "COACH",
+  "STUDENT",
+  "GUEST",
+  "USER",
+];
+
+const dashboardTabsByRole: Record<DashboardRole, TabId[]> = {
+  MASTER: ["users", "events", "financial", "admin", "system"],
+  ADMIN: ["users", "events", "financial", "admin", "system"],
+  STAFF: ["users", "events", "financial", "admin", "system"],
+  COACH: ["users"],
+  STUDENT: [],
+  GUEST: [],
+  USER: [],
+};
+
+const normalizeDashboardRole = (value?: string | null): DashboardRole => {
+  const normalized = (value ?? "").trim().toUpperCase();
+  if (normalized === "ALUNO") {
+    return "STUDENT";
+  }
+  if (dashboardRoleOptions.includes(normalized as DashboardRole)) {
+    return normalized as DashboardRole;
+  }
+  return "GUEST";
+};
 
 const systemSections: Array<{
   id: SystemSectionId;
@@ -508,6 +557,31 @@ type PlanOption = {
   priceCents?: number | null;
 };
 
+type PlanRequestStatus = "pending" | "approved" | "rejected";
+type PlanRequestType = "plan_change" | "plan_activation";
+
+type PlanRequestRecord = {
+  id: string;
+  type: PlanRequestType;
+  status: PlanRequestStatus;
+  requestedByUserId: string;
+  requestedByName: string | null;
+  requestedByEmail: string | null;
+  currentPlanId: string | null;
+  currentPlanSlug: string | null;
+  currentPlanName: string | null;
+  targetPlanId: string | null;
+  targetPlanSlug: string | null;
+  targetPlanName: string | null;
+  notes: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewedByUserId: string | null;
+  reviewedByName: string | null;
+  reviewedByEmail: string | null;
+  reviewReason: string | null;
+};
+
 const emptyHealthForm: HealthForm = {
   heightCm: "",
   weightKg: "",
@@ -679,6 +753,17 @@ const FINANCIAL_EXPENSE_STATUS_LABEL_MAP: Record<FinancialExpenseStatus, string>
   approved: "Aprovada",
   paid: "Paga",
   cancelled: "Cancelada",
+};
+
+const PLAN_REQUEST_STATUS_LABEL_MAP: Record<PlanRequestStatus, string> = {
+  pending: "Pendente",
+  approved: "Aprovada",
+  rejected: "Recusada",
+};
+
+const PLAN_REQUEST_TYPE_LABEL_MAP: Record<PlanRequestType, string> = {
+  plan_change: "Troca de plano",
+  plan_activation: "Ativacao de plano",
 };
 
 const FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP: Record<
@@ -1179,7 +1264,22 @@ export default function DashboardPage() {
       notes: "",
     });
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
+  const [planRequests, setPlanRequests] = useState<PlanRequestRecord[]>([]);
+  const [planRequestsStatus, setPlanRequestsStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [planRequestsError, setPlanRequestsError] = useState<string | null>(null);
+  const [reviewingPlanRequestId, setReviewingPlanRequestId] = useState<
+    string | null
+  >(null);
+  const [hasLoadedPlanRequestsOnce, setHasLoadedPlanRequestsOnce] =
+    useState(false);
+  const [planRequestReviewReasonById, setPlanRequestReviewReasonById] = useState<
+    Record<string, string>
+  >({});
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
+  const [dashboardViewRole, setDashboardViewRole] =
+    useState<DashboardRole | null>(null);
   const [currentUserStatus, setCurrentUserStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle");
@@ -1270,9 +1370,34 @@ export default function DashboardPage() {
     Array<File | null>
   >([]);
 
+  const currentDashboardRole = useMemo(
+    () => normalizeDashboardRole(currentUser?.role),
+    [currentUser?.role],
+  );
+  const effectiveDashboardRole =
+    currentDashboardRole === "MASTER"
+      ? (dashboardViewRole ?? "MASTER")
+      : currentDashboardRole;
+  const canSwitchDashboardView = currentDashboardRole === "MASTER";
+  const isStaffFinancialRestricted = effectiveDashboardRole === "STAFF";
+  const isCoachDashboard = effectiveDashboardRole === "COACH";
+  const availableTabs = useMemo(
+    () =>
+      tabs.filter((tab) =>
+        dashboardTabsByRole[effectiveDashboardRole].includes(tab.id),
+      ),
+    [effectiveDashboardRole],
+  );
+  const availableSystemSections = useMemo(
+    () =>
+      effectiveDashboardRole === "MASTER"
+        ? systemSections
+        : systemSections.filter((section) => section.id !== "system"),
+    [effectiveDashboardRole],
+  );
   const currentTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTab),
-    [activeTab],
+    () => availableTabs.find((tab) => tab.id === activeTab),
+    [activeTab, availableTabs],
   );
 
   useEffect(() => {
@@ -1289,6 +1414,37 @@ export default function DashboardPage() {
       return Array.from({ length: nextLength }, (_, index) => prev[index] ?? null);
     });
   }, [systemSettingsForm.carouselImages.length]);
+
+  useEffect(() => {
+    if (currentDashboardRole !== "MASTER") {
+      if (dashboardViewRole !== null) {
+        setDashboardViewRole(null);
+      }
+      return;
+    }
+    if (dashboardViewRole === null) {
+      setDashboardViewRole("MASTER");
+    }
+  }, [currentDashboardRole, dashboardViewRole]);
+
+  useEffect(() => {
+    if (availableTabs.length === 0) {
+      return;
+    }
+    if (!availableTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(availableTabs[0].id);
+      setIsTabMenuOpen(false);
+    }
+  }, [activeTab, availableTabs]);
+
+  useEffect(() => {
+    if (availableSystemSections.length === 0) {
+      return;
+    }
+    if (!availableSystemSections.some((section) => section.id === systemSection)) {
+      setSystemSection(availableSystemSections[0].id);
+    }
+  }, [availableSystemSections, systemSection]);
 
   const showSaveFeedback = (
     status: "success" | "error",
@@ -1412,33 +1568,100 @@ export default function DashboardPage() {
     setFinancialError(null);
     try {
       const competence = toCompetenceDateValue(financialCompetenceMonth);
-      const [dashboardResponse, subscriptionsResponse, receivablesResponse, templatesResponse, expensesResponse] =
-        await Promise.all([
-          fetch(
-            `${API_BASE_URL}/financial/dashboard?competence=${encodeURIComponent(
-              competence,
-            )}`,
-            { credentials: "include" },
-          ),
-          fetch(`${API_BASE_URL}/financial/subscriptions`, {
-            credentials: "include",
-          }),
-          fetch(
-            `${API_BASE_URL}/financial/receivables?competence=${encodeURIComponent(
-              competence,
-            )}`,
-            { credentials: "include" },
-          ),
-          fetch(`${API_BASE_URL}/financial/expense-templates`, {
-            credentials: "include",
-          }),
-          fetch(
-            `${API_BASE_URL}/financial/expenses?competence=${encodeURIComponent(
-              competence,
-            )}`,
-            { credentials: "include" },
-          ),
-        ]);
+      if (isStaffFinancialRestricted) {
+        const [subscriptionsResponse, templatesResponse, expensesResponse] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/financial/subscriptions`, {
+              credentials: "include",
+            }),
+            fetch(`${API_BASE_URL}/financial/expense-templates`, {
+              credentials: "include",
+            }),
+            fetch(
+              `${API_BASE_URL}/financial/expenses?competence=${encodeURIComponent(
+                competence,
+              )}`,
+              { credentials: "include" },
+            ),
+          ]);
+
+        if (!subscriptionsResponse.ok) {
+          throw new Error(
+            await parseApiError(
+              subscriptionsResponse,
+              "Nao foi possivel carregar assinaturas.",
+            ),
+          );
+        }
+        if (!templatesResponse.ok) {
+          throw new Error(
+            await parseApiError(
+              templatesResponse,
+              "Nao foi possivel carregar templates de despesas.",
+            ),
+          );
+        }
+        if (!expensesResponse.ok) {
+          throw new Error(
+            await parseApiError(
+              expensesResponse,
+              "Nao foi possivel carregar despesas.",
+            ),
+          );
+        }
+
+        const [subscriptionsPayload, templatesPayload, expensesPayload] =
+          await Promise.all([
+            subscriptionsResponse.json() as Promise<FinancialSubscriptionApiRecord[]>,
+            templatesResponse.json() as Promise<FinancialExpenseTemplateApiRecord[]>,
+            expensesResponse.json() as Promise<FinancialExpenseApiRecord[]>,
+          ]);
+
+        setFinancialDashboard(null);
+        setFinancialReceivables([]);
+        setFinancialSubscriptions(
+          Array.isArray(subscriptionsPayload) ? subscriptionsPayload : [],
+        );
+        setFinancialExpenseTemplates(
+          Array.isArray(templatesPayload) ? templatesPayload : [],
+        );
+        setFinancialExpenses(Array.isArray(expensesPayload) ? expensesPayload : []);
+        setFinancialStatus("ready");
+        return;
+      }
+
+      const [
+        dashboardResponse,
+        subscriptionsResponse,
+        receivablesResponse,
+        templatesResponse,
+        expensesResponse,
+      ] = await Promise.all([
+        fetch(
+          `${API_BASE_URL}/financial/dashboard?competence=${encodeURIComponent(
+            competence,
+          )}`,
+          { credentials: "include" },
+        ),
+        fetch(`${API_BASE_URL}/financial/subscriptions`, {
+          credentials: "include",
+        }),
+        fetch(
+          `${API_BASE_URL}/financial/receivables?competence=${encodeURIComponent(
+            competence,
+          )}`,
+          { credentials: "include" },
+        ),
+        fetch(`${API_BASE_URL}/financial/expense-templates`, {
+          credentials: "include",
+        }),
+        fetch(
+          `${API_BASE_URL}/financial/expenses?competence=${encodeURIComponent(
+            competence,
+          )}`,
+          { credentials: "include" },
+        ),
+      ]);
 
       if (!dashboardResponse.ok) {
         throw new Error(
@@ -1481,14 +1704,19 @@ export default function DashboardPage() {
         );
       }
 
-      const [dashboardPayload, subscriptionsPayload, receivablesPayload, templatesPayload, expensesPayload] =
-        await Promise.all([
-          dashboardResponse.json() as Promise<FinancialDashboardApiRecord>,
-          subscriptionsResponse.json() as Promise<FinancialSubscriptionApiRecord[]>,
-          receivablesResponse.json() as Promise<FinancialReceivableApiRecord[]>,
-          templatesResponse.json() as Promise<FinancialExpenseTemplateApiRecord[]>,
-          expensesResponse.json() as Promise<FinancialExpenseApiRecord[]>,
-        ]);
+      const [
+        dashboardPayload,
+        subscriptionsPayload,
+        receivablesPayload,
+        templatesPayload,
+        expensesPayload,
+      ] = await Promise.all([
+        dashboardResponse.json() as Promise<FinancialDashboardApiRecord>,
+        subscriptionsResponse.json() as Promise<FinancialSubscriptionApiRecord[]>,
+        receivablesResponse.json() as Promise<FinancialReceivableApiRecord[]>,
+        templatesResponse.json() as Promise<FinancialExpenseTemplateApiRecord[]>,
+        expensesResponse.json() as Promise<FinancialExpenseApiRecord[]>,
+      ]);
 
       setFinancialDashboard(dashboardPayload ?? null);
       setFinancialSubscriptions(
@@ -1513,7 +1741,7 @@ export default function DashboardPage() {
         err instanceof Error ? err.message : "Falha ao carregar financeiro.",
       );
     }
-  }, [financialCompetenceMonth]);
+  }, [financialCompetenceMonth, isStaffFinancialRestricted]);
 
   const loadSystemSettings = useCallback(async () => {
     setSystemSettingsStatus("loading");
@@ -1539,6 +1767,36 @@ export default function DashboardPage() {
         err instanceof Error
           ? err.message
           : "Falha ao carregar configuracoes do sistema.",
+      );
+    }
+  }, []);
+
+  const loadPlanRequests = useCallback(async () => {
+    setPlanRequestsStatus("loading");
+    setPlanRequestsError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users/plan-requests`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel carregar solicitacoes de plano.",
+          ),
+        );
+      }
+
+      const payload = (await response.json()) as PlanRequestRecord[];
+      setPlanRequests(Array.isArray(payload) ? payload : []);
+      setPlanRequestsStatus("ready");
+    } catch (err) {
+      setPlanRequests([]);
+      setPlanRequestsStatus("error");
+      setPlanRequestsError(
+        err instanceof Error
+          ? err.message
+          : "Falha ao carregar solicitacoes de plano.",
       );
     }
   }, []);
@@ -1582,11 +1840,35 @@ export default function DashboardPage() {
   }, [loadUsers, loadPlans, loadEvents, loadSystemSettings]);
 
   useEffect(() => {
-    if (activeTab !== "financial") {
+    if (
+      activeTab !== "financial" ||
+      !availableTabs.some((tab) => tab.id === "financial")
+    ) {
       return;
     }
     void loadFinancial();
-  }, [activeTab, loadFinancial]);
+  }, [activeTab, availableTabs, loadFinancial]);
+
+  useEffect(() => {
+    if (!availableTabs.some((tab) => tab.id === "admin")) {
+      return;
+    }
+    if (hasLoadedPlanRequestsOnce) {
+      return;
+    }
+    setHasLoadedPlanRequestsOnce(true);
+    void loadPlanRequests();
+  }, [availableTabs, hasLoadedPlanRequestsOnce, loadPlanRequests]);
+
+  useEffect(() => {
+    if (
+      activeTab !== "admin" ||
+      !availableTabs.some((tab) => tab.id === "admin")
+    ) {
+      return;
+    }
+    void loadPlanRequests();
+  }, [activeTab, availableTabs, loadPlanRequests]);
 
   useEffect(() => {
     if (!checkinUser) {
@@ -1631,6 +1913,15 @@ export default function DashboardPage() {
   }, []);
 
   const openUserModal = (user: AdminUser) => {
+    if (isCoachDashboard) {
+      showSaveFeedback(
+        "error",
+        "Permissao insuficiente",
+        "COACH pode alterar apenas os dados de saúde.",
+      );
+      return;
+    }
+
     setSelectedUser(user);
     setUserSaveError(null);
     setUserBirthDateInitial("");
@@ -2002,6 +2293,14 @@ export default function DashboardPage() {
 
   const handleSaveUser = async () => {
     if (!selectedUser) {
+      return;
+    }
+    if (isCoachDashboard) {
+      showSaveFeedback(
+        "error",
+        "Permissao insuficiente",
+        "COACH pode alterar apenas os dados de saúde.",
+      );
       return;
     }
     setIsSavingUser(true);
@@ -3393,10 +3692,104 @@ export default function DashboardPage() {
   const cancelledRegistrationsCount = eventRegistrations.filter(
     (registration) => registration.status === "cancelled",
   ).length;
+  const pendingPlanRequestsCount = planRequests.filter(
+    (request) => request.status === "pending",
+  ).length;
+  const reviewedPlanRequestsCount = planRequests.filter(
+    (request) => request.status !== "pending",
+  ).length;
+  const canSeePlanRequestsIndicator = availableTabs.some(
+    (tab) => tab.id === "admin",
+  );
+  const planRequestsIndicatorLabel =
+    planRequestsStatus === "loading" && planRequests.length === 0
+      ? "..."
+      : String(pendingPlanRequestsCount);
+  const renderTabButtonContent = (tab: (typeof tabs)[number]) => (
+    <>
+      {tab.icon}
+      <span>{tab.label}</span>
+      {tab.id === "admin" && pendingPlanRequestsCount > 0 ? (
+        <span className="inline-flex min-w-6 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-2 py-0.5 text-[0.62rem] font-semibold tracking-normal text-[color:var(--danger)]">
+          {pendingPlanRequestsCount}
+        </span>
+      ) : null}
+    </>
+  );
 
   const handleTabSelect = (tabId: TabId) => {
+    if (!availableTabs.some((tab) => tab.id === tabId)) {
+      return;
+    }
     setActiveTab(tabId);
     setIsTabMenuOpen(false);
+  };
+
+  const handleReviewPlanRequest = async (
+    request: PlanRequestRecord,
+    status: "approved" | "rejected",
+  ) => {
+    if (reviewingPlanRequestId) {
+      return;
+    }
+
+    const reason = (planRequestReviewReasonById[request.id] ?? "").trim();
+    if (status === "rejected" && !reason) {
+      showSaveFeedback(
+        "error",
+        "Motivo obrigatório",
+        "Informe o motivo da recusa antes de continuar.",
+      );
+      return;
+    }
+
+    setReviewingPlanRequestId(request.id);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/admin/users/plan-requests/${request.id}/review`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status,
+            reason: reason || undefined,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel atualizar a solicitacao de plano.",
+          ),
+        );
+      }
+
+      await loadPlanRequests();
+      setPlanRequestReviewReasonById((prev) => ({
+        ...prev,
+        [request.id]: "",
+      }));
+      showSaveFeedback(
+        "success",
+        status === "approved" ? "Solicitacao aprovada" : "Solicitacao recusada",
+        status === "approved"
+          ? "A solicitacao de plano foi aprovada com sucesso."
+          : "A solicitacao de plano foi recusada com sucesso.",
+      );
+    } catch (err) {
+      showSaveFeedback(
+        "error",
+        "Erro ao revisar solicitação",
+        err instanceof Error
+          ? err.message
+          : "Falha ao revisar solicitação de plano.",
+      );
+    } finally {
+      setReviewingPlanRequestId(null);
+    }
   };
 
   const patchSystemSettings = useCallback(
@@ -3845,10 +4238,7 @@ export default function DashboardPage() {
     currentUser?.name?.trim() ||
     currentUser?.email?.split("@")[0] ||
     "Visitante";
-  const displayRole =
-    currentUser?.role && roleLabelMap[currentUser.role as AdminUser["role"]]
-      ? roleLabelMap[currentUser.role as AdminUser["role"]]
-      : "Convidado";
+  const displayRole = dashboardRoleLabelMap[currentDashboardRole];
   const avatarSrc = currentUser?.avatarUrl || currentUser?.image || "";
   const avatarLabel =
     currentUserStatus === "loading" ? "Carregando" : displayName;
@@ -3877,12 +4267,11 @@ export default function DashboardPage() {
   const healthUserAvatar = healthUser
     ? healthUser.avatarUrl || healthUser.image || ""
     : "";
-  const normalizedCurrentRole = (currentUser?.role ?? "").trim().toUpperCase();
   const canViewPrivateNotes = ["MASTER", "ADMIN", "COACH"].includes(
-    normalizedCurrentRole,
+    effectiveDashboardRole,
   );
-  const isCurrentUserMaster = normalizedCurrentRole === "MASTER";
-  const isCurrentUserAdmin = normalizedCurrentRole === "ADMIN";
+  const isCurrentUserMaster = currentDashboardRole === "MASTER";
+  const isCurrentUserAdmin = currentDashboardRole === "ADMIN";
   const canManageMaintenanceToggle = isCurrentUserMaster;
   const canDisableMaintenance = isCurrentUserMaster || isCurrentUserAdmin;
   const modalLabelClass =
@@ -3955,25 +4344,74 @@ export default function DashboardPage() {
                 {isLoggingOut ? "Saindo..." : "Sair"}
               </span>
             </button>
+            {canSeePlanRequestsIndicator && (
+              <button
+                type="button"
+                onClick={() => handleTabSelect("admin")}
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:px-4"
+                aria-label="Abrir solicitações de plano"
+              >
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Solicitacoes</span>
+                <span
+                  className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[0.62rem] font-semibold tracking-normal ${
+                    pendingPlanRequestsCount > 0
+                      ? "border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                      : "border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--muted-foreground)]"
+                  }`}
+                >
+                  {planRequestsIndicatorLabel}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
-        <nav className="hidden w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 text-[0.65rem] font-semibold uppercase tracking-[0.3rem] sm:flex sm:flex-wrap sm:gap-4 sm:p-3 sm:text-xs font-[var(--font-roboto)]">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabSelect(tab.id)}
-              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 transition sm:px-4 ${
-                activeTab === tab.id
-                  ? "border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)] shadow-[0_10px_24px_-18px_var(--gold-tone)]"
-                  : "border-transparent text-[var(--muted-foreground)] hover:border-[color:var(--border-dim)] hover:text-[var(--gold-tone-dark)]"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        {canSwitchDashboardView && (
+          <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                  Visualizacao do dashboard
+                </p>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  MASTER pode simular os perfis existentes para validar o acesso.
+                </p>
+              </div>
+              <select
+                value={effectiveDashboardRole}
+                onChange={(event) =>
+                  setDashboardViewRole(event.target.value as DashboardRole)
+                }
+                className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] sm:w-auto"
+              >
+                {dashboardRoleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {dashboardRoleLabelMap[role]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {availableTabs.length > 0 && (
+          <nav className="hidden w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 text-[0.65rem] font-semibold uppercase tracking-[0.3rem] sm:flex sm:flex-wrap sm:gap-4 sm:p-3 sm:text-xs font-[var(--font-roboto)]">
+            {availableTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabSelect(tab.id)}
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 transition sm:px-4 ${
+                  activeTab === tab.id
+                    ? "border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)] shadow-[0_10px_24px_-18px_var(--gold-tone)]"
+                    : "border-transparent text-[var(--muted-foreground)] hover:border-[color:var(--border-dim)] hover:text-[var(--gold-tone-dark)]"
+                }`}
+              >
+                {renderTabButtonContent(tab)}
+              </button>
+            ))}
+          </nav>
+        )}
 
         {currentTab && (
           <div className="hidden rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)] sm:block">
@@ -3981,10 +4419,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {isTabMenuOpen && (
+        {isTabMenuOpen && availableTabs.length > 0 && (
           <div className="w-full rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-xs font-semibold uppercase tracking-[0.25rem] text-[var(--foreground)] sm:hidden font-[var(--font-roboto)]">
             <div className="grid gap-2">
-              {tabs.map((tab) => (
+              {availableTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => handleTabSelect(tab.id)}
@@ -3994,8 +4432,7 @@ export default function DashboardPage() {
                       : "border-transparent text-[var(--muted-foreground)] hover:border-[color:var(--border-dim)] hover:text-[var(--gold-tone-dark)]"
                   }`}
                 >
-                  {tab.icon}
-                  {tab.label}
+                  {renderTabButtonContent(tab)}
                 </button>
               ))}
             </div>
@@ -4004,13 +4441,21 @@ export default function DashboardPage() {
 
       </header>
 
-      {activeTab === "users" && (
+      {availableTabs.length === 0 && (
+        <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
+          O dashboard exclusivo de aluno/usuário será disponibilizado em breve.
+        </div>
+      )}
+
+      {activeTab === "users" && availableTabs.some((tab) => tab.id === "users") && (
         <div className="space-y-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h2 className="text-2xl font-semibold">Usuarios cadastrados</h2>
-            <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-              Novo usuario
-            </button>
+            {!isCoachDashboard && (
+              <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
+                Novo usuario
+              </button>
+            )}
           </div>
 
           <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 sm:flex-wrap sm:gap-3 sm:p-3">
@@ -4123,13 +4568,23 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-start gap-2 pt-1 md:justify-end md:pt-0">
-                        <button
-                          onClick={() => openUserModal(user)}
-                          className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Editar
-                        </button>
+                        {isCoachDashboard ? (
+                          <button
+                            onClick={() => void openHealthModal(user)}
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                          >
+                            <Stethoscope className="h-3.5 w-3.5" />
+                            Saude
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => openUserModal(user)}
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Editar
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -4139,7 +4594,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeTab === "events" && (
+      {activeTab === "events" && availableTabs.some((tab) => tab.id === "events") && (
         <div className="space-y-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h2 className="text-2xl font-semibold">Eventos cadastrados</h2>
@@ -4558,7 +5013,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeTab === "financial" && (
+      {activeTab === "financial" && availableTabs.some((tab) => tab.id === "financial") && (
         <div className="space-y-6">
           <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -4589,13 +5044,15 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => void handleGenerateReceivables()}
-                disabled={isGeneratingReceivables}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isGeneratingReceivables ? "Gerando..." : "Gerar recebiveis"}
-              </button>
+              {!isStaffFinancialRestricted && (
+                <button
+                  onClick={() => void handleGenerateReceivables()}
+                  disabled={isGeneratingReceivables}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isGeneratingReceivables ? "Gerando..." : "Gerar recebiveis"}
+                </button>
+              )}
               <button
                 onClick={() => void handleGenerateExpenses()}
                 disabled={isGeneratingExpenses}
@@ -4631,185 +5088,196 @@ export default function DashboardPage() {
 
           {financialStatus === "ready" && (
             <>
-              <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Recebiveis
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrencyFromCents(financialSummary.receivablesCents)}
-                  </p>
-                </article>
-                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Recebido
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrencyFromCents(financialSummary.receivedCents)}
-                  </p>
-                </article>
-                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Pendente
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrencyFromCents(financialSummary.pendingCents)}
-                  </p>
-                </article>
-                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Despesas
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrencyFromCents(financialSummary.expensesCents)}
-                  </p>
-                </article>
-                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Resultado realizado
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {formatCurrencyFromCents(financialSummary.realizedBalanceCents)}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                    Previsto: {formatCurrencyFromCents(financialSummary.expectedBalanceCents)}
-                  </p>
-                </article>
-              </section>
+              {!isStaffFinancialRestricted && (
+                <>
+                  <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                    <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Recebiveis
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {formatCurrencyFromCents(financialSummary.receivablesCents)}
+                      </p>
+                    </article>
+                    <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Recebido
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {formatCurrencyFromCents(financialSummary.receivedCents)}
+                      </p>
+                    </article>
+                    <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Pendente
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {formatCurrencyFromCents(financialSummary.pendingCents)}
+                      </p>
+                    </article>
+                    <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Despesas
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {formatCurrencyFromCents(financialSummary.expensesCents)}
+                      </p>
+                    </article>
+                    <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Resultado realizado
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {formatCurrencyFromCents(financialSummary.realizedBalanceCents)}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        Previsto: {formatCurrencyFromCents(financialSummary.expectedBalanceCents)}
+                      </p>
+                    </article>
+                  </section>
 
-              <section className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-xl font-semibold">Recebiveis e pagamentos</h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => setFinancialReceivableStatusFilter("all")}
-                      className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
-                        financialReceivableStatusFilter === "all"
-                          ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
-                          : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
-                      }`}
-                    >
-                      Todos
-                    </button>
-                    {(["open", "overdue", "paid"] as const).map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => setFinancialReceivableStatusFilter(status)}
-                        className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
-                          financialReceivableStatusFilter === status
-                            ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
-                            : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
-                        }`}
-                      >
-                        {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[status]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  <section className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-xl font-semibold">Recebiveis e pagamentos</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => setFinancialReceivableStatusFilter("all")}
+                          className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                            financialReceivableStatusFilter === "all"
+                              ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                              : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                          }`}
+                        >
+                          Todos
+                        </button>
+                        {(["open", "overdue", "paid"] as const).map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => setFinancialReceivableStatusFilter(status)}
+                            className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                              financialReceivableStatusFilter === status
+                                ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                                : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[status]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {filteredFinancialReceivables.length === 0 && (
-                  <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-                    Nenhum recebivel encontrado para o filtro selecionado.
-                  </div>
-                )}
+                    {filteredFinancialReceivables.length === 0 && (
+                      <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
+                        Nenhum recebivel encontrado para o filtro selecionado.
+                      </div>
+                    )}
 
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {filteredFinancialReceivables.map((receivable) => {
-                    const draft = getReceivablePaymentDraft(receivable);
-                    const outstanding = getReceivableOutstandingCents(receivable);
-                    const canRegisterPayment =
-                      ["open", "overdue"].includes(receivable.status) &&
-                      outstanding > 0;
-                    const userLabel =
-                      userNameById.get(receivable.userId) ||
-                      `Usuario ${receivable.userId.slice(0, 8)}`;
-                    return (
-                      <article
-                        key={receivable.id}
-                        className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                              {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[receivable.status]}
-                            </p>
-                            <p className="mt-1 text-base font-semibold text-[var(--foreground)]">
-                              {userLabel}
-                            </p>
-                            <p className="text-xs text-[var(--muted-foreground)]">
-                              Vencimento: {formatDatePtBr(receivable.dueDate)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                              Aberto
-                            </p>
-                            <p className="text-base font-semibold text-[var(--foreground)]">
-                              {formatCurrencyFromCents(outstanding)}
-                            </p>
-                          </div>
-                        </div>
-
-                        {canRegisterPayment ? (
-                          <>
-                            <div className="mt-4 grid gap-2 md:grid-cols-2">
-                              <input
-                                value={draft.amount}
-                                onChange={(event) =>
-                                  updateReceivablePaymentDraft(receivable.id, {
-                                    amount: event.target.value,
-                                  })
-                                }
-                                placeholder="Valor (ex: 120.00)"
-                                className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
-                              />
-                              <select
-                                value={draft.method}
-                                onChange={(event) =>
-                                  updateReceivablePaymentDraft(receivable.id, {
-                                    method: event.target.value as FinancialPaymentMethod,
-                                  })
-                                }
-                                className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
-                              >
-                                {FINANCIAL_PAYMENT_METHOD_OPTIONS.map((method) => (
-                                  <option key={method} value={method}>
-                                    {FINANCIAL_PAYMENT_METHOD_LABEL_MAP[method]}
-                                  </option>
-                                ))}
-                              </select>
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {filteredFinancialReceivables.map((receivable) => {
+                        const draft = getReceivablePaymentDraft(receivable);
+                        const outstanding = getReceivableOutstandingCents(receivable);
+                        const canRegisterPayment =
+                          ["open", "overdue"].includes(receivable.status) &&
+                          outstanding > 0;
+                        const userLabel =
+                          userNameById.get(receivable.userId) ||
+                          `Usuario ${receivable.userId.slice(0, 8)}`;
+                        return (
+                          <article
+                            key={receivable.id}
+                            className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                                  {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[receivable.status]}
+                                </p>
+                                <p className="mt-1 text-base font-semibold text-[var(--foreground)]">
+                                  {userLabel}
+                                </p>
+                                <p className="text-xs text-[var(--muted-foreground)]">
+                                  Vencimento: {formatDatePtBr(receivable.dueDate)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                                  Aberto
+                                </p>
+                                <p className="text-base font-semibold text-[var(--foreground)]">
+                                  {formatCurrencyFromCents(outstanding)}
+                                </p>
+                              </div>
                             </div>
-                            <textarea
-                              value={draft.notes}
-                              onChange={(event) =>
-                                updateReceivablePaymentDraft(receivable.id, {
-                                  notes: event.target.value,
-                                })
-                              }
-                              rows={2}
-                              placeholder="Observacoes do pagamento (opcional)"
-                              className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
-                            />
-                            <button
-                              onClick={() => void handleCreatePayment(receivable)}
-                              disabled={isSavingPaymentId === receivable.id}
-                              className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {isSavingPaymentId === receivable.id
-                                ? "Registrando..."
-                                : "Registrar pagamento"}
-                            </button>
-                          </>
-                        ) : (
-                          <p className="mt-3 text-sm text-[var(--muted-foreground)]">
-                            Recebivel sem saldo pendente para pagamento.
-                          </p>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
+
+                            {canRegisterPayment ? (
+                              <>
+                                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                                  <input
+                                    value={draft.amount}
+                                    onChange={(event) =>
+                                      updateReceivablePaymentDraft(receivable.id, {
+                                        amount: event.target.value,
+                                      })
+                                    }
+                                    placeholder="Valor (ex: 120.00)"
+                                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                                  />
+                                  <select
+                                    value={draft.method}
+                                    onChange={(event) =>
+                                      updateReceivablePaymentDraft(receivable.id, {
+                                        method: event.target.value as FinancialPaymentMethod,
+                                      })
+                                    }
+                                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                                  >
+                                    {FINANCIAL_PAYMENT_METHOD_OPTIONS.map((method) => (
+                                      <option key={method} value={method}>
+                                        {FINANCIAL_PAYMENT_METHOD_LABEL_MAP[method]}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <textarea
+                                  value={draft.notes}
+                                  onChange={(event) =>
+                                    updateReceivablePaymentDraft(receivable.id, {
+                                      notes: event.target.value,
+                                    })
+                                  }
+                                  rows={2}
+                                  placeholder="Observacoes do pagamento (opcional)"
+                                  className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                                />
+                                <button
+                                  onClick={() => void handleCreatePayment(receivable)}
+                                  disabled={isSavingPaymentId === receivable.id}
+                                  className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {isSavingPaymentId === receivable.id
+                                    ? "Registrando..."
+                                    : "Registrar pagamento"}
+                                </button>
+                              </>
+                            ) : (
+                              <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+                                Recebivel sem saldo pendente para pagamento.
+                              </p>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {isStaffFinancialRestricted && (
+                <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
+                  Visualização limitada para STAFF: o resumo de receitas e a lista
+                  de recebíveis/pagamentos ficam ocultos.
+                </section>
+              )}
 
               <section className="grid gap-4 xl:grid-cols-2">
                 <article className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
@@ -5416,7 +5884,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeTab === "admin" && (
+      {activeTab === "admin" && availableTabs.some((tab) => tab.id === "admin") && (
         <div className="space-y-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h2 className="text-2xl font-semibold">Relatorios administrativos</h2>
@@ -5424,6 +5892,176 @@ export default function DashboardPage() {
               Gerar relatorios
             </button>
           </div>
+
+          <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                  Solicitacoes de plano
+                </p>
+                <h3 className="mt-1 text-lg font-semibold">
+                  Aprovacao de trocas e ativacoes
+                </h3>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  {pendingPlanRequestsCount} pendentes • {reviewedPlanRequestsCount} revisadas
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadPlanRequests()}
+                disabled={planRequestsStatus === "loading"}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {planRequestsStatus === "loading" ? "Atualizando..." : "Atualizar"}
+              </button>
+            </div>
+
+            {planRequestsStatus === "loading" && (
+              <p className="mt-4 text-sm text-[var(--muted-foreground)]">
+                Carregando solicitações de plano...
+              </p>
+            )}
+
+            {planRequestsStatus === "error" && (
+              <div className="mt-4 space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
+                <p className="text-sm text-[color:var(--danger)]">
+                  {planRequestsError ?? "Nao foi possivel carregar solicitacoes de plano."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void loadPlanRequests()}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {planRequestsStatus === "ready" && planRequests.length === 0 && (
+              <p className="mt-4 text-sm text-[var(--muted-foreground)]">
+                Nenhuma solicitacao de plano encontrada.
+              </p>
+            )}
+
+            {planRequestsStatus === "ready" && planRequests.length > 0 && (
+              <div className="mt-4 grid gap-3">
+                {planRequests.map((request) => {
+                  const isPending = request.status === "pending";
+                  const isReviewing = reviewingPlanRequestId === request.id;
+                  const reason = planRequestReviewReasonById[request.id] ?? "";
+
+                  return (
+                    <article
+                      key={request.id}
+                      className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--foreground)]">
+                            {PLAN_REQUEST_TYPE_LABEL_MAP[request.type]}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            Solicitante:{" "}
+                            {request.requestedByName?.trim() ||
+                              request.requestedByEmail?.trim() ||
+                              request.requestedByUserId}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            Criada em {formatDateTimePtBr(request.createdAt)}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full border px-3 py-1 text-[0.6rem] uppercase tracking-[0.25em] ${
+                            request.status === "approved"
+                              ? "border-[color:var(--success-border)] bg-[color:var(--success-soft)] text-[color:var(--success)]"
+                              : request.status === "rejected"
+                                ? "border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                                : "border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--gold-tone-dark)]"
+                          }`}
+                        >
+                          {PLAN_REQUEST_STATUS_LABEL_MAP[request.status]}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 grid gap-2 text-xs text-[var(--muted-foreground)] sm:grid-cols-2">
+                        <p>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Plano atual:
+                          </span>{" "}
+                          {request.currentPlanName || request.currentPlanSlug || "-"}
+                        </p>
+                        <p>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            Plano alvo:
+                          </span>{" "}
+                          {request.targetPlanName || request.targetPlanSlug || "-"}
+                        </p>
+                      </div>
+
+                      {request.notes && (
+                        <p className="mt-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                          {request.notes}
+                        </p>
+                      )}
+
+                      {isPending ? (
+                        <div className="mt-3 space-y-2">
+                          <textarea
+                            value={reason}
+                            onChange={(event) =>
+                              setPlanRequestReviewReasonById((prev) => ({
+                                ...prev,
+                                [request.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Motivo (obrigatório para recusar)"
+                            rows={2}
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void handleReviewPlanRequest(request, "approved")}
+                              disabled={isReviewing}
+                              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.25em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isReviewing ? "Processando..." : "Aprovar"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleReviewPlanRequest(request, "rejected")}
+                              disabled={isReviewing}
+                              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 text-xs uppercase tracking-[0.25em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isReviewing ? "Processando..." : "Recusar"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                          <p>
+                            Revisada por{" "}
+                            {request.reviewedByName?.trim() ||
+                              request.reviewedByEmail?.trim() ||
+                              request.reviewedByUserId ||
+                              "-"}{" "}
+                            em{" "}
+                            {request.reviewedAt
+                              ? formatDateTimePtBr(request.reviewedAt)
+                              : "-"}
+                            .
+                          </p>
+                          {request.reviewReason ? (
+                            <p className="mt-1">{request.reviewReason}</p>
+                          ) : null}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
@@ -5476,7 +6114,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeTab === "system" && (
+      {activeTab === "system" && availableTabs.some((tab) => tab.id === "system") && (
         <div className="space-y-6">
           <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <h2 className="text-2xl font-semibold">Configurações do sistema</h2>
@@ -5484,7 +6122,7 @@ export default function DashboardPage() {
               Studio, Sistema e Homepage com persistência no backend.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              {systemSections.map((section) => (
+              {availableSystemSections.map((section) => (
                 <button
                   key={section.id}
                   onClick={() => setSystemSection(section.id)}
@@ -5499,7 +6137,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-              {systemSections.find((section) => section.id === systemSection)
+              {availableSystemSections.find((section) => section.id === systemSection)
                 ?.description ?? ""}
             </p>
           </section>
@@ -5682,7 +6320,7 @@ export default function DashboardPage() {
                 </section>
               )}
 
-              {systemSection === "system" && (
+              {systemSection === "system" && effectiveDashboardRole === "MASTER" && (
                 <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
                   <h3 className="text-xl font-semibold">Modo manutencao</h3>
                   <p className="mt-2 text-sm text-[var(--muted-foreground)]">
@@ -6087,7 +6725,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {selectedUser && (
+      {selectedUser && !isCoachDashboard && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
             <div className="flex flex-wrap items-start justify-between gap-4">

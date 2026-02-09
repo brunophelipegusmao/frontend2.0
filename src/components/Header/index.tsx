@@ -53,7 +53,10 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <InstallAppButton className="hidden rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16rem] text-[var(--background)] md:inline-flex" />
+            <InstallAppButton
+              iconOnly
+              className="hidden h-9 w-9 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] md:inline-flex"
+            />
             <button
               type="button"
               onClick={toggleTheme}
@@ -281,7 +284,10 @@ export function Header() {
         <div className="md:hidden">
           <div className="space-y-2 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-center">
             <div className="pb-1">
-              <InstallAppButton className="inline-flex rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16rem] text-[var(--background)] md:hidden" />
+              <InstallAppButton
+                iconOnly
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] md:hidden"
+              />
             </div>
             {navItems.map((item) => (
               <Link

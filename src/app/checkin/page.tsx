@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, UserCheck } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
@@ -65,7 +65,7 @@ const buildCheckinErrorFeedback = (message: string, code?: string) => {
   };
 };
 
-export default function CheckinPage() {
+function CheckinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
@@ -417,5 +417,21 @@ export default function CheckinPage() {
         </div>
       )}
     </section>
+  );
+}
+
+export default function CheckinPage() {
+  return (
+    <Suspense
+      fallback={
+        <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+          <div className="mx-auto w-full max-w-6xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
+            Carregando check-in...
+          </div>
+        </section>
+      }
+    >
+      <CheckinPageContent />
+    </Suspense>
   );
 }

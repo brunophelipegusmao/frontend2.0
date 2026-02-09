@@ -8,7 +8,7 @@ const ROLE_ROUTE: Record<string, string> = {
   ADMIN: "/dashboard",
   STAFF: "/dashboard",
   COACH: "/dashboard",
-  STUDENT: "/users/studentDashboad",
+  STUDENT: "/users/userDashboard",
   GUEST: "/dashboard",
 };
 
