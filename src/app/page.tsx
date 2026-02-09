@@ -36,8 +36,9 @@ type ApiPlan = {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.API_URL ||
-  "http://localhost:3001";
+  "http://127.0.0.1:3001";
 
 const buildApiUrl = (path: string) =>
   `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -103,11 +104,34 @@ const resolvePlanPerks = (plan: ApiPlan) => {
 };
 
 const getCarouselSlides = async (): Promise<HeroSlide[]> => {
-  const images = await fetchJson<CarouselImage[]>("/system-settings/carousel");
-  if (!images?.length) {
+  let images: CarouselImage[] | null = null;
+  try {
+    const response = await fetch(buildApiUrl("/system-settings/carousel"), {
+      cache: "no-store",
+    });
+    if (response.ok) {
+      images = (await response.json()) as CarouselImage[];
+    }
+  } catch {
+    images = null;
+  }
+
+  const configuredImages = (images ?? [])
+    .filter(
+      (image): image is CarouselImage =>
+        typeof image?.imageUrl === "string" && image.imageUrl.trim().length > 0,
+    )
+    .map((image) => ({
+      ...image,
+      imageUrl: image.imageUrl.trim(),
+      altText: image.altText?.trim() ?? null,
+    }));
+
+  if (configuredImages.length === 0) {
     return DEFAULT_HERO_SLIDES;
   }
-  return images.map((image, index) => {
+
+  return configuredImages.map((image, index) => {
     const fallback = DEFAULT_HERO_SLIDES[index % DEFAULT_HERO_SLIDES.length];
     return {
       src: image.imageUrl,

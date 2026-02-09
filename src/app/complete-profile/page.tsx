@@ -41,6 +41,7 @@ const completeProfile = async (payload: {
   name?: string;
   phone?: string;
   address?: string;
+  image?: string;
 }) => {
   const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
     method: "PATCH",

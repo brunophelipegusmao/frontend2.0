@@ -19,13 +19,10 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
     return () => clearInterval(timer);
   }, [slidesToShow.length]);
 
-  useEffect(() => {
-    if (activeSlide >= slidesToShow.length) {
-      setActiveSlide(0);
-    }
-  }, [activeSlide, slidesToShow.length]);
+  const safeActiveSlide =
+    slidesToShow.length > 0 ? activeSlide % slidesToShow.length : 0;
 
-  const active = slidesToShow[activeSlide];
+  const active = slidesToShow[safeActiveSlide];
 
   const handleDotClick = (index: number) => {
     setActiveSlide(index);
@@ -92,7 +89,7 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
 
         <div className="flex items-center justify-center gap-2">
           {slidesToShow.map((_, index) => {
-            const isActive = index === activeSlide;
+            const isActive = index === safeActiveSlide;
             return (
               <button
                 key={_.src}

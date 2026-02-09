@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ExternalLink,
   Facebook,
+  Globe2,
   Instagram,
   MapPin,
   MessageCircle,

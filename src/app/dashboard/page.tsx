@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Users,
   CalendarCheck,
   Wallet,
   Settings,
   BadgeCheck,
-  CreditCard,
   Globe,
   Clock,
   CheckCircle2,
@@ -15,8 +14,6 @@ import {
   Pencil,
   MessageCircle,
   Stethoscope,
-  Trash2,
-  Power,
   Menu,
 } from "lucide-react";
 
@@ -86,7 +83,7 @@ type SystemSettingsForm = {
   }>;
 };
 
-const tabs: { id: TabId; label: string; description: string; icon: JSX.Element }[] =
+const tabs: { id: TabId; label: string; description: string; icon: ReactNode }[] =
   [
     {
       id: "users",
@@ -266,16 +263,130 @@ type EventRegistrationApiRecord = {
   createdAt: string;
 };
 
-const mockPayments = [
-  { id: "p-01", user: "Carla Mendes", amount: "R$ 120,00", method: "PIX" },
-  { id: "p-02", user: "Julio Costa", amount: "R$ 90,00", method: "Cartao" },
-];
+type FinancialSubscriptionStatus =
+  | "active"
+  | "paused"
+  | "cancelled"
+  | "finished";
+type FinancialReceivableStatus =
+  | "open"
+  | "paid"
+  | "overdue"
+  | "cancelled"
+  | "renegotiated";
+type FinancialReceivableKind = "regular" | "prorated" | "adjustment";
+type FinancialPaymentMethod = "pix" | "card" | "cash" | "transfer" | "other";
+type FinancialExpenseStatus = "planned" | "approved" | "paid" | "cancelled";
+type FinancialExpenseCategory =
+  | "rent"
+  | "payroll"
+  | "utilities"
+  | "marketing"
+  | "software"
+  | "equipment"
+  | "maintenance"
+  | "taxes"
+  | "other";
 
-const mockPlans = [
-  { id: "pl-01", name: "Plano Free", price: "R$ 0", active: true },
-  { id: "pl-02", name: "Plano Intensivo", price: "R$ 249", active: true },
-  { id: "pl-03", name: "Plano Guest", price: "R$ 0", active: true },
-];
+type FinancialDashboardApiRecord = {
+  competence: string;
+  receivablesCents: number;
+  receivedCents: number;
+  expensesCents: number;
+};
+
+type FinancialSubscriptionApiRecord = {
+  id: string;
+  userId: string;
+  planId: string;
+  status: FinancialSubscriptionStatus;
+  dueDateMode: "fixed_day" | "custom_date";
+  billingDay: number | null;
+  customDueDay: number | null;
+  customDueDate: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  monthlyAmountCentsSnapshot: number;
+  prorationMode: "first_month_prorated" | "none" | "full_first_month";
+  prorationBase: "calendar_month" | "30_days";
+  planNameSnapshot: string;
+  planSlugSnapshot: string;
+  planPriceCentsSnapshot: number;
+  planPromoPriceCentsSnapshot: number | null;
+  notes: string | null;
+};
+
+type FinancialReceivableApiRecord = {
+  id: string;
+  userId: string;
+  subscriptionId: string;
+  competence: string;
+  dueDate: string;
+  amountCents: number;
+  status: FinancialReceivableStatus;
+  kind: FinancialReceivableKind;
+  paidAt: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  paidTotal: number;
+};
+
+type FinancialExpenseTemplateApiRecord = {
+  id: string;
+  name: string;
+  category: FinancialExpenseCategory;
+  defaultAmountCents: number;
+  billingDay: number;
+  active: boolean;
+  notes: string | null;
+};
+
+type FinancialExpenseApiRecord = {
+  id: string;
+  templateId: string | null;
+  category: FinancialExpenseCategory;
+  description: string;
+  competence: string;
+  dueDate: string;
+  amountCents: number;
+  status: FinancialExpenseStatus;
+  paidAt: string | null;
+  notes: string | null;
+};
+
+type FinancialSubscriptionForm = {
+  userId: string;
+  planId: string;
+  startsAt: string;
+  dueDateMode: "fixed_day" | "custom_date";
+  billingDay: string;
+  customDueDay: string;
+  customDueDate: string;
+  replaceActive: boolean;
+  notes: string;
+};
+
+type FinancialExpenseTemplateForm = {
+  name: string;
+  category: FinancialExpenseCategory;
+  defaultAmount: string;
+  billingDay: string;
+  active: boolean;
+  notes: string;
+};
+
+type FinancialExpenseForm = {
+  templateId: string;
+  category: FinancialExpenseCategory;
+  description: string;
+  dueDate: string;
+  amount: string;
+  status: FinancialExpenseStatus;
+  notes: string;
+};
 
 type AdminUser = {
   id: string;
@@ -534,6 +645,141 @@ const REGISTRATION_STATUS_LABEL_MAP: Record<
   cancelled: "Cancelado",
 };
 
+const FINANCIAL_PAYMENT_METHOD_LABEL_MAP: Record<FinancialPaymentMethod, string> = {
+  pix: "PIX",
+  card: "Cartao",
+  cash: "Dinheiro",
+  transfer: "Transferencia",
+  other: "Outro",
+};
+
+const FINANCIAL_SUBSCRIPTION_STATUS_LABEL_MAP: Record<
+  FinancialSubscriptionStatus,
+  string
+> = {
+  active: "Ativa",
+  paused: "Pausada",
+  cancelled: "Cancelada",
+  finished: "Finalizada",
+};
+
+const FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP: Record<
+  FinancialReceivableStatus,
+  string
+> = {
+  open: "Aberto",
+  paid: "Pago",
+  overdue: "Atrasado",
+  cancelled: "Cancelado",
+  renegotiated: "Renegociado",
+};
+
+const FINANCIAL_EXPENSE_STATUS_LABEL_MAP: Record<FinancialExpenseStatus, string> = {
+  planned: "Planejada",
+  approved: "Aprovada",
+  paid: "Paga",
+  cancelled: "Cancelada",
+};
+
+const FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP: Record<
+  FinancialExpenseCategory,
+  string
+> = {
+  rent: "Aluguel",
+  payroll: "Folha",
+  utilities: "Utilidades",
+  marketing: "Marketing",
+  software: "Software",
+  equipment: "Equipamentos",
+  maintenance: "Manutencao",
+  taxes: "Impostos",
+  other: "Outros",
+};
+
+const FINANCIAL_EXPENSE_CATEGORY_OPTIONS: FinancialExpenseCategory[] = [
+  "rent",
+  "payroll",
+  "utilities",
+  "marketing",
+  "software",
+  "equipment",
+  "maintenance",
+  "taxes",
+  "other",
+];
+
+const FINANCIAL_PAYMENT_METHOD_OPTIONS: FinancialPaymentMethod[] = [
+  "pix",
+  "card",
+  "cash",
+  "transfer",
+  "other",
+];
+
+const FINANCIAL_SUBSCRIPTION_STATUS_OPTIONS: FinancialSubscriptionStatus[] = [
+  "active",
+  "paused",
+  "cancelled",
+  "finished",
+];
+
+const FINANCIAL_EXPENSE_STATUS_OPTIONS: FinancialExpenseStatus[] = [
+  "planned",
+  "approved",
+  "paid",
+  "cancelled",
+];
+
+const toMonthValue = (value: Date) => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+const toCompetenceDateValue = (monthValue: string) => {
+  const normalized = monthValue.trim();
+  if (!/^\d{4}-\d{2}$/.test(normalized)) {
+    return `${toMonthValue(new Date())}-01`;
+  }
+  return `${normalized}-01`;
+};
+
+const formatDatePtBr = (value?: string | null) => {
+  if (!value) {
+    return "-";
+  }
+  const raw = value.includes("T") ? value : `${value}T00:00:00`;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+  }).format(parsed);
+};
+
+const formatDateTimePtBr = (value?: string | null) => {
+  if (!value) {
+    return "-";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(parsed);
+};
+
+const getReceivableOutstandingCents = (
+  receivable: Pick<FinancialReceivableApiRecord, "amountCents" | "paidTotal">,
+) =>
+  Math.max(
+    0,
+    Number(receivable.amountCents ?? 0) - Number(receivable.paidTotal ?? 0),
+  );
+
 const mapApiStatusToUiStatus = (status: EventApiRecord["status"]) =>
   EVENT_STATUS_LABEL_MAP[status] ?? "rascunho";
 
@@ -584,7 +830,16 @@ const formatCurrencyFromCents = (value?: number | null) => {
 };
 
 const parseReaisToCents = (value: string) => {
-  const normalized = value.trim().replace(/\./g, "").replace(",", ".");
+  const cleaned = value.trim().replace(/\s/g, "").replace(/[^\d,.-]/g, "");
+  if (!cleaned) {
+    return null;
+  }
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.replace(/\./g, "").replace(",", ".")
+      : cleaned.includes(",")
+        ? cleaned.replace(",", ".")
+        : cleaned;
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return null;
@@ -678,6 +933,14 @@ const toFormValue = (value?: string | number | null) => {
 const parsePositive = (value: string) => {
   const parsed = Number(value.trim().replace(",", "."));
   if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
+
+const parseNonNegative = (value: string) => {
+  const parsed = Number(value.trim().replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed < 0) {
     return null;
   }
   return parsed;
@@ -830,6 +1093,91 @@ export default function DashboardPage() {
   const [eventFilter, setEventFilter] = useState<
     "FUTUROS" | "CANCELADOS" | "REALIZADOS"
   >("FUTUROS");
+  const [financialCompetenceMonth, setFinancialCompetenceMonth] = useState(
+    () => toMonthValue(new Date()),
+  );
+  const [financialStatus, setFinancialStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [financialError, setFinancialError] = useState<string | null>(null);
+  const [financialDashboard, setFinancialDashboard] =
+    useState<FinancialDashboardApiRecord | null>(null);
+  const [financialSubscriptions, setFinancialSubscriptions] = useState<
+    FinancialSubscriptionApiRecord[]
+  >([]);
+  const [financialReceivables, setFinancialReceivables] = useState<
+    FinancialReceivableApiRecord[]
+  >([]);
+  const [financialExpenseTemplates, setFinancialExpenseTemplates] = useState<
+    FinancialExpenseTemplateApiRecord[]
+  >([]);
+  const [financialExpenses, setFinancialExpenses] = useState<
+    FinancialExpenseApiRecord[]
+  >([]);
+  const [isGeneratingReceivables, setIsGeneratingReceivables] = useState(false);
+  const [isGeneratingExpenses, setIsGeneratingExpenses] = useState(false);
+  const [isSavingSubscription, setIsSavingSubscription] = useState(false);
+  const [updatingSubscriptionId, setUpdatingSubscriptionId] = useState<
+    string | null
+  >(null);
+  const [isSavingPaymentId, setIsSavingPaymentId] = useState<string | null>(
+    null,
+  );
+  const [isSavingExpenseTemplate, setIsSavingExpenseTemplate] = useState(false);
+  const [updatingExpenseTemplateId, setUpdatingExpenseTemplateId] = useState<
+    string | null
+  >(null);
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
+  const [updatingExpenseId, setUpdatingExpenseId] = useState<string | null>(
+    null,
+  );
+  const [financialSubscriptionStatusFilter, setFinancialSubscriptionStatusFilter] =
+    useState<FinancialSubscriptionStatus | "all">("all");
+  const [financialReceivableStatusFilter, setFinancialReceivableStatusFilter] =
+    useState<FinancialReceivableStatus | "all">("all");
+  const [financialExpenseStatusFilter, setFinancialExpenseStatusFilter] =
+    useState<FinancialExpenseStatus | "all">("all");
+  const [financialSubscriptionForm, setFinancialSubscriptionForm] =
+    useState<FinancialSubscriptionForm>({
+      userId: "",
+      planId: "",
+      startsAt: "",
+      dueDateMode: "fixed_day",
+      billingDay: "5",
+      customDueDay: "",
+      customDueDate: "",
+      replaceActive: true,
+      notes: "",
+    });
+  const [paymentDraftsByReceivable, setPaymentDraftsByReceivable] = useState<
+    Record<
+      string,
+      {
+        amount: string;
+        method: FinancialPaymentMethod;
+        notes: string;
+      }
+    >
+  >({});
+  const [financialExpenseTemplateForm, setFinancialExpenseTemplateForm] =
+    useState<FinancialExpenseTemplateForm>({
+      name: "",
+      category: "other",
+      defaultAmount: "",
+      billingDay: "5",
+      active: true,
+      notes: "",
+    });
+  const [financialExpenseForm, setFinancialExpenseForm] =
+    useState<FinancialExpenseForm>({
+      templateId: "",
+      category: "other",
+      description: "",
+      dueDate: toLocalDateKey(new Date()),
+      amount: "",
+      status: "planned",
+      notes: "",
+    });
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(null);
   const [currentUserStatus, setCurrentUserStatus] = useState<
@@ -918,6 +1266,9 @@ export default function DashboardPage() {
   const [uploadingCarouselSlot, setUploadingCarouselSlot] = useState<
     number | null
   >(null);
+  const [carouselImageFiles, setCarouselImageFiles] = useState<
+    Array<File | null>
+  >([]);
 
   const currentTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTab),
@@ -931,6 +1282,13 @@ export default function DashboardPage() {
       }
     };
   }, [saveFeedbackTimer]);
+
+  useEffect(() => {
+    setCarouselImageFiles((prev) => {
+      const nextLength = systemSettingsForm.carouselImages.length;
+      return Array.from({ length: nextLength }, (_, index) => prev[index] ?? null);
+    });
+  }, [systemSettingsForm.carouselImages.length]);
 
   const showSaveFeedback = (
     status: "success" | "error",
@@ -1049,6 +1407,114 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadFinancial = useCallback(async () => {
+    setFinancialStatus("loading");
+    setFinancialError(null);
+    try {
+      const competence = toCompetenceDateValue(financialCompetenceMonth);
+      const [dashboardResponse, subscriptionsResponse, receivablesResponse, templatesResponse, expensesResponse] =
+        await Promise.all([
+          fetch(
+            `${API_BASE_URL}/financial/dashboard?competence=${encodeURIComponent(
+              competence,
+            )}`,
+            { credentials: "include" },
+          ),
+          fetch(`${API_BASE_URL}/financial/subscriptions`, {
+            credentials: "include",
+          }),
+          fetch(
+            `${API_BASE_URL}/financial/receivables?competence=${encodeURIComponent(
+              competence,
+            )}`,
+            { credentials: "include" },
+          ),
+          fetch(`${API_BASE_URL}/financial/expense-templates`, {
+            credentials: "include",
+          }),
+          fetch(
+            `${API_BASE_URL}/financial/expenses?competence=${encodeURIComponent(
+              competence,
+            )}`,
+            { credentials: "include" },
+          ),
+        ]);
+
+      if (!dashboardResponse.ok) {
+        throw new Error(
+          await parseApiError(
+            dashboardResponse,
+            "Nao foi possivel carregar o resumo financeiro.",
+          ),
+        );
+      }
+      if (!subscriptionsResponse.ok) {
+        throw new Error(
+          await parseApiError(
+            subscriptionsResponse,
+            "Nao foi possivel carregar assinaturas.",
+          ),
+        );
+      }
+      if (!receivablesResponse.ok) {
+        throw new Error(
+          await parseApiError(
+            receivablesResponse,
+            "Nao foi possivel carregar recebiveis.",
+          ),
+        );
+      }
+      if (!templatesResponse.ok) {
+        throw new Error(
+          await parseApiError(
+            templatesResponse,
+            "Nao foi possivel carregar templates de despesas.",
+          ),
+        );
+      }
+      if (!expensesResponse.ok) {
+        throw new Error(
+          await parseApiError(
+            expensesResponse,
+            "Nao foi possivel carregar despesas.",
+          ),
+        );
+      }
+
+      const [dashboardPayload, subscriptionsPayload, receivablesPayload, templatesPayload, expensesPayload] =
+        await Promise.all([
+          dashboardResponse.json() as Promise<FinancialDashboardApiRecord>,
+          subscriptionsResponse.json() as Promise<FinancialSubscriptionApiRecord[]>,
+          receivablesResponse.json() as Promise<FinancialReceivableApiRecord[]>,
+          templatesResponse.json() as Promise<FinancialExpenseTemplateApiRecord[]>,
+          expensesResponse.json() as Promise<FinancialExpenseApiRecord[]>,
+        ]);
+
+      setFinancialDashboard(dashboardPayload ?? null);
+      setFinancialSubscriptions(
+        Array.isArray(subscriptionsPayload) ? subscriptionsPayload : [],
+      );
+      setFinancialReceivables(
+        Array.isArray(receivablesPayload) ? receivablesPayload : [],
+      );
+      setFinancialExpenseTemplates(
+        Array.isArray(templatesPayload) ? templatesPayload : [],
+      );
+      setFinancialExpenses(Array.isArray(expensesPayload) ? expensesPayload : []);
+      setFinancialStatus("ready");
+    } catch (err) {
+      setFinancialDashboard(null);
+      setFinancialSubscriptions([]);
+      setFinancialReceivables([]);
+      setFinancialExpenseTemplates([]);
+      setFinancialExpenses([]);
+      setFinancialStatus("error");
+      setFinancialError(
+        err instanceof Error ? err.message : "Falha ao carregar financeiro.",
+      );
+    }
+  }, [financialCompetenceMonth]);
+
   const loadSystemSettings = useCallback(async () => {
     setSystemSettingsStatus("loading");
     setSystemSettingsError(null);
@@ -1114,6 +1580,13 @@ export default function DashboardPage() {
     loadEvents();
     loadSystemSettings();
   }, [loadUsers, loadPlans, loadEvents, loadSystemSettings]);
+
+  useEffect(() => {
+    if (activeTab !== "financial") {
+      return;
+    }
+    void loadFinancial();
+  }, [activeTab, loadFinancial]);
 
   useEffect(() => {
     if (!checkinUser) {
@@ -1786,6 +2259,75 @@ export default function DashboardPage() {
     return eventsByDate.get(selectedEventDate) ?? [];
   }, [eventsByDate, selectedEventDate]);
 
+  const userNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach((user) => {
+      const display =
+        user.name?.trim() || user.email?.trim() || `Usuario ${user.id.slice(0, 8)}`;
+      map.set(user.id, display);
+    });
+    return map;
+  }, [users]);
+
+  const planNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    plans.forEach((plan) => {
+      map.set(plan.id, plan.name);
+    });
+    return map;
+  }, [plans]);
+
+  const filteredFinancialSubscriptions = useMemo(() => {
+    return financialSubscriptions.filter((subscription) => {
+      if (financialSubscriptionStatusFilter === "all") {
+        return true;
+      }
+      return subscription.status === financialSubscriptionStatusFilter;
+    });
+  }, [financialSubscriptionStatusFilter, financialSubscriptions]);
+
+  const filteredFinancialReceivables = useMemo(() => {
+    return financialReceivables.filter((receivable) => {
+      if (financialReceivableStatusFilter === "all") {
+        return true;
+      }
+      return receivable.status === financialReceivableStatusFilter;
+    });
+  }, [financialReceivableStatusFilter, financialReceivables]);
+
+  const filteredFinancialExpenses = useMemo(() => {
+    return financialExpenses.filter((expense) => {
+      if (financialExpenseStatusFilter === "all") {
+        return true;
+      }
+      return expense.status === financialExpenseStatusFilter;
+    });
+  }, [financialExpenseStatusFilter, financialExpenses]);
+
+  const financialSummary = useMemo(() => {
+    const receivablesCents = Number(financialDashboard?.receivablesCents ?? 0);
+    const receivedCents = Number(financialDashboard?.receivedCents ?? 0);
+    const expensesCents = Number(financialDashboard?.expensesCents ?? 0);
+    const pendingCents = Math.max(0, receivablesCents - receivedCents);
+    const expectedBalanceCents = receivablesCents - expensesCents;
+    const realizedBalanceCents = receivedCents - expensesCents;
+    return {
+      receivablesCents,
+      receivedCents,
+      expensesCents,
+      pendingCents,
+      expectedBalanceCents,
+      realizedBalanceCents,
+    };
+  }, [financialDashboard]);
+
+  const activeSubscriptionsCount = useMemo(
+    () =>
+      financialSubscriptions.filter((subscription) => subscription.status === "active")
+        .length,
+    [financialSubscriptions],
+  );
+
   const parsePriceToReais = (price: string) => {
     const digits = price.replace(/\D/g, "");
     if (!digits) {
@@ -2124,6 +2666,572 @@ export default function DashboardPage() {
     }
   };
 
+  const getReceivablePaymentDraft = (receivable: FinancialReceivableApiRecord) => {
+    const existing = paymentDraftsByReceivable[receivable.id];
+    if (existing) {
+      return existing;
+    }
+    const outstanding = getReceivableOutstandingCents(receivable);
+    return {
+      amount: outstanding > 0 ? (outstanding / 100).toFixed(2) : "",
+      method: "pix" as FinancialPaymentMethod,
+      notes: "",
+    };
+  };
+
+  const updateReceivablePaymentDraft = (
+    receivableId: string,
+    updates: Partial<{
+      amount: string;
+      method: FinancialPaymentMethod;
+      notes: string;
+    }>,
+  ) => {
+    setPaymentDraftsByReceivable((prev) => {
+      const current = prev[receivableId] ?? {
+        amount: "",
+        method: "pix" as FinancialPaymentMethod,
+        notes: "",
+      };
+      return {
+        ...prev,
+        [receivableId]: {
+          ...current,
+          ...updates,
+        },
+      };
+    });
+  };
+
+  const handleGenerateReceivables = async () => {
+    if (isGeneratingReceivables) {
+      return;
+    }
+    setIsGeneratingReceivables(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/financial/receivables/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          competence: toCompetenceDateValue(financialCompetenceMonth),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel gerar recebiveis."),
+        );
+      }
+      const payload = (await response.json()) as {
+        created?: Array<unknown>;
+        skipped?: number;
+      };
+      await loadFinancial();
+      const createdCount = Array.isArray(payload.created)
+        ? payload.created.length
+        : 0;
+      showSaveFeedback(
+        "success",
+        "Recebiveis gerados",
+        `${createdCount} recebiveis criados. ${Number(payload.skipped ?? 0)} ja existiam.`,
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao gerar recebiveis.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsGeneratingReceivables(false);
+    }
+  };
+
+  const handleGenerateExpenses = async () => {
+    if (isGeneratingExpenses) {
+      return;
+    }
+    setIsGeneratingExpenses(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/financial/expenses/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          competence: toCompetenceDateValue(financialCompetenceMonth),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel gerar despesas."),
+        );
+      }
+      const payload = (await response.json()) as {
+        created?: Array<unknown>;
+        skipped?: number;
+      };
+      await loadFinancial();
+      const createdCount = Array.isArray(payload.created)
+        ? payload.created.length
+        : 0;
+      showSaveFeedback(
+        "success",
+        "Despesas geradas",
+        `${createdCount} despesas criadas. ${Number(payload.skipped ?? 0)} ja existiam.`,
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao gerar despesas.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsGeneratingExpenses(false);
+    }
+  };
+
+  const handleSaveFinancialSubscription = async () => {
+    if (isSavingSubscription) {
+      return;
+    }
+    if (!financialSubscriptionForm.userId) {
+      showSaveFeedback(
+        "error",
+        "Dados incompletos",
+        "Selecione o usuario da assinatura.",
+      );
+      return;
+    }
+    if (!financialSubscriptionForm.planId) {
+      showSaveFeedback(
+        "error",
+        "Dados incompletos",
+        "Selecione o plano da assinatura.",
+      );
+      return;
+    }
+    const billingDay = Number(financialSubscriptionForm.billingDay);
+    const customDueDay = Number(financialSubscriptionForm.customDueDay);
+    if (
+      financialSubscriptionForm.dueDateMode === "fixed_day" &&
+      (!Number.isFinite(billingDay) || billingDay < 1 || billingDay > 31)
+    ) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Informe o dia de vencimento entre 1 e 31.",
+      );
+      return;
+    }
+    if (
+      financialSubscriptionForm.dueDateMode === "custom_date" &&
+      (!financialSubscriptionForm.customDueDate &&
+        (!Number.isFinite(customDueDay) || customDueDay < 1 || customDueDay > 31))
+    ) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Informe uma data customizada ou dia customizado (1 a 31).",
+      );
+      return;
+    }
+
+    setIsSavingSubscription(true);
+    try {
+      const payload: Record<string, unknown> = {
+        userId: financialSubscriptionForm.userId,
+        planId: financialSubscriptionForm.planId,
+        dueDateMode: financialSubscriptionForm.dueDateMode,
+        replaceActive: financialSubscriptionForm.replaceActive,
+      };
+      if (financialSubscriptionForm.startsAt) {
+        payload.startsAt = `${financialSubscriptionForm.startsAt}T00:00:00`;
+      }
+      if (financialSubscriptionForm.notes.trim()) {
+        payload.notes = financialSubscriptionForm.notes.trim();
+      }
+      if (financialSubscriptionForm.dueDateMode === "fixed_day") {
+        payload.billingDay = Math.trunc(billingDay);
+      } else {
+        if (financialSubscriptionForm.customDueDate) {
+          payload.customDueDate = `${financialSubscriptionForm.customDueDate}T00:00:00`;
+        }
+        if (Number.isFinite(customDueDay) && customDueDay > 0) {
+          payload.customDueDay = Math.trunc(customDueDay);
+        }
+      }
+
+      const response = await fetch(`${API_BASE_URL}/financial/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel criar a assinatura financeira.",
+          ),
+        );
+      }
+
+      await Promise.all([loadFinancial(), loadUsers()]);
+      setFinancialSubscriptionForm((prev) => ({
+        ...prev,
+        startsAt: "",
+        notes: "",
+      }));
+      showSaveFeedback(
+        "success",
+        "Assinatura criada",
+        "A assinatura foi criada e vinculada ao usuario.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao criar assinatura.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsSavingSubscription(false);
+    }
+  };
+
+  const handleUpdateSubscriptionStatus = async (
+    subscriptionId: string,
+    status: FinancialSubscriptionStatus,
+  ) => {
+    if (updatingSubscriptionId) {
+      return;
+    }
+    setUpdatingSubscriptionId(subscriptionId);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/financial/subscriptions/${subscriptionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel atualizar status da assinatura.",
+          ),
+        );
+      }
+      await Promise.all([loadFinancial(), loadUsers()]);
+      showSaveFeedback(
+        "success",
+        "Assinatura atualizada",
+        "Status da assinatura atualizado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao atualizar status da assinatura.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setUpdatingSubscriptionId(null);
+    }
+  };
+
+  const handleCreatePayment = async (receivable: FinancialReceivableApiRecord) => {
+    if (isSavingPaymentId) {
+      return;
+    }
+    const draft = getReceivablePaymentDraft(receivable);
+    const amountCents = parseReaisToCents(draft.amount);
+    if (!amountCents || amountCents < 1) {
+      showSaveFeedback(
+        "error",
+        "Pagamento invalido",
+        "Informe um valor de pagamento valido.",
+      );
+      return;
+    }
+    setIsSavingPaymentId(receivable.id);
+    try {
+      const response = await fetch(`${API_BASE_URL}/financial/payments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          receivableId: receivable.id,
+          amountCents,
+          method: draft.method,
+          notes: draft.notes.trim() || null,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel registrar pagamento do recebivel.",
+          ),
+        );
+      }
+
+      await loadFinancial();
+      setPaymentDraftsByReceivable((prev) => {
+        const next = { ...prev };
+        delete next[receivable.id];
+        return next;
+      });
+      showSaveFeedback(
+        "success",
+        "Pagamento registrado",
+        "Pagamento registrado no recebivel.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao registrar pagamento.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsSavingPaymentId(null);
+    }
+  };
+
+  const handleSaveExpenseTemplate = async () => {
+    if (isSavingExpenseTemplate) {
+      return;
+    }
+    const name = financialExpenseTemplateForm.name.trim();
+    const defaultAmount = parseNonNegative(financialExpenseTemplateForm.defaultAmount);
+    const billingDay = Number(financialExpenseTemplateForm.billingDay);
+    if (name.length < 2) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Informe um nome para o template.",
+      );
+      return;
+    }
+    if (defaultAmount === null) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Valor padrao do template e invalido.",
+      );
+      return;
+    }
+    if (!Number.isFinite(billingDay) || billingDay < 1 || billingDay > 31) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Dia de vencimento deve estar entre 1 e 31.",
+      );
+      return;
+    }
+
+    setIsSavingExpenseTemplate(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/financial/expense-templates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name,
+          category: financialExpenseTemplateForm.category,
+          defaultAmountCents: Math.round(defaultAmount * 100),
+          billingDay: Math.trunc(billingDay),
+          active: financialExpenseTemplateForm.active,
+          notes: financialExpenseTemplateForm.notes.trim() || null,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel criar o template de despesa.",
+          ),
+        );
+      }
+      await loadFinancial();
+      setFinancialExpenseTemplateForm({
+        name: "",
+        category: "other",
+        defaultAmount: "",
+        billingDay: "5",
+        active: true,
+        notes: "",
+      });
+      showSaveFeedback(
+        "success",
+        "Template salvo",
+        "Template de despesa criado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao criar template de despesa.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsSavingExpenseTemplate(false);
+    }
+  };
+
+  const handleToggleExpenseTemplate = async (
+    template: FinancialExpenseTemplateApiRecord,
+  ) => {
+    if (updatingExpenseTemplateId) {
+      return;
+    }
+    setUpdatingExpenseTemplateId(template.id);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/financial/expense-templates/${template.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ active: !template.active }),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel atualizar o template de despesa.",
+          ),
+        );
+      }
+      await loadFinancial();
+      showSaveFeedback(
+        "success",
+        "Template atualizado",
+        template.active
+          ? "Template desativado com sucesso."
+          : "Template ativado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao atualizar template de despesa.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setUpdatingExpenseTemplateId(null);
+    }
+  };
+
+  const handleSaveExpense = async () => {
+    if (isSavingExpense) {
+      return;
+    }
+    const amount = parseNonNegative(financialExpenseForm.amount);
+    if (financialExpenseForm.description.trim().length < 2) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Informe a descricao da despesa.",
+      );
+      return;
+    }
+    if (!financialExpenseForm.dueDate) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Informe a data de vencimento da despesa.",
+      );
+      return;
+    }
+    if (amount === null) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Valor da despesa invalido.",
+      );
+      return;
+    }
+
+    setIsSavingExpense(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/financial/expenses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          templateId: financialExpenseForm.templateId || null,
+          category: financialExpenseForm.category,
+          description: financialExpenseForm.description.trim(),
+          competence: toCompetenceDateValue(financialCompetenceMonth),
+          dueDate: `${financialExpenseForm.dueDate}T00:00:00`,
+          amountCents: Math.round(amount * 100),
+          status: financialExpenseForm.status,
+          notes: financialExpenseForm.notes.trim() || null,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel criar a despesa."),
+        );
+      }
+      await loadFinancial();
+      setFinancialExpenseForm((prev) => ({
+        ...prev,
+        description: "",
+        amount: "",
+        notes: "",
+      }));
+      showSaveFeedback("success", "Despesa criada", "Despesa registrada.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao criar despesa.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setIsSavingExpense(false);
+    }
+  };
+
+  const handleUpdateExpenseStatus = async (
+    expense: FinancialExpenseApiRecord,
+    status: FinancialExpenseStatus,
+  ) => {
+    if (updatingExpenseId) {
+      return;
+    }
+    setUpdatingExpenseId(expense.id);
+    try {
+      const payload: Record<string, unknown> = { status };
+      if (status === "paid" && !expense.paidAt) {
+        payload.paidAt = new Date().toISOString();
+      }
+      if (status !== "paid" && expense.paidAt) {
+        payload.paidAt = null;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/financial/expenses/${expense.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        },
+      );
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel atualizar status da despesa.",
+          ),
+        );
+      }
+      await loadFinancial();
+      showSaveFeedback(
+        "success",
+        "Despesa atualizada",
+        "Status da despesa atualizado.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao atualizar despesa.";
+      showSaveFeedback("error", "Erro financeiro", message);
+    } finally {
+      setUpdatingExpenseId(null);
+    }
+  };
+
   const loadEventRegistrations = useCallback(async (eventId: string) => {
     setEventRegistrationsStatus("loading");
     setEventRegistrationsError(null);
@@ -2323,6 +3431,26 @@ export default function DashboardPage() {
     }
   };
 
+  const parseCloudinaryUrlField = (value: string, fieldLabel: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new Error(`${fieldLabel}: envie uma imagem para o Cloudinary.`);
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      throw new Error(`${fieldLabel}: URL invalida.`);
+    }
+
+    if (parsed.hostname !== "res.cloudinary.com") {
+      throw new Error(`${fieldLabel}: use apenas imagens enviadas ao Cloudinary.`);
+    }
+
+    return parsed.toString();
+  };
+
   const handleOperatingHourChange = (
     day: SystemDay,
     field: "start" | "end",
@@ -2397,48 +3525,37 @@ export default function DashboardPage() {
     });
   };
 
-  const handleUploadCarouselImage = async (slotIndex: number, file?: File) => {
-    if (!file || uploadingCarouselSlot !== null) {
-      return;
-    }
+  const handleCarouselFileChange = (index: number, file?: File) => {
+    setCarouselImageFiles((prev) => {
+      const next = [...prev];
+      next[index] = file ?? null;
+      return next;
+    });
+  };
 
-    setUploadingCarouselSlot(slotIndex);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
+  const uploadCarouselImageFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const response = await fetch(
-        `${API_BASE_URL}/system-settings/carousel/upload`,
-        {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        },
+    const response = await fetch(`${API_BASE_URL}/system-settings/carousel/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(
+        await parseApiError(
+          response,
+          "Nao foi possivel enviar a imagem do carrossel.",
+        ),
       );
-      if (!response.ok) {
-        throw new Error(
-          await parseApiError(
-            response,
-            "Nao foi possivel enviar a imagem do carrossel.",
-          ),
-        );
-      }
-      const payload = (await response.json()) as { imageUrl: string };
-      handleCarouselFieldChange(slotIndex, "imageUrl", payload.imageUrl ?? "");
-      showSaveFeedback(
-        "success",
-        "Imagem enviada",
-        "A imagem foi enviada para o carrossel.",
-      );
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Falha ao enviar imagem do carrossel.";
-      showSaveFeedback("error", "Erro no upload", message);
-    } finally {
-      setUploadingCarouselSlot(null);
     }
+    const payload = (await response.json()) as { imageUrl?: string | null };
+    const imageUrl = payload.imageUrl?.trim() ?? "";
+    if (!imageUrl) {
+      throw new Error("Cloudinary nao retornou a URL da imagem.");
+    }
+    return imageUrl;
   };
 
   const handleSaveStudioSettings = async () => {
@@ -2552,12 +3669,12 @@ export default function DashboardPage() {
   };
 
   const handleSaveMaintenanceSettings = async () => {
-    const normalizedRole = (currentUser?.role ?? "").toUpperCase();
+    const normalizedRole = (currentUser?.role ?? "").trim().toUpperCase();
     if (normalizedRole !== "MASTER") {
       showSaveFeedback(
         "error",
         "Permissao insuficiente",
-        "Somente MASTER pode ativar ou desativar o modo manutencao.",
+        "Somente MASTER pode ativar o modo manutencao.",
       );
       return;
     }
@@ -2590,44 +3707,96 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDisableMaintenance = async () => {
+    const normalizedRole = (currentUser?.role ?? "").trim().toUpperCase();
+    if (normalizedRole !== "MASTER" && normalizedRole !== "ADMIN") {
+      showSaveFeedback(
+        "error",
+        "Permissao insuficiente",
+        "Somente MASTER ou ADMIN podem desativar o modo manutencao.",
+      );
+      return;
+    }
+    if (isSavingMaintenanceSettings) {
+      return;
+    }
+
+    setIsSavingMaintenanceSettings(true);
+    try {
+      await patchSystemSettings(
+        {
+          maintenanceMode: false,
+          maintenanceMessage: systemSettingsForm.maintenanceMessage.trim() || null,
+        },
+        "Nao foi possivel desativar o modo manutencao.",
+      );
+      showSaveFeedback(
+        "success",
+        "Manutencao desativada",
+        "Sistema liberado novamente para todos os usuarios.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao desativar manutencao.";
+      showSaveFeedback("error", "Erro ao desativar", message);
+    } finally {
+      setIsSavingMaintenanceSettings(false);
+    }
+  };
+
   const handleSaveHomepageSettings = async () => {
     if (isSavingHomepageSettings) {
       return;
     }
 
-    const normalizedImages: Array<{ imageUrl: string; altText?: string }> = [];
-    for (let index = 0; index < systemSettingsForm.carouselImages.length; index += 1) {
-      const image = systemSettingsForm.carouselImages[index];
-      const imageUrl = image.imageUrl.trim();
-      if (!imageUrl) {
-        showSaveFeedback(
-          "error",
-          "Imagem obrigatoria",
-          `Preencha a imagem do slide ${index + 1}.`,
-        );
-        return;
-      }
-      try {
-        new URL(imageUrl);
-      } catch {
-        showSaveFeedback(
-          "error",
-          "URL invalida",
-          `Slide ${index + 1}: informe uma URL valida.`,
-        );
-        return;
-      }
-      normalizedImages.push({
-        imageUrl,
-        ...(image.altText.trim() ? { altText: image.altText.trim() } : {}),
-      });
-    }
-
     setIsSavingHomepageSettings(true);
     try {
+      const normalizedImages: Array<{ imageUrl: string; altText?: string }> = [];
+      for (
+        let index = 0;
+        index < systemSettingsForm.carouselImages.length;
+        index += 1
+      ) {
+        const image = systemSettingsForm.carouselImages[index];
+        let imageUrl = image.imageUrl;
+        const selectedFile = carouselImageFiles[index] ?? null;
+
+        if (selectedFile) {
+          setUploadingCarouselSlot(index);
+          imageUrl = await uploadCarouselImageFile(selectedFile);
+          handleCarouselFieldChange(index, "imageUrl", imageUrl);
+        }
+
+        try {
+          const normalizedUrl = parseCloudinaryUrlField(
+            imageUrl,
+            `Slide ${index + 1}`,
+          );
+          normalizedImages.push({
+            imageUrl: normalizedUrl,
+            ...(image.altText.trim() ? { altText: image.altText.trim() } : {}),
+          });
+        } catch (err) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : `Slide ${index + 1}: URL invalida.`;
+          showSaveFeedback("error", "Imagem invalida", message);
+          return;
+        } finally {
+          setUploadingCarouselSlot(null);
+        }
+      }
+
       await patchSystemSettings(
         { carouselImages: normalizedImages },
         "Nao foi possivel salvar o carrossel da homepage.",
+      );
+      setCarouselImageFiles(
+        Array.from(
+          { length: systemSettingsForm.carouselImages.length },
+          () => null,
+        ),
       );
       showSaveFeedback(
         "success",
@@ -2639,6 +3808,7 @@ export default function DashboardPage() {
         err instanceof Error ? err.message : "Falha ao salvar a homepage.";
       showSaveFeedback("error", "Erro ao salvar", message);
     } finally {
+      setUploadingCarouselSlot(null);
       setIsSavingHomepageSettings(false);
     }
   };
@@ -2707,11 +3877,14 @@ export default function DashboardPage() {
   const healthUserAvatar = healthUser
     ? healthUser.avatarUrl || healthUser.image || ""
     : "";
+  const normalizedCurrentRole = (currentUser?.role ?? "").trim().toUpperCase();
   const canViewPrivateNotes = ["MASTER", "ADMIN", "COACH"].includes(
-    (currentUser?.role ?? "").toUpperCase(),
+    normalizedCurrentRole,
   );
-  const isCurrentUserMaster = (currentUser?.role ?? "").toUpperCase() === "MASTER";
-  const canManageMaintenance = isCurrentUserMaster;
+  const isCurrentUserMaster = normalizedCurrentRole === "MASTER";
+  const isCurrentUserAdmin = normalizedCurrentRole === "ADMIN";
+  const canManageMaintenanceToggle = isCurrentUserMaster;
+  const canDisableMaintenance = isCurrentUserMaster || isCurrentUserAdmin;
   const modalLabelClass =
     "space-y-2 text-sm font-medium text-[var(--foreground)]";
   const modalInputClass =
@@ -3386,72 +4559,860 @@ export default function DashboardPage() {
       )}
 
       {activeTab === "financial" && (
-        <div className="space-y-8">
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold">Pagamentos pendentes</h2>
-            <div className="grid gap-3 md:grid-cols-2">
-              {mockPayments.map((payment) => (
-                <article
-                  key={payment.id}
-                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+        <div className="space-y-6">
+          <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-semibold">Gerenciamento financeiro</h2>
+                <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                  Assinaturas, recebiveis, pagamentos e despesas por competencia.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                  Competencia
+                </label>
+                <input
+                  type="month"
+                  value={financialCompetenceMonth}
+                  onChange={(event) =>
+                    setFinancialCompetenceMonth(event.target.value)
+                  }
+                  className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                />
+                <button
+                  onClick={() => void loadFinancial()}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
                 >
-                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                    {payment.method}
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {payment.user}
-                  </p>
-                  <p className="text-sm text-[var(--muted-foreground)]">
-                    {payment.amount}
-                  </p>
-                  <button className="mt-3 inline-flex items-center gap-2 rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[color:var(--success)]">
-                    <BadgeCheck className="h-4 w-4" />
-                    Confirmar
-                  </button>
-                </article>
-              ))}
+                  Atualizar
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => void handleGenerateReceivables()}
+                disabled={isGeneratingReceivables}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isGeneratingReceivables ? "Gerando..." : "Gerar recebiveis"}
+              </button>
+              <button
+                onClick={() => void handleGenerateExpenses()}
+                disabled={isGeneratingExpenses}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isGeneratingExpenses ? "Gerando..." : "Gerar despesas"}
+              </button>
+              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                Competencia ativa: {formatDatePtBr(toCompetenceDateValue(financialCompetenceMonth))}
+              </span>
             </div>
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-2xl font-semibold">Planos (criar/editar)</h2>
-            <div className="grid gap-3 lg:grid-cols-3">
-              {mockPlans.map((plan) => (
-                <article
-                  key={plan.id}
-                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
-                >
-                  <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                    {plan.active ? "Ativo" : "Inativo"}
+          {financialStatus === "loading" && (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Carregando financeiro...
+            </p>
+          )}
+
+          {financialStatus === "error" && (
+            <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
+              <p className="text-sm text-[color:var(--danger)]">
+                {financialError ?? "Nao foi possivel carregar o financeiro."}
+              </p>
+              <button
+                onClick={() => void loadFinancial()}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
+          {financialStatus === "ready" && (
+            <>
+              <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Recebiveis
                   </p>
                   <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                    {plan.name}
+                    {formatCurrencyFromCents(financialSummary.receivablesCents)}
                   </p>
-                  <p className="text-sm text-[var(--muted-foreground)]">
-                    {plan.price}
+                </article>
+                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Recebido
                   </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      <Pencil className="h-4 w-4" />
-                      Editar
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {formatCurrencyFromCents(financialSummary.receivedCents)}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Pendente
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {formatCurrencyFromCents(financialSummary.pendingCents)}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Despesas
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {formatCurrencyFromCents(financialSummary.expensesCents)}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    Resultado realizado
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                    {formatCurrencyFromCents(financialSummary.realizedBalanceCents)}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    Previsto: {formatCurrencyFromCents(financialSummary.expectedBalanceCents)}
+                  </p>
+                </article>
+              </section>
+
+              <section className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xl font-semibold">Recebiveis e pagamentos</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => setFinancialReceivableStatusFilter("all")}
+                      className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                        financialReceivableStatusFilter === "all"
+                          ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                          : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                      }`}
+                    >
+                      Todos
                     </button>
-                    <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      <Power className="h-4 w-4" />
-                      {plan.active ? "Desativar" : "Ativar"}
+                    {(["open", "overdue", "paid"] as const).map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setFinancialReceivableStatusFilter(status)}
+                        className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                          financialReceivableStatusFilter === status
+                            ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                            : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                        }`}
+                      >
+                        {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[status]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredFinancialReceivables.length === 0 && (
+                  <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
+                    Nenhum recebivel encontrado para o filtro selecionado.
+                  </div>
+                )}
+
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {filteredFinancialReceivables.map((receivable) => {
+                    const draft = getReceivablePaymentDraft(receivable);
+                    const outstanding = getReceivableOutstandingCents(receivable);
+                    const canRegisterPayment =
+                      ["open", "overdue"].includes(receivable.status) &&
+                      outstanding > 0;
+                    const userLabel =
+                      userNameById.get(receivable.userId) ||
+                      `Usuario ${receivable.userId.slice(0, 8)}`;
+                    return (
+                      <article
+                        key={receivable.id}
+                        className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                              {FINANCIAL_RECEIVABLE_STATUS_LABEL_MAP[receivable.status]}
+                            </p>
+                            <p className="mt-1 text-base font-semibold text-[var(--foreground)]">
+                              {userLabel}
+                            </p>
+                            <p className="text-xs text-[var(--muted-foreground)]">
+                              Vencimento: {formatDatePtBr(receivable.dueDate)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                              Aberto
+                            </p>
+                            <p className="text-base font-semibold text-[var(--foreground)]">
+                              {formatCurrencyFromCents(outstanding)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {canRegisterPayment ? (
+                          <>
+                            <div className="mt-4 grid gap-2 md:grid-cols-2">
+                              <input
+                                value={draft.amount}
+                                onChange={(event) =>
+                                  updateReceivablePaymentDraft(receivable.id, {
+                                    amount: event.target.value,
+                                  })
+                                }
+                                placeholder="Valor (ex: 120.00)"
+                                className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                              />
+                              <select
+                                value={draft.method}
+                                onChange={(event) =>
+                                  updateReceivablePaymentDraft(receivable.id, {
+                                    method: event.target.value as FinancialPaymentMethod,
+                                  })
+                                }
+                                className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                              >
+                                {FINANCIAL_PAYMENT_METHOD_OPTIONS.map((method) => (
+                                  <option key={method} value={method}>
+                                    {FINANCIAL_PAYMENT_METHOD_LABEL_MAP[method]}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <textarea
+                              value={draft.notes}
+                              onChange={(event) =>
+                                updateReceivablePaymentDraft(receivable.id, {
+                                  notes: event.target.value,
+                                })
+                              }
+                              rows={2}
+                              placeholder="Observacoes do pagamento (opcional)"
+                              className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                            />
+                            <button
+                              onClick={() => void handleCreatePayment(receivable)}
+                              disabled={isSavingPaymentId === receivable.id}
+                              className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isSavingPaymentId === receivable.id
+                                ? "Registrando..."
+                                : "Registrar pagamento"}
+                            </button>
+                          </>
+                        ) : (
+                          <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+                            Recebivel sem saldo pendente para pagamento.
+                          </p>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="grid gap-4 xl:grid-cols-2">
+                <article className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-xl font-semibold">Assinaturas</h3>
+                    <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                      Ativas: {activeSubscriptionsCount}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <select
+                      value={financialSubscriptionForm.userId}
+                      onChange={(event) =>
+                        setFinancialSubscriptionForm((prev) => ({
+                          ...prev,
+                          userId: event.target.value,
+                        }))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                      <option value="">Selecione o usuario</option>
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name?.trim() || user.email}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={financialSubscriptionForm.planId}
+                      onChange={(event) =>
+                        setFinancialSubscriptionForm((prev) => ({
+                          ...prev,
+                          planId: event.target.value,
+                        }))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                      <option value="">Selecione o plano</option>
+                      {plans
+                        .filter((plan) => plan.active !== false)
+                        .map((plan) => (
+                          <option key={plan.id} value={plan.id}>
+                            {plan.name}
+                          </option>
+                        ))}
+                    </select>
+                    <input
+                      type="date"
+                      value={financialSubscriptionForm.startsAt}
+                      onChange={(event) =>
+                        setFinancialSubscriptionForm((prev) => ({
+                          ...prev,
+                          startsAt: event.target.value,
+                        }))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    />
+                    <select
+                      value={financialSubscriptionForm.dueDateMode}
+                      onChange={(event) =>
+                        setFinancialSubscriptionForm((prev) => ({
+                          ...prev,
+                          dueDateMode: event.target.value as "fixed_day" | "custom_date",
+                        }))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                      <option value="fixed_day">Dia fixo</option>
+                      <option value="custom_date">Data customizada</option>
+                    </select>
+                    {financialSubscriptionForm.dueDateMode === "fixed_day" ? (
+                      <input
+                        value={financialSubscriptionForm.billingDay}
+                        onChange={(event) =>
+                          setFinancialSubscriptionForm((prev) => ({
+                            ...prev,
+                            billingDay: event.target.value,
+                          }))
+                        }
+                        placeholder="Dia vencimento (1-31)"
+                        className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                      />
+                    ) : (
+                      <>
+                        <input
+                          type="date"
+                          value={financialSubscriptionForm.customDueDate}
+                          onChange={(event) =>
+                            setFinancialSubscriptionForm((prev) => ({
+                              ...prev,
+                              customDueDate: event.target.value,
+                            }))
+                          }
+                          className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                        />
+                        <input
+                          value={financialSubscriptionForm.customDueDay}
+                          onChange={(event) =>
+                            setFinancialSubscriptionForm((prev) => ({
+                              ...prev,
+                              customDueDay: event.target.value,
+                            }))
+                          }
+                          placeholder="Ou dia customizado (1-31)"
+                          className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                        />
+                      </>
+                    )}
+                  </div>
+                  <textarea
+                    value={financialSubscriptionForm.notes}
+                    onChange={(event) =>
+                      setFinancialSubscriptionForm((prev) => ({
+                        ...prev,
+                        notes: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder="Observacoes da assinatura"
+                    className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <input
+                      type="checkbox"
+                      checked={financialSubscriptionForm.replaceActive}
+                      onChange={(event) =>
+                        setFinancialSubscriptionForm((prev) => ({
+                          ...prev,
+                          replaceActive: event.target.checked,
+                        }))
+                      }
+                    />
+                    Substituir assinatura ativa automaticamente
+                  </label>
+                  <button
+                    onClick={() => void handleSaveFinancialSubscription()}
+                    disabled={isSavingSubscription}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingSubscription ? "Salvando..." : "Criar assinatura"}
+                  </button>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <button
+                      onClick={() => setFinancialSubscriptionStatusFilter("all")}
+                      className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                        financialSubscriptionStatusFilter === "all"
+                          ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                          : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                      }`}
+                    >
+                      Todos
                     </button>
-                    <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]">
-                      <Trash2 className="h-4 w-4" />
-                      Apagar
-                    </button>
+                    {FINANCIAL_SUBSCRIPTION_STATUS_OPTIONS.map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setFinancialSubscriptionStatusFilter(status)}
+                        className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                          financialSubscriptionStatusFilter === status
+                            ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                            : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                        }`}
+                      >
+                        {FINANCIAL_SUBSCRIPTION_STATUS_LABEL_MAP[status]}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-3">
+                    {filteredFinancialSubscriptions.map((subscription) => {
+                      const userLabel =
+                        userNameById.get(subscription.userId) ||
+                        `Usuario ${subscription.userId.slice(0, 8)}`;
+                      const planLabel =
+                        subscription.planNameSnapshot ||
+                        planNameById.get(subscription.planId) ||
+                        `Plano ${subscription.planId.slice(0, 8)}`;
+                      return (
+                        <article
+                          key={subscription.id}
+                          className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-[var(--foreground)]">
+                              {userLabel}
+                            </p>
+                            <span className="rounded-full border border-[color:var(--border-dim)] px-2 py-1 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                              {FINANCIAL_SUBSCRIPTION_STATUS_LABEL_MAP[subscription.status]}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                            {planLabel} •{" "}
+                            {formatCurrencyFromCents(
+                              subscription.monthlyAmountCentsSnapshot,
+                            )}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            Inicio: {formatDateTimePtBr(subscription.startsAt)}
+                            {" • "}
+                            Fim: {formatDateTimePtBr(subscription.endsAt)}
+                          </p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {subscription.status !== "active" && (
+                              <button
+                                onClick={() =>
+                                  void handleUpdateSubscriptionStatus(
+                                    subscription.id,
+                                    "active",
+                                  )
+                                }
+                                disabled={updatingSubscriptionId === subscription.id}
+                                className="rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Ativar
+                              </button>
+                            )}
+                            {subscription.status === "active" && (
+                              <button
+                                onClick={() =>
+                                  void handleUpdateSubscriptionStatus(
+                                    subscription.id,
+                                    "paused",
+                                  )
+                                }
+                                disabled={updatingSubscriptionId === subscription.id}
+                                className="rounded-full border border-[color:var(--border-dim)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Pausar
+                              </button>
+                            )}
+                            {subscription.status !== "cancelled" && (
+                              <button
+                                onClick={() =>
+                                  void handleUpdateSubscriptionStatus(
+                                    subscription.id,
+                                    "cancelled",
+                                  )
+                                }
+                                disabled={updatingSubscriptionId === subscription.id}
+                                className="rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                    {filteredFinancialSubscriptions.length === 0 && (
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        Nenhuma assinatura encontrada para o filtro selecionado.
+                      </p>
+                    )}
                   </div>
                 </article>
-              ))}
-            </div>
-            <button className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-              <CreditCard className="h-4 w-4" />
-              Criar novo plano
-            </button>
-          </section>
+
+                <article className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                  <h3 className="text-xl font-semibold">Templates de despesas</h3>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <input
+                      value={financialExpenseTemplateForm.name}
+                      onChange={(event) =>
+                        setFinancialExpenseTemplateForm((prev) => ({
+                          ...prev,
+                          name: event.target.value,
+                        }))
+                      }
+                      placeholder="Nome do template"
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    />
+                    <select
+                      value={financialExpenseTemplateForm.category}
+                      onChange={(event) =>
+                        setFinancialExpenseTemplateForm((prev) => ({
+                          ...prev,
+                          category: event.target.value as FinancialExpenseCategory,
+                        }))
+                      }
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    >
+                      {FINANCIAL_EXPENSE_CATEGORY_OPTIONS.map((category) => (
+                        <option key={category} value={category}>
+                          {FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP[category]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={financialExpenseTemplateForm.defaultAmount}
+                      onChange={(event) =>
+                        setFinancialExpenseTemplateForm((prev) => ({
+                          ...prev,
+                          defaultAmount: event.target.value,
+                        }))
+                      }
+                      placeholder="Valor padrao (ex: 100.00)"
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    />
+                    <input
+                      value={financialExpenseTemplateForm.billingDay}
+                      onChange={(event) =>
+                        setFinancialExpenseTemplateForm((prev) => ({
+                          ...prev,
+                          billingDay: event.target.value,
+                        }))
+                      }
+                      placeholder="Dia de vencimento (1-31)"
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    />
+                  </div>
+                  <textarea
+                    value={financialExpenseTemplateForm.notes}
+                    onChange={(event) =>
+                      setFinancialExpenseTemplateForm((prev) => ({
+                        ...prev,
+                        notes: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder="Observacoes do template"
+                    className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <input
+                      type="checkbox"
+                      checked={financialExpenseTemplateForm.active}
+                      onChange={(event) =>
+                        setFinancialExpenseTemplateForm((prev) => ({
+                          ...prev,
+                          active: event.target.checked,
+                        }))
+                      }
+                    />
+                    Template ativo
+                  </label>
+                  <button
+                    onClick={() => void handleSaveExpenseTemplate()}
+                    disabled={isSavingExpenseTemplate}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingExpenseTemplate ? "Salvando..." : "Criar template"}
+                  </button>
+
+                  <div className="grid gap-3">
+                    {financialExpenseTemplates.map((template) => (
+                      <article
+                        key={template.id}
+                        className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-[var(--foreground)]">
+                            {template.name}
+                          </p>
+                          <span className="text-xs text-[var(--muted-foreground)]">
+                            {template.active ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[var(--muted-foreground)]">
+                          {FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP[template.category]} •{" "}
+                          {formatCurrencyFromCents(template.defaultAmountCents)} • dia{" "}
+                          {template.billingDay}
+                        </p>
+                        <button
+                          onClick={() => void handleToggleExpenseTemplate(template)}
+                          disabled={updatingExpenseTemplateId === template.id}
+                          className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {updatingExpenseTemplateId === template.id
+                            ? "Atualizando..."
+                            : template.active
+                              ? "Desativar"
+                              : "Ativar"}
+                        </button>
+                      </article>
+                    ))}
+                    {financialExpenseTemplates.length === 0 && (
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        Nenhum template cadastrado.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              </section>
+
+              <section className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xl font-semibold">Despesas da competencia</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => setFinancialExpenseStatusFilter("all")}
+                      className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                        financialExpenseStatusFilter === "all"
+                          ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                          : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {FINANCIAL_EXPENSE_STATUS_OPTIONS.map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setFinancialExpenseStatusFilter(status)}
+                        className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
+                          financialExpenseStatusFilter === status
+                            ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                            : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                        }`}
+                      >
+                        {FINANCIAL_EXPENSE_STATUS_LABEL_MAP[status]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-3">
+                  <select
+                    value={financialExpenseForm.templateId}
+                    onChange={(event) => {
+                      const templateId = event.target.value;
+                      const template = financialExpenseTemplates.find(
+                        (item) => item.id === templateId,
+                      );
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        templateId,
+                        category: template?.category ?? prev.category,
+                        description: template ? template.name : prev.description,
+                        amount: template
+                          ? (template.defaultAmountCents / 100).toFixed(2)
+                          : prev.amount,
+                      }));
+                    }}
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  >
+                    <option value="">Sem template</option>
+                    {financialExpenseTemplates
+                      .filter((template) => template.active)
+                      .map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                  </select>
+                  <select
+                    value={financialExpenseForm.category}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        category: event.target.value as FinancialExpenseCategory,
+                      }))
+                    }
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  >
+                    {FINANCIAL_EXPENSE_CATEGORY_OPTIONS.map((category) => (
+                      <option key={category} value={category}>
+                        {FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP[category]}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={financialExpenseForm.status}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        status: event.target.value as FinancialExpenseStatus,
+                      }))
+                    }
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  >
+                    {FINANCIAL_EXPENSE_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {FINANCIAL_EXPENSE_STATUS_LABEL_MAP[status]}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={financialExpenseForm.description}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Descricao da despesa"
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] md:col-span-2"
+                  />
+                  <input
+                    type="date"
+                    value={financialExpenseForm.dueDate}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        dueDate: event.target.value,
+                      }))
+                    }
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                  <input
+                    value={financialExpenseForm.amount}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        amount: event.target.value,
+                      }))
+                    }
+                    placeholder="Valor (ex: 100.00)"
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  />
+                  <textarea
+                    value={financialExpenseForm.notes}
+                    onChange={(event) =>
+                      setFinancialExpenseForm((prev) => ({
+                        ...prev,
+                        notes: event.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder="Observacoes"
+                    className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] md:col-span-2"
+                  />
+                  <button
+                    onClick={() => void handleSaveExpense()}
+                    disabled={isSavingExpense}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingExpense ? "Salvando..." : "Criar despesa"}
+                  </button>
+                </div>
+
+                <div className="grid gap-3">
+                  {filteredFinancialExpenses.map((expense) => (
+                    <article
+                      key={expense.id}
+                      className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--foreground)]">
+                            {expense.description}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            {FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP[expense.category]} •
+                            vencimento {formatDatePtBr(expense.dueDate)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-[var(--foreground)]">
+                            {formatCurrencyFromCents(expense.amountCents)}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            {FINANCIAL_EXPENSE_STATUS_LABEL_MAP[expense.status]}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {expense.status !== "approved" && (
+                          <button
+                            onClick={() => void handleUpdateExpenseStatus(expense, "approved")}
+                            disabled={updatingExpenseId === expense.id}
+                            className="rounded-full border border-[color:var(--border-dim)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Aprovar
+                          </button>
+                        )}
+                        {expense.status !== "paid" && (
+                          <button
+                            onClick={() => void handleUpdateExpenseStatus(expense, "paid")}
+                            disabled={updatingExpenseId === expense.id}
+                            className="rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[color:var(--success)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Marcar paga
+                          </button>
+                        )}
+                        {expense.status !== "planned" && (
+                          <button
+                            onClick={() => void handleUpdateExpenseStatus(expense, "planned")}
+                            disabled={updatingExpenseId === expense.id}
+                            className="rounded-full border border-[color:var(--border-dim)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Voltar planejada
+                          </button>
+                        )}
+                        {expense.status !== "cancelled" && (
+                          <button
+                            onClick={() => void handleUpdateExpenseStatus(expense, "cancelled")}
+                            disabled={updatingExpenseId === expense.id}
+                            className="rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                  {filteredFinancialExpenses.length === 0 && (
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Nenhuma despesa cadastrada na competencia.
+                    </p>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
         </div>
       )}
 
@@ -3730,7 +5691,8 @@ export default function DashboardPage() {
                   </p>
                   {currentUser?.role && !isCurrentUserMaster && (
                     <p className="mt-2 text-sm text-[color:var(--danger)]">
-                      Somente MASTER pode ativar ou desativar o modo manutenção.
+                      Somente MASTER pode ativar o modo manutenção. MASTER e ADMIN
+                      podem desativar.
                     </p>
                   )}
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -3741,7 +5703,7 @@ export default function DashboardPage() {
                           maintenanceMode: !prev.maintenanceMode,
                         }))
                       }
-                      disabled={!canManageMaintenance}
+                      disabled={!canManageMaintenanceToggle}
                       className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] ${
                         systemSettingsForm.maintenanceMode
                           ? "border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
@@ -3759,19 +5721,33 @@ export default function DashboardPage() {
                         maintenanceMessage: event.target.value,
                       }))
                     }
-                    disabled={!canManageMaintenance}
+                    disabled={!canManageMaintenanceToggle}
                     placeholder="Mensagem exibida durante manutenção"
                     rows={4}
                     className="mt-4 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-sm text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
                   />
                   <button
                     onClick={() => void handleSaveMaintenanceSettings()}
-                    disabled={!canManageMaintenance || isSavingMaintenanceSettings}
+                    disabled={
+                      !canManageMaintenanceToggle || isSavingMaintenanceSettings
+                    }
                     className="mt-4 inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSavingMaintenanceSettings
                       ? "Salvando..."
                       : "Salvar sistema"}
+                  </button>
+                  <button
+                    onClick={() => void handleDisableMaintenance()}
+                    disabled={
+                      !canDisableMaintenance ||
+                      isSavingMaintenanceSettings
+                    }
+                    className="mt-3 inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-5 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingMaintenanceSettings
+                      ? "Desativando..."
+                      : "Desativar manutencao"}
                   </button>
                 </section>
               )}
@@ -3780,8 +5756,8 @@ export default function DashboardPage() {
                 <section className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
                   <h3 className="text-xl font-semibold">Carousel da homepage</h3>
                   <p className="text-sm text-[var(--muted-foreground)]">
-                    Defina quantidade de slides, imagem e texto opcional de cada
-                    slide.
+                    Defina quantidade de slides, envie arquivos de imagem para o
+                    Cloudinary e adicione texto opcional.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3">
@@ -3830,18 +5806,18 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div className="mt-3 space-y-3">
-                          <input
-                            value={image.imageUrl}
-                            onChange={(event) =>
-                              handleCarouselFieldChange(
-                                index,
-                                "imageUrl",
-                                event.target.value,
-                              )
-                            }
-                            placeholder="URL da imagem"
-                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
-                          />
+                          <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
+                            {image.imageUrl ? (
+                              <>
+                                <p className="font-semibold text-[var(--foreground)]">
+                                  URL gerada pelo Cloudinary
+                                </p>
+                                <p className="mt-1 break-all">{image.imageUrl}</p>
+                              </>
+                            ) : (
+                              <p>Nenhuma imagem enviada para este slide.</p>
+                            )}
+                          </div>
                           <input
                             value={image.altText}
                             onChange={(event) =>
@@ -3854,24 +5830,42 @@ export default function DashboardPage() {
                             placeholder="Texto da imagem (opcional)"
                             className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                           />
-                          <div>
-                            <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-                              {uploadingCarouselSlot === index
-                                ? "Enviando..."
-                                : "Enviar imagem"}
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  event.target.value = "";
-                                  if (file) {
-                                    void handleUploadCarouselImage(index, file);
-                                  }
-                                }}
-                              />
-                            </label>
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              disabled={isSavingHomepageSettings}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                handleCarouselFileChange(index, file);
+                              }}
+                              className={`${modalInputClass} file:mr-3 file:rounded-full file:border-0 file:bg-[var(--gold-tone)]/10 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60`}
+                            />
+                            {carouselImageFiles[index] ? (
+                              <p className="text-xs text-[var(--muted-foreground)]">
+                                Arquivo selecionado: {carouselImageFiles[index]?.name}
+                              </p>
+                            ) : null}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {uploadingCarouselSlot === index ? (
+                                <span className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
+                                  Enviando...
+                                </span>
+                              ) : null}
+                              {image.imageUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleCarouselFieldChange(index, "imageUrl", "");
+                                    handleCarouselFileChange(index, undefined);
+                                  }}
+                                  disabled={uploadingCarouselSlot === index}
+                                  className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Remover
+                                </button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </article>
