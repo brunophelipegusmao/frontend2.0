@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
       }
     >
       <form
-        className="mt-6 space-y-4 text-left font-[var(--font-nunito-sans)]"
+        className="mt-6 space-y-4 text-left font-[var(--font-roboto)]"
         onSubmit={handleSubmit}
       >
         <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]">
@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
           />
         </label>
 
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-nunito-sans)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
         >
           {isSubmitting ? "Enviando..." : "Enviar link"}
         </button>

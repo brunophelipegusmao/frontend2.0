@@ -29,7 +29,7 @@ export function GoogleLoginButton({
   );
 
   const baseClassName =
-    "group inline-flex w-full items-center justify-center gap-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:shadow-[0_12px_30px_var(--shadow)] font-[var(--font-nunito-sans)]";
+    "group inline-flex w-full items-center justify-center gap-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:shadow-[0_12px_30px_var(--shadow)] font-[var(--font-roboto)]";
   const mergedClassName = className
     ? `${baseClassName} ${className}`
     : baseClassName;

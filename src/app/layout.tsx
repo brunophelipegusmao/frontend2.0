@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/context/ThemeContext";
 
-const nunitoSans = Nunito_Sans({
+const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800"],
-  variable: "--font-nunito-sans",
+  weight: [
+    "100",
+    "200",
+    "300",
+    "400",
+    "500",
+    "600",
+    "700",
+    "800",
+    "900",
+  ],
+  variable: "--font-roboto",
 });
 
 export const metadata: Metadata = {
@@ -55,7 +65,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" className="h-full">
-      <body className={`min-h-full ${nunitoSans.variable} antialiased`}>
+      <body
+        className={`min-h-full antialiased ${roboto.variable} ${roboto.className}`}
+      >
         <div
           className="flex min-h-screen flex-col text-[var(--foreground)]"
           style={{

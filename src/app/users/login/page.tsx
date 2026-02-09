@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthCard } from "@/components/AuthCard";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { signInWithEmail, startSocialSignIn } from "@/lib/auth";
-import { redirectBasedOnRole } from "@/lib/roleRedirect";
+import { API_BASE_URL, redirectBasedOnRole } from "@/lib/roleRedirect";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,12 +20,33 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  useEffect(() => {
+    let active = true;
+    const checkSession = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/me/status`, {
+          credentials: "include",
+        });
+        if (!response.ok || !active) {
+          return;
+        }
+        await redirectBasedOnRole(router);
+      } catch {
+        // ignore
+      }
+    };
+    checkSession();
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   const handleGoogleLogin = async () => {
     setError(null);
     setSuccess(null);
 
     const origin = window.location.origin;
-    const callbackURL = `${origin}/register`;
+    const callbackURL = `${origin}/users/login`;
     const completeProfileUrl = new URL("/complete-profile", origin);
     if (planId) {
       completeProfileUrl.searchParams.set("planId", planId);
@@ -91,26 +112,26 @@ export default function LoginPage() {
         </>
       }
     >
-      <div className="mt-6 space-y-4 font-[var(--font-nunito-sans)]">
+      <div className="mt-6 space-y-4 font-[var(--font-roboto)]">
         <GoogleLoginButton
           label="Entrar com Google"
           onClick={handleGoogleLogin}
         />
       </div>
 
-      <div className="mt-6 flex items-center gap-4 text-[0.65rem] uppercase tracking-[0.5rem] text-[var(--muted-foreground)] font-[var(--font-nunito-sans)]">
-        <span className="h-px flex-1 bg-[color:var(--border-dim)] font-[var(--font-nunito-sans)]" />
-        <span className="font-bold text-md text-[var(--gold-tone)] font-[var(--font-nunito-sans)]">
+      <div className="mt-6 flex items-center gap-4 text-[0.65rem] uppercase tracking-[0.5rem] text-[var(--muted-foreground)] font-[var(--font-roboto)]">
+        <span className="h-px flex-1 bg-[color:var(--border-dim)] font-[var(--font-roboto)]" />
+        <span className="font-bold text-md text-[var(--gold-tone)] font-[var(--font-roboto)]">
           Ou continue com
         </span>
-        <span className="h-px flex-1 bg-[color:var(--border-dim)] font-[var(--font-nunito-sans)] " />
+        <span className="h-px flex-1 bg-[color:var(--border-dim)] font-[var(--font-roboto)] " />
       </div>
 
       <form
-        className="mt-6 space-y-4 text-left font-[var(--font-nunito-sans)]"
+        className="mt-6 space-y-4 text-left font-[var(--font-roboto)]"
         onSubmit={handleSubmit}
       >
-        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-nunito-sans)]">
+        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-roboto)]">
           E-mail
           <input
             type="email"
@@ -119,16 +140,16 @@ export default function LoginPage() {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
           />
         </label>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-nunito-sans)]">
+          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-roboto)]">
             <label htmlFor="password">Senha</label>
             <a
               href="/users/forgot-password"
-              className="text-[0.65rem] font-semibold normal-case tracking-normal text-[var(--gold-tone)] font-[var(--font-nunito-sans)]"
+              className="text-[0.65rem] font-semibold normal-case tracking-normal text-[var(--gold-tone)] font-[var(--font-roboto)]"
             >
               Esqueceu a senha?
             </a>
@@ -142,12 +163,12 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] font-[var(--font-nunito-sans)] text-[var(--gold-tone)]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] font-[var(--font-roboto)] text-[var(--gold-tone)]"
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
             >
               {showPassword ? (
@@ -168,7 +189,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-extrabold uppercase tracking-[0.4rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-nunito-sans)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-extrabold uppercase tracking-[0.4rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
         >
           {isSubmitting ? "Entrando..." : "Entrar"}
         </button>

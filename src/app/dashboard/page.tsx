@@ -289,6 +289,24 @@ type AdminUser = {
   avatarUrl: string | null;
 };
 
+const roleLabelMap: Record<AdminUser["role"], string> = {
+  MASTER: "Administrador (Master)",
+  ADMIN: "Administrador",
+  STAFF: "Equipe",
+  COACH: "Coach",
+  STUDENT: "Aluno",
+  GUEST: "Convidado",
+};
+
+const filterOptions = [
+  { value: "ALL" as const, label: "Todos" },
+  { value: "ADMIN" as const, label: "Administrador" },
+  { value: "STAFF" as const, label: "Equipe" },
+  { value: "COACH" as const, label: "Coach" },
+  { value: "STUDENT" as const, label: "Aluno" },
+  { value: "GUEST" as const, label: "Convidado" },
+] as const;
+
 type HealthProfile = {
   heightCm?: string | number | null;
   weightKg?: string | number | null;
@@ -296,11 +314,42 @@ type HealthProfile = {
   sex?: string | null;
   birthDate?: string | null;
   injuries?: string | null;
+  skinfoldChest?: string | number | null;
+  skinfoldAbdomen?: string | number | null;
+  skinfoldThigh?: string | number | null;
+  skinfoldTriceps?: string | number | null;
+  skinfoldSubscapular?: string | number | null;
+  skinfoldSuprailiac?: string | number | null;
+  skinfoldMidaxillary?: string | number | null;
   takesMedication?: boolean | null;
   medications?: string | null;
   exercisesRegularly?: boolean | null;
   usesSupplementation?: boolean | null;
   supplements?: string | null;
+  dailyRoutine?: string | null;
+  foodRoutine?: string | null;
+  notesPublic?: string | null;
+  notesPrivate?: string | null;
+};
+
+type BodyCompositionResult = {
+  protocol: "pollock-3-siri";
+  sex: "MALE" | "FEMALE";
+  age: number;
+  weightKg: number;
+  bmi?: number;
+  bmiCategory?: string;
+  sumSkinfoldsMm: number;
+  bodyDensity: number;
+  bodyFatPct: number;
+  fatMassKg: number;
+  leanMassKg: number;
+  goal?: {
+    goalBodyFatPct: number;
+    targetBodyWeightKg: number;
+    excessWeightKg: number;
+    kcalToGoal: number;
+  };
 };
 
 type HealthForm = {
@@ -310,11 +359,22 @@ type HealthForm = {
   sex: string;
   birthDate: string;
   injuries: string;
+  skinfoldChest: string;
+  skinfoldAbdomen: string;
+  skinfoldThigh: string;
+  skinfoldTriceps: string;
+  skinfoldSubscapular: string;
+  skinfoldSuprailiac: string;
+  skinfoldMidaxillary: string;
   takesMedication: boolean;
   medications: string;
   exercisesRegularly: boolean;
   usesSupplementation: boolean;
   supplements: string;
+  dailyRoutine: string;
+  foodRoutine: string;
+  notesPublic: string;
+  notesPrivate: string;
 };
 
 type PlanOption = {
@@ -332,11 +392,22 @@ const emptyHealthForm: HealthForm = {
   sex: "",
   birthDate: "",
   injuries: "",
+  skinfoldChest: "",
+  skinfoldAbdomen: "",
+  skinfoldThigh: "",
+  skinfoldTriceps: "",
+  skinfoldSubscapular: "",
+  skinfoldSuprailiac: "",
+  skinfoldMidaxillary: "",
   takesMedication: false,
   medications: "",
   exercisesRegularly: false,
   usesSupplementation: false,
   supplements: "",
+  dailyRoutine: "",
+  foodRoutine: "",
+  notesPublic: "",
+  notesPrivate: "",
 };
 
 const API_BASE_URL =
@@ -373,6 +444,30 @@ const toFormValue = (value?: string | number | null) => {
   return String(value);
 };
 
+const parsePositive = (value: string) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
+
+const bmiCategoryFromAdult = (bmi: number) => {
+  if (bmi < 18.5) return "Baixo peso";
+  if (bmi < 25) return "Peso adequado (eutrofia)";
+  if (bmi < 30) return "Sobrepeso";
+  if (bmi < 35) return "Obesidade grau I";
+  if (bmi < 40) return "Obesidade grau II";
+  return "Obesidade grau III (obesidade grave/mórbida)";
+};
+
+const formatNumber = (value?: number | null, digits = 2) => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "-";
+  }
+  return value.toFixed(digits);
+};
+
 const mapHealthToForm = (profile?: HealthProfile | null): HealthForm => ({
   heightCm: toFormValue(profile?.heightCm),
   weightKg: toFormValue(profile?.weightKg),
@@ -380,11 +475,22 @@ const mapHealthToForm = (profile?: HealthProfile | null): HealthForm => ({
   sex: profile?.sex ?? "",
   birthDate: profile?.birthDate ?? "",
   injuries: profile?.injuries ?? "",
+  skinfoldChest: toFormValue(profile?.skinfoldChest),
+  skinfoldAbdomen: toFormValue(profile?.skinfoldAbdomen),
+  skinfoldThigh: toFormValue(profile?.skinfoldThigh),
+  skinfoldTriceps: toFormValue(profile?.skinfoldTriceps),
+  skinfoldSubscapular: toFormValue(profile?.skinfoldSubscapular),
+  skinfoldSuprailiac: toFormValue(profile?.skinfoldSuprailiac),
+  skinfoldMidaxillary: toFormValue(profile?.skinfoldMidaxillary),
   takesMedication: profile?.takesMedication ?? false,
   medications: profile?.medications ?? "",
   exercisesRegularly: profile?.exercisesRegularly ?? false,
   usesSupplementation: profile?.usesSupplementation ?? false,
   supplements: profile?.supplements ?? "",
+  dailyRoutine: profile?.dailyRoutine ?? "",
+  foodRoutine: profile?.foodRoutine ?? "",
+  notesPublic: profile?.notesPublic ?? "",
+  notesPrivate: profile?.notesPrivate ?? "",
 });
 
 const getInitials = (value: string) => {
@@ -472,8 +578,30 @@ export default function DashboardPage() {
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [isSavingHealth, setIsSavingHealth] = useState(false);
+  const [compositionResult, setCompositionResult] =
+    useState<BodyCompositionResult | null>(null);
+  const [compositionStatus, setCompositionStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [compositionError, setCompositionError] = useState<string | null>(null);
+  const [healthFieldErrors, setHealthFieldErrors] = useState<
+    Partial<
+      Record<
+        | "heightCm"
+        | "weightKg"
+        | "bloodType"
+        | "sex"
+        | "birthDate"
+        | "injuries"
+        | "medications"
+        | "supplements"
+        | "dailyRoutine",
+        string
+      >
+    >
+  >({});
   const [userFilter, setUserFilter] = useState<
-    "ALL" | "MASTER" | "ADMIN" | "STAFF" | "COACH" | "STUDENT" | "GUEST"
+    "ALL" | "ADMIN" | "STAFF" | "COACH" | "STUDENT" | "GUEST"
   >("ALL");
 
   const currentTab = useMemo(
@@ -590,8 +718,12 @@ export default function DashboardPage() {
     setHealthUser(user);
     setHealthLoading(true);
     setHealthError(null);
+    setHealthFieldErrors({});
     setHealthForm(emptyHealthForm);
     setHealthInitial(emptyHealthForm);
+    setCompositionResult(null);
+    setCompositionStatus("idle");
+    setCompositionError(null);
     try {
       const response = await fetch(
         `${API_BASE_URL}/admin/health/${user.id}`,
@@ -624,22 +756,170 @@ export default function DashboardPage() {
     }
   };
 
+  useEffect(() => {
+    if (!healthUser) {
+      setCompositionResult(null);
+      setCompositionStatus("idle");
+      setCompositionError(null);
+      return;
+    }
+
+    const sex = healthForm.sex as "MALE" | "FEMALE" | "";
+    const weightKg = parsePositive(healthForm.weightKg);
+    const birthDate = healthForm.birthDate;
+    const thighMm = parsePositive(healthForm.skinfoldThigh);
+
+    if (!sex || !weightKg || !birthDate || !thighMm) {
+      setCompositionResult(null);
+      setCompositionStatus("idle");
+      setCompositionError(null);
+      return;
+    }
+
+    const chestMm = parsePositive(healthForm.skinfoldChest);
+    const abdominalMm = parsePositive(healthForm.skinfoldAbdomen);
+    const tricepsMm = parsePositive(healthForm.skinfoldTriceps);
+    const suprailiacMm = parsePositive(healthForm.skinfoldSuprailiac);
+
+    if (sex === "MALE" && (!chestMm || !abdominalMm)) {
+      setCompositionResult(null);
+      setCompositionStatus("idle");
+      setCompositionError(null);
+      return;
+    }
+
+    if (sex === "FEMALE" && (!tricepsMm || !suprailiacMm)) {
+      setCompositionResult(null);
+      setCompositionStatus("idle");
+      setCompositionError(null);
+      return;
+    }
+
+    const payload: Record<string, number | string> = {
+      sex,
+      birthDate,
+      weightKg,
+      thighMm,
+    };
+
+    const heightCm = parsePositive(healthForm.heightCm);
+    if (heightCm) {
+      payload.heightCm = heightCm;
+    }
+
+    if (sex === "MALE") {
+      payload.chestMm = chestMm!;
+      payload.abdominalMm = abdominalMm!;
+    } else {
+      payload.tricepsMm = tricepsMm!;
+      payload.suprailiacMm = suprailiacMm!;
+    }
+
+    const controller = new AbortController();
+    setCompositionStatus("loading");
+    setCompositionError(null);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/admin/health/${healthUser.id}/body-composition/compute`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          },
+        );
+        if (!response.ok) {
+          throw new Error(
+            await parseApiError(
+              response,
+              "Não foi possível calcular a composição corporal.",
+            ),
+          );
+        }
+        const data = (await response.json()) as BodyCompositionResult;
+        setCompositionResult(data);
+        setCompositionStatus("ready");
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          return;
+        }
+        setCompositionResult(null);
+        setCompositionStatus("error");
+        setCompositionError(
+          err instanceof Error
+            ? err.message
+            : "Falha ao calcular composição corporal.",
+        );
+      }
+    }, 450);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [
+    healthUser,
+    healthForm.sex,
+    healthForm.weightKg,
+    healthForm.birthDate,
+    healthForm.heightCm,
+    healthForm.skinfoldChest,
+    healthForm.skinfoldAbdomen,
+    healthForm.skinfoldThigh,
+    healthForm.skinfoldTriceps,
+    healthForm.skinfoldSuprailiac,
+  ]);
+
   const validateHealthForm = (form: HealthForm) => {
-    if (
-      !form.heightCm.trim() ||
-      !form.weightKg.trim() ||
-      !form.bloodType.trim() ||
-      !form.sex.trim() ||
-      !form.birthDate.trim() ||
-      !form.injuries.trim()
-    ) {
-      return "Preencha todos os campos obrigatorios.";
+    const nextErrors: Partial<
+      Record<
+        | "heightCm"
+        | "weightKg"
+        | "bloodType"
+        | "sex"
+        | "birthDate"
+        | "injuries"
+        | "medications"
+        | "supplements"
+        | "dailyRoutine",
+        string
+      >
+    > = {};
+
+    if (!form.heightCm.trim()) {
+      nextErrors.heightCm = "Altura é obrigatória.";
+    }
+    if (!form.weightKg.trim()) {
+      nextErrors.weightKg = "Peso é obrigatório.";
+    }
+    if (!form.bloodType.trim()) {
+      nextErrors.bloodType = "Tipo sanguíneo é obrigatório.";
+    }
+    if (!form.sex.trim()) {
+      nextErrors.sex = "Sexo é obrigatório.";
+    }
+    if (!form.birthDate.trim()) {
+      nextErrors.birthDate = "Data de nascimento é obrigatória.";
+    }
+    if (!form.injuries.trim()) {
+      nextErrors.injuries = 'Informe lesões ou "nenhuma".';
     }
     if (form.takesMedication && !form.medications.trim()) {
-      return "Informe as medicacoes utilizadas.";
+      nextErrors.medications = "Informe as medicações utilizadas.";
     }
     if (form.usesSupplementation && !form.supplements.trim()) {
-      return "Informe os suplementos utilizados.";
+      nextErrors.supplements = "Informe os suplementos utilizados.";
+    }
+    if (form.exercisesRegularly && !form.dailyRoutine.trim()) {
+      nextErrors.dailyRoutine = "Descreva sua rotina de exercícios.";
+    }
+
+    setHealthFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return "Preencha os campos obrigatórios destacados.";
     }
     return null;
   };
@@ -648,6 +928,7 @@ export default function DashboardPage() {
     if (!healthUser) {
       return;
     }
+    setHealthFieldErrors({});
     const validation = validateHealthForm(healthForm);
     if (validation) {
       setHealthError(validation);
@@ -663,6 +944,13 @@ export default function DashboardPage() {
         sex: healthForm.sex,
         birthDate: healthForm.birthDate,
         injuries: healthForm.injuries.trim(),
+        skinfoldChest: healthForm.skinfoldChest.trim(),
+        skinfoldAbdomen: healthForm.skinfoldAbdomen.trim(),
+        skinfoldThigh: healthForm.skinfoldThigh.trim(),
+        skinfoldTriceps: healthForm.skinfoldTriceps.trim(),
+        skinfoldSubscapular: healthForm.skinfoldSubscapular.trim(),
+        skinfoldSuprailiac: healthForm.skinfoldSuprailiac.trim(),
+        skinfoldMidaxillary: healthForm.skinfoldMidaxillary.trim(),
         takesMedication: healthForm.takesMedication,
         medications: healthForm.takesMedication
           ? healthForm.medications.trim()
@@ -672,14 +960,22 @@ export default function DashboardPage() {
         supplements: healthForm.usesSupplementation
           ? healthForm.supplements.trim()
           : "",
+        dailyRoutine: healthForm.exercisesRegularly
+          ? healthForm.dailyRoutine.trim()
+          : "",
+        foodRoutine: healthForm.foodRoutine.trim(),
+        notesPublic: healthForm.notesPublic.trim(),
       };
+      const payloadWithPrivateNotes = canViewPrivateNotes
+        ? { ...payload, notesPrivate: healthForm.notesPrivate.trim() }
+        : payload;
       const response = await fetch(
         `${API_BASE_URL}/admin/health/${healthUser.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payloadWithPrivateNotes),
         },
       );
       if (!response.ok) {
@@ -973,7 +1269,10 @@ export default function DashboardPage() {
     currentUser?.name?.trim() ||
     currentUser?.email?.split("@")[0] ||
     "Visitante";
-  const displayRole = currentUser?.role ?? "GUEST";
+  const displayRole =
+    currentUser?.role && roleLabelMap[currentUser.role as AdminUser["role"]]
+      ? roleLabelMap[currentUser.role as AdminUser["role"]]
+      : "Convidado";
   const avatarSrc = currentUser?.avatarUrl || currentUser?.image || "";
   const avatarLabel =
     currentUserStatus === "loading" ? "Carregando" : displayName;
@@ -982,9 +1281,45 @@ export default function DashboardPage() {
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageText)}`
     : "#";
   const whatsappDisabled = !whatsappNumber;
+  const selectedUserDisplayName = selectedUser
+    ? userForm.name?.trim() ||
+      selectedUser.name?.trim() ||
+      selectedUser.email ||
+      "Usuário"
+    : "";
+  const selectedUserAvatar = selectedUser
+    ? userForm.image || selectedUser.avatarUrl || selectedUser.image || ""
+    : "";
+  const selectedUserEmail = selectedUser ? selectedUser.email : "";
+  const healthUserDisplayName = healthUser
+    ? healthUser.name?.trim() || healthUser.email || "Usuário"
+    : "";
+  const healthUserAvatar = healthUser
+    ? healthUser.avatarUrl || healthUser.image || ""
+    : "";
+  const canViewPrivateNotes = ["MASTER", "ADMIN", "COACH"].includes(
+    (currentUser?.role ?? "").toUpperCase(),
+  );
+  const modalLabelClass =
+    "space-y-2 text-sm font-medium text-[var(--foreground)]";
+  const modalInputClass =
+    "w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] transition focus:border-[var(--gold-tone-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--border-glow)]";
+  const modalErrorClass =
+    "border-red-400 focus:border-red-400 focus:ring-red-400/40";
+  const bmiFallback = useMemo(() => {
+    const weightKg = parsePositive(healthForm.weightKg);
+    const heightCm = parsePositive(healthForm.heightCm);
+    if (!weightKg || !heightCm) {
+      return null;
+    }
+    const heightM = heightCm / 100;
+    return weightKg / (heightM * heightM);
+  }, [healthForm.heightCm, healthForm.weightKg]);
+  const bmiLabelFallback =
+    bmiFallback !== null ? bmiCategoryFromAdult(bmiFallback) : null;
 
   return (
-    <section className="relative flex min-h-screen flex-col gap-6 rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6">
+    <section className="relative flex min-h-screen flex-col gap-6 rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6 font-[var(--font-roboto)]">
       <header className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex w-full items-start gap-3 sm:w-auto sm:items-center">
@@ -1027,15 +1362,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <nav className="hidden w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 text-[0.65rem] font-semibold uppercase tracking-[0.3rem] sm:flex sm:flex-wrap sm:gap-4 sm:p-3 sm:text-xs">
+        <nav className="hidden w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 text-[0.65rem] font-semibold uppercase tracking-[0.3rem] sm:flex sm:flex-wrap sm:gap-4 sm:p-3 sm:text-xs font-[var(--font-roboto)]">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabSelect(tab.id)}
-              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 transition sm:px-4 ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 transition sm:px-4 ${
                 activeTab === tab.id
-                  ? "text-[var(--gold-tone-dark)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                  ? "border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)] shadow-[0_10px_24px_-18px_var(--gold-tone)]"
+                  : "border-transparent text-[var(--muted-foreground)] hover:border-[color:var(--border-dim)] hover:text-[var(--gold-tone-dark)]"
               }`}
             >
               {tab.icon}
@@ -1051,16 +1386,16 @@ export default function DashboardPage() {
         )}
 
         {isTabMenuOpen && (
-          <div className="w-full rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-xs font-semibold uppercase tracking-[0.25rem] text-[var(--foreground)] sm:hidden">
+          <div className="w-full rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-xs font-semibold uppercase tracking-[0.25rem] text-[var(--foreground)] sm:hidden font-[var(--font-roboto)]">
             <div className="grid gap-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => handleTabSelect(tab.id)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2 transition ${
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
                     activeTab === tab.id
-                      ? "bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                      ? "border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)] shadow-[0_10px_24px_-18px_var(--gold-tone)]"
+                      : "border-transparent text-[var(--muted-foreground)] hover:border-[color:var(--border-dim)] hover:text-[var(--gold-tone-dark)]"
                   }`}
                 >
                   {tab.icon}
@@ -1083,27 +1418,17 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 sm:flex-wrap sm:gap-3 sm:p-3">
-            {(
-              [
-                "ALL",
-                "MASTER",
-                "ADMIN",
-                "STAFF",
-                "COACH",
-                "STUDENT",
-                "GUEST",
-              ] as const
-            ).map((role) => (
+            {filterOptions.map((option) => (
               <button
-                key={role}
-                onClick={() => setUserFilter(role)}
+                key={option.value}
+                onClick={() => setUserFilter(option.value)}
                 className={`shrink-0 rounded-full border px-3 py-2 text-[0.55rem] uppercase tracking-[0.25em] transition sm:px-4 sm:text-xs sm:tracking-[0.35em] ${
-                  userFilter === role
+                  userFilter === option.value
                     ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone)]"
                     : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:border-[color:var(--gold-tone-dark)] hover:text-[var(--foreground)]"
                 }`}
               >
-                {role === "ALL" ? "Todos" : role}
+                {option.label}
               </button>
             ))}
           </div>
@@ -1134,13 +1459,20 @@ export default function DashboardPage() {
                 </div>
               )}
               {users
-                .filter((user) =>
-                  userFilter === "ALL" ? true : user.role === userFilter,
-                )
+                .filter((user) => {
+                  if (userFilter === "ALL") {
+                    return true;
+                  }
+                  if (userFilter === "ADMIN") {
+                    return user.role === "ADMIN" || user.role === "MASTER";
+                  }
+                  return user.role === userFilter;
+                })
                 .map((user) => {
                   const displayName =
                     user.name?.trim() || user.email || "Sem nome";
                   const avatarUrl = user.avatarUrl || user.image || "";
+                  const roleLabel = roleLabelMap[user.role];
                   return (
                     <div
                       key={user.id}
@@ -1190,7 +1522,7 @@ export default function DashboardPage() {
                             Perfil
                           </span>
                           <span className="text-sm md:text-[var(--muted-foreground)]">
-                            {user.role}
+                            {roleLabel}
                           </span>
                         </div>
                       </div>
@@ -1753,27 +2085,46 @@ export default function DashboardPage() {
       {selectedUser && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                  Editar usuario
-                </p>
-                <h3 className="text-2xl font-semibold">
-                  {userForm.name || selectedUser.email || "Usuario"}
-                </h3>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] shadow-[0_8px_18px_-10px_var(--shadow)]">
+                  {selectedUserAvatar ? (
+                    <img
+                      src={selectedUserAvatar}
+                      alt={`Foto de ${selectedUserDisplayName}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>{getInitials(selectedUserDisplayName)}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                    Editar usuário
+                  </p>
+                  <h3 className="text-2xl font-semibold">
+                    {selectedUserDisplayName}
+                  </h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]">
+                    <span>{selectedUserEmail}</span>
+                    <span className="rounded-full border border-[color:var(--border-dim)] px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.2em] text-[var(--gold-tone-dark)]">
+                      {roleLabelMap[userForm.role]}
+                    </span>
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--border-dim)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] transition hover:text-[var(--gold-tone-dark)]"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 text-xs font-semibold text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
                 onClick={() => setCheckinUser(selectedUser)}
               >
                 <Clock className="h-4 w-4" />
-                Historico check-in
+                Histórico de check-in
               </button>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Nome
                 <input
                   value={userForm.name}
@@ -1783,10 +2134,10 @@ export default function DashboardPage() {
                       name: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Email
                 <input
                   value={userForm.email}
@@ -1796,18 +2147,18 @@ export default function DashboardPage() {
                       email: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 CPF (bloqueado)
                 <input
                   value={userForm.cpf}
                   disabled
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm text-[var(--muted-foreground)]"
+                  className={`${modalInputClass} disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Telefone
                 <input
                   value={userForm.phone}
@@ -1817,10 +2168,10 @@ export default function DashboardPage() {
                       phone: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Perfil
                 <select
                   value={userForm.role}
@@ -1830,18 +2181,25 @@ export default function DashboardPage() {
                       role: event.target.value as AdminUser["role"],
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 >
-                  {["MASTER", "ADMIN", "STAFF", "COACH", "STUDENT", "GUEST"].map(
-                    (role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ),
-                  )}
+                  {(
+                    [
+                      "MASTER",
+                      "ADMIN",
+                      "STAFF",
+                      "COACH",
+                      "STUDENT",
+                      "GUEST",
+                    ] as const
+                  ).map((role) => (
+                    <option key={role} value={role}>
+                      {roleLabelMap[role]}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Plano
                 <select
                   value={userForm.planId}
@@ -1855,7 +2213,7 @@ export default function DashboardPage() {
                       planId: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] disabled:bg-[color:var(--muted)] disabled:text-[var(--muted-foreground)]"
+                  className={`${modalInputClass} disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
                 >
                   <option value="">Selecione</option>
                   {plans.map((plan) => (
@@ -1871,18 +2229,18 @@ export default function DashboardPage() {
                   </span>
                 )}
                 {plansError && (
-                  <span className="text-[0.6rem] normal-case text-[color:var(--danger)]">
+                  <span className="text-xs text-[color:var(--danger)]">
                     {plansError}
                   </span>
                 )}
                 {["MASTER", "ADMIN", "GUEST"].includes(userForm.role) && (
-                  <span className="text-[0.6rem] normal-case text-[var(--muted-foreground)]">
+                  <span className="text-xs text-[var(--muted-foreground)]">
                     Plano definido automaticamente para este perfil.
                   </span>
                 )}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] md:col-span-2">
-                Endereco
+              <label className={`${modalLabelClass} md:col-span-2`}>
+                Endereço
                 <input
                   value={userForm.address}
                   onChange={(event) =>
@@ -1891,10 +2249,10 @@ export default function DashboardPage() {
                       address: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] md:col-span-2">
+              <label className={`${modalLabelClass} md:col-span-2`}>
                 Imagem (URL)
                 <input
                   value={userForm.image}
@@ -1904,10 +2262,10 @@ export default function DashboardPage() {
                       image: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={userForm.active}
@@ -1918,24 +2276,24 @@ export default function DashboardPage() {
                     }))
                   }
                 />
-                Usuario ativo
+                Usuário ativo
               </label>
             </div>
 
             <div className="mt-6 space-y-4">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Mensagem WhatsApp
                 <textarea
                   value={messageText}
                   onChange={(event) => setMessageText(event.target.value)}
                   rows={3}
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <button
                   onClick={cancelUserEdit}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--border-dim)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
                 >
                   Cancelar
                 </button>
@@ -1944,7 +2302,7 @@ export default function DashboardPage() {
                   target="_blank"
                   rel="noreferrer"
                   aria-disabled={whatsappDisabled}
-                  className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--success)] ${
+                  className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[color:var(--success-border)] bg-[color:var(--success-soft)] px-4 text-sm font-semibold text-[color:var(--success)] ${
                     whatsappDisabled ? "pointer-events-none opacity-60" : ""
                   }`}
                 >
@@ -1954,18 +2312,18 @@ export default function DashboardPage() {
                 <button
                   onClick={() => openHealthModal(selectedUser)}
                   disabled={healthLoading}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-tone)]/60 bg-transparent px-4 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)] transition hover:bg-[var(--gold-tone)]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-tone)]/60 bg-[color:var(--card)] px-4 text-sm font-semibold text-[var(--gold-tone-dark)] transition hover:bg-[var(--gold-tone)]/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Stethoscope className="h-4 w-4" />
-                  Editar saude
+                  Editar saúde
                 </button>
                 <button
                   onClick={handleSaveUser}
                   disabled={isSavingUser}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-sm font-semibold text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  {isSavingUser ? "Salvando..." : "Salvar alteracoes"}
+                  {isSavingUser ? "Salvando..." : "Salvar alterações"}
                 </button>
               </div>
               {userSaveError && (
@@ -1983,16 +2341,16 @@ export default function DashboardPage() {
           <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                  Historico de check-in
+                <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                  Histórico de check-in
                 </p>
                 <h3 className="text-2xl font-semibold">
-                  {checkinUser.name || checkinUser.email || "Usuario"}
+                  {checkinUser.name || checkinUser.email || "Usuário"}
                 </h3>
               </div>
               <button
                 onClick={() => setCheckinUser(null)}
-                className="rounded-full border border-[color:var(--border-dim)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Fechar
               </button>
@@ -2008,7 +2366,7 @@ export default function DashboardPage() {
                           new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
                       )
                     }
-                    className="rounded-full border border-[color:var(--border-dim)] px-3 py-1 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                    className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
                   >
                     Anterior
                   </button>
@@ -2022,13 +2380,13 @@ export default function DashboardPage() {
                           new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
                       )
                     }
-                    className="rounded-full border border-[color:var(--border-dim)] px-3 py-1 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                    className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
                   >
-                    Proximo
+                    Próximo
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-7 gap-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                <div className="mt-4 grid grid-cols-7 gap-2 text-[0.6rem] tracking-[0.2em] text-[var(--muted-foreground)]">
                   {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(
                     (label) => (
                       <span key={label} className="text-center">
@@ -2060,7 +2418,7 @@ export default function DashboardPage() {
               </section>
 
               <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
-                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                <p className="text-xs font-semibold text-[var(--muted-foreground)]">
                   Lista de check-ins
                 </p>
                 <div className="mt-4 space-y-3">
@@ -2077,7 +2435,7 @@ export default function DashboardPage() {
                             new Date(`${date}T00:00:00`),
                           )}
                         </span>
-                        <span className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        <span className="text-xs text-[var(--muted-foreground)]">
                           Confirmado
                         </span>
                       </div>
@@ -2097,15 +2455,31 @@ export default function DashboardPage() {
 
       {healthUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                  Dados de saude
-                </p>
-                <h3 className="text-2xl font-semibold">
-                  {healthUser.name || healthUser.email || "Usuario"}
-                </h3>
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:w-[80%] sm:max-w-none sm:p-6 scrollbar-none">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] shadow-[0_8px_18px_-10px_var(--shadow)]">
+                  {healthUserAvatar ? (
+                    <img
+                      src={healthUserAvatar}
+                      alt={`Foto de ${healthUserDisplayName}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>{getInitials(healthUserDisplayName)}</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                    Dados de saúde
+                  </p>
+                  <h3 className="text-2xl font-semibold">
+                    {healthUserDisplayName}
+                  </h3>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    {healthUser.email}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => {
@@ -2113,13 +2487,13 @@ export default function DashboardPage() {
                   setHealthError(null);
                   setHealthUser(null);
                 }}
-                className="rounded-full border border-[color:var(--border-dim)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
-                Cancelar
+                Fechar
               </button>
             </div>
             {healthLoading && (
-              <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <p className="mt-3 text-xs text-[var(--muted-foreground)]">
                 Carregando dados...
               </p>
             )}
@@ -2130,7 +2504,7 @@ export default function DashboardPage() {
             )}
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Altura (cm)
                 <input
                   value={healthForm.heightCm}
@@ -2140,10 +2514,23 @@ export default function DashboardPage() {
                       heightCm: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      heightCm: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.heightCm ? modalErrorClass : ""
+                  }`}
                 />
+                {healthFieldErrors.heightCm ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.heightCm}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Peso (kg)
                 <input
                   value={healthForm.weightKg}
@@ -2153,11 +2540,24 @@ export default function DashboardPage() {
                       weightKg: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      weightKg: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.weightKg ? modalErrorClass : ""
+                  }`}
                 />
+                {healthFieldErrors.weightKg ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.weightKg}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Tipo sanguineo
+              <label className={modalLabelClass}>
+                Tipo sanguíneo
                 <select
                   value={healthForm.bloodType}
                   onChange={(event) =>
@@ -2166,26 +2566,39 @@ export default function DashboardPage() {
                       bloodType: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      bloodType: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.bloodType ? modalErrorClass : ""
+                  }`}
                 >
                   <option value="">Selecione</option>
                   {[
-                    "A_POSITIVE",
-                    "A_NEGATIVE",
-                    "B_POSITIVE",
-                    "B_NEGATIVE",
-                    "AB_POSITIVE",
-                    "AB_NEGATIVE",
-                    "O_POSITIVE",
-                    "O_NEGATIVE",
+                    { value: "A_POSITIVE", label: "A+" },
+                    { value: "A_NEGATIVE", label: "A-" },
+                    { value: "B_POSITIVE", label: "B+" },
+                    { value: "B_NEGATIVE", label: "B-" },
+                    { value: "AB_POSITIVE", label: "AB+" },
+                    { value: "AB_NEGATIVE", label: "AB-" },
+                    { value: "O_POSITIVE", label: "O+" },
+                    { value: "O_NEGATIVE", label: "O-" },
                   ].map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                    <option key={type.value} value={type.value}>
+                      {type.label}
                     </option>
                   ))}
                 </select>
+                {healthFieldErrors.bloodType ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.bloodType}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Sexo
                 <select
                   value={healthForm.sex}
@@ -2195,14 +2608,27 @@ export default function DashboardPage() {
                       sex: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      sex: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.sex ? modalErrorClass : ""
+                  }`}
                 >
                   <option value="">Selecione</option>
                   <option value="MALE">Masculino</option>
                   <option value="FEMALE">Feminino</option>
                 </select>
+                {healthFieldErrors.sex ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.sex}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Data de nascimento
                 <input
                   type="date"
@@ -2213,11 +2639,24 @@ export default function DashboardPage() {
                       birthDate: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      birthDate: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.birthDate ? modalErrorClass : ""
+                  }`}
                 />
+                {healthFieldErrors.birthDate ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.birthDate}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Lesoes
+              <label className={modalLabelClass}>
+                Lesões
                 <input
                   value={healthForm.injuries}
                   onChange={(event) =>
@@ -2226,56 +2665,272 @@ export default function DashboardPage() {
                       injuries: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      injuries: undefined,
+                    }))
+                  }
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.injuries ? modalErrorClass : ""
+                  }`}
                 />
+                {healthFieldErrors.injuries ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.injuries}
+                  </span>
+                ) : null}
               </label>
             </div>
 
+            <div className="mt-6 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+              <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                Dobras cutâneas (mm)
+              </p>
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <label className={modalLabelClass}>
+                  Peitoral
+                  <input
+                    value={healthForm.skinfoldChest}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldChest: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Abdômen
+                  <input
+                    value={healthForm.skinfoldAbdomen}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldAbdomen: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Coxa
+                  <input
+                    value={healthForm.skinfoldThigh}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldThigh: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Tríceps
+                  <input
+                    value={healthForm.skinfoldTriceps}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldTriceps: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Subescapular
+                  <input
+                    value={healthForm.skinfoldSubscapular}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldSubscapular: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Supra-ilíaca
+                  <input
+                    value={healthForm.skinfoldSuprailiac}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldSuprailiac: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+                <label className={modalLabelClass}>
+                  Axilar média
+                  <input
+                    value={healthForm.skinfoldMidaxillary}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        skinfoldMidaxillary: event.target.value,
+                      }))
+                    }
+                    className={modalInputClass}
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-semibold text-[var(--muted-foreground)]">
+                    Resultado Pollock
+                  </p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Preencha peso, sexo, data de nascimento e dobras necessárias.
+                  </p>
+                </div>
+                {compositionStatus === "loading" && (
+                  <span className="text-xs text-[var(--gold-tone-dark)]">
+                    Calculando...
+                  </span>
+                )}
+              </div>
+
+              {compositionStatus === "error" && compositionError ? (
+                <p className="mt-3 text-xs text-[color:var(--danger)]">
+                  {compositionError}
+                </p>
+              ) : null}
+
+              {compositionStatus === "ready" && compositionResult ? (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      % Gordura corporal
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(compositionResult.bodyFatPct, 2)}%
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      Massa gorda
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(compositionResult.fatMassKg, 2)} kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      Massa magra
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(compositionResult.leanMassKg, 2)} kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      Soma das dobras
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(compositionResult.sumSkinfoldsMm, 1)} mm
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      Densidade corporal
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(compositionResult.bodyDensity, 4)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
+                    <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                      IMC
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {formatNumber(
+                        compositionResult.bmi ?? bmiFallback,
+                        1,
+                      )}
+                    </p>
+                    {compositionResult.bmiCategory || bmiLabelFallback ? (
+                      <p className="text-[0.65rem] text-[var(--muted-foreground)]">
+                        {compositionResult.bmiCategory || bmiLabelFallback}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {compositionStatus === "idle" && !compositionResult ? (
+                <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                  Para masculino: peitoral, abdômen e coxa. Para feminino:
+                  tríceps, supra-ilíaca e coxa.
+                </p>
+              ) : null}
+            </div>
+
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={healthForm.takesMedication}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setHealthForm((prev) => ({
                       ...prev,
                       takesMedication: event.target.checked,
-                    }))
-                  }
+                    }));
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      medications: undefined,
+                    }));
+                  }}
                 />
-                Usa medicacao
+                Usa medicação
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={healthForm.exercisesRegularly}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setHealthForm((prev) => ({
                       ...prev,
                       exercisesRegularly: event.target.checked,
-                    }))
-                  }
+                    }));
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      dailyRoutine: undefined,
+                    }));
+                  }}
                 />
                 Exercita regularmente
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={healthForm.usesSupplementation}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setHealthForm((prev) => ({
                       ...prev,
                       usesSupplementation: event.target.checked,
-                    }))
-                  }
+                    }));
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      supplements: undefined,
+                    }));
+                  }}
                 />
-                Usa suplementacao
+                Usa suplementação
               </label>
             </div>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Medicacoes
+              <label className={modalLabelClass}>
+                Medicações
                 <input
                   value={healthForm.medications}
                   onChange={(event) =>
@@ -2284,11 +2939,24 @@ export default function DashboardPage() {
                       medications: event.target.value,
                     }))
                   }
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      medications: undefined,
+                    }))
+                  }
                   disabled={!healthForm.takesMedication}
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] disabled:bg-[color:var(--muted)] disabled:text-[var(--muted-foreground)]"
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.medications ? modalErrorClass : ""
+                  } disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
                 />
+                {healthFieldErrors.medications ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.medications}
+                  </span>
+                ) : null}
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Suplementos
                 <input
                   value={healthForm.supplements}
@@ -2298,11 +2966,108 @@ export default function DashboardPage() {
                       supplements: event.target.value,
                     }))
                   }
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      supplements: undefined,
+                    }))
+                  }
                   disabled={!healthForm.usesSupplementation}
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] disabled:bg-[color:var(--muted)] disabled:text-[var(--muted-foreground)]"
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.supplements ? modalErrorClass : ""
+                  } disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
+                />
+                {healthFieldErrors.supplements ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.supplements}
+                  </span>
+                ) : null}
+              </label>
+            </div>
+
+            <div className="mt-4">
+              <label className={modalLabelClass}>
+                Rotina de exercícios
+                <textarea
+                  value={healthForm.dailyRoutine}
+                  onChange={(event) =>
+                    setHealthForm((prev) => ({
+                      ...prev,
+                      dailyRoutine: event.target.value,
+                    }))
+                  }
+                  onInput={() =>
+                    setHealthFieldErrors((prev) => ({
+                      ...prev,
+                      dailyRoutine: undefined,
+                    }))
+                  }
+                  rows={3}
+                  disabled={!healthForm.exercisesRegularly}
+                  className={`${modalInputClass} ${
+                    healthFieldErrors.dailyRoutine ? modalErrorClass : ""
+                  } disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
+                />
+                {healthFieldErrors.dailyRoutine ? (
+                  <span className="text-xs text-red-400">
+                    {healthFieldErrors.dailyRoutine}
+                  </span>
+                ) : null}
+              </label>
+            </div>
+
+            <div className="mt-4">
+              <label className={modalLabelClass}>
+                Rotina alimentar
+                <textarea
+                  value={healthForm.foodRoutine}
+                  onChange={(event) =>
+                    setHealthForm((prev) => ({
+                      ...prev,
+                      foodRoutine: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className={modalInputClass}
                 />
               </label>
             </div>
+
+            <div className="mt-4">
+              <label className={modalLabelClass}>
+                Anotações públicas
+                <textarea
+                  value={healthForm.notesPublic}
+                  onChange={(event) =>
+                    setHealthForm((prev) => ({
+                      ...prev,
+                      notesPublic: event.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className={modalInputClass}
+                />
+              </label>
+            </div>
+
+            {canViewPrivateNotes ? (
+              <div className="mt-4">
+                <label className={modalLabelClass}>
+                  Anotações privadas
+                  <textarea
+                    value={healthForm.notesPrivate}
+                    onChange={(event) =>
+                      setHealthForm((prev) => ({
+                        ...prev,
+                        notesPrivate: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className={modalInputClass}
+                  />
+                </label>
+              </div>
+            ) : null}
 
             <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
               <button
@@ -2311,17 +3076,17 @@ export default function DashboardPage() {
                   setHealthError(null);
                   setHealthUser(null);
                 }}
-                className="rounded-full border border-[color:var(--border-dim)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveHealth}
                 disabled={isSavingHealth}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-sm font-semibold text-[var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                {isSavingHealth ? "Salvando..." : "Salvar saude"}
+                {isSavingHealth ? "Salvando..." : "Salvar saúde"}
               </button>
             </div>
           </div>
@@ -2333,7 +3098,7 @@ export default function DashboardPage() {
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                <p className="text-xs font-semibold text-[var(--muted-foreground)]">
                   {eventModalMode === "edit" ? "Editar evento" : "Novo evento"}
                 </p>
                 <h3 className="text-2xl font-semibold">
@@ -2344,15 +3109,15 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setIsEventModalOpen(false)}
-                className="rounded-full border border-[color:var(--border-dim)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Fechar
               </button>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] md:col-span-2">
-                Titulo
+              <label className={`${modalLabelClass} md:col-span-2`}>
+                Título
                 <input
                   value={eventForm.title}
                   onChange={(event) =>
@@ -2361,21 +3126,21 @@ export default function DashboardPage() {
                       title: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
 
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] md:col-span-2">
+              <label className={`${modalLabelClass} md:col-span-2`}>
                 Imagem do evento
                 <input
                   type="file"
                   accept="image/*"
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--gold-tone)]/10 file:px-4 file:py-2 file:text-xs file:uppercase file:tracking-[0.3em] file:text-[var(--gold-tone-dark)]"
+                  className={`${modalInputClass} file:mr-3 file:rounded-full file:border-0 file:bg-[var(--gold-tone)]/10 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-[var(--gold-tone-dark)]`}
                 />
               </label>
 
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] md:col-span-2">
-                Descricao
+              <label className={`${modalLabelClass} md:col-span-2`}>
+                Descrição
                 <textarea
                   value={eventForm.description}
                   onChange={(event) =>
@@ -2385,11 +3150,11 @@ export default function DashboardPage() {
                     }))
                   }
                   rows={3}
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
 
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Data
                 <input
                   type="date"
@@ -2400,11 +3165,11 @@ export default function DashboardPage() {
                       date: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Horario
+              <label className={modalLabelClass}>
+                Horário
                 <input
                   type="time"
                   value={eventForm.time}
@@ -2414,11 +3179,11 @@ export default function DashboardPage() {
                       time: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Horario fim (opcional)
+              <label className={modalLabelClass}>
+                Horário fim (opcional)
                 <input
                   type="time"
                   value={eventForm.endTime}
@@ -2428,10 +3193,10 @@ export default function DashboardPage() {
                       endTime: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Local
                 <input
                   value={eventForm.location}
@@ -2441,10 +3206,10 @@ export default function DashboardPage() {
                       location: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 />
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={eventForm.hideLocation}
@@ -2460,7 +3225,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Acesso
                 <select
                   value={eventForm.accessMode}
@@ -2472,13 +3237,13 @@ export default function DashboardPage() {
                         event.target.value === "open" ? "" : prev.capacity,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                  className={modalInputClass}
                 >
                   <option value="open">Aberto</option>
-                  <option value="registered_only">Com inscricao</option>
+                  <option value="registered_only">Com inscrição</option>
                 </select>
               </label>
-              <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className={modalLabelClass}>
                 Capacidade
                 <input
                   type="number"
@@ -2491,13 +3256,13 @@ export default function DashboardPage() {
                       capacity: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] disabled:bg-[color:var(--muted)] disabled:text-[var(--muted-foreground)]"
+                  className={`${modalInputClass} disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
                 />
               </label>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={eventForm.allowGuests}
@@ -2510,7 +3275,7 @@ export default function DashboardPage() {
                 />
                 Permitir convidados
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={eventForm.requiresConfirmation}
@@ -2521,9 +3286,9 @@ export default function DashboardPage() {
                     }))
                   }
                 />
-                Exige confirmacao
+                Exige confirmação
               </label>
-              <label className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <label className="flex items-center gap-3 text-sm font-medium text-[var(--foreground)]">
                 <input
                   type="checkbox"
                   checked={eventForm.isPaid}
@@ -2542,7 +3307,7 @@ export default function DashboardPage() {
 
             {eventForm.isPaid && (
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                <label className={modalLabelClass}>
                   Valor (R$)
                   <input
                     type="number"
@@ -2554,10 +3319,10 @@ export default function DashboardPage() {
                         priceCents: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    className={modalInputClass}
                   />
                 </label>
-                <label className="space-y-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                <label className={modalLabelClass}>
                   Forma de pagamento
                   <input
                     value={eventForm.paymentMethod}
@@ -2567,7 +3332,7 @@ export default function DashboardPage() {
                         paymentMethod: event.target.value,
                       }))
                     }
-                    className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
+                    className={modalInputClass}
                   />
                 </label>
               </div>
@@ -2577,23 +3342,23 @@ export default function DashboardPage() {
               {eventModalMode === "edit" && (
                 <button
                   onClick={cancelEvent}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-5 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-5 text-sm font-semibold text-[color:var(--danger)]"
                 >
                   Cancelar evento
                 </button>
               )}
               <button
                 onClick={() => setIsEventModalOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => setIsEventModalOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-sm font-semibold text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
               >
                 {eventModalMode === "edit"
-                  ? "Salvar alteracoes"
+                  ? "Salvar alterações"
                   : "Salvar evento"}
               </button>
             </div>

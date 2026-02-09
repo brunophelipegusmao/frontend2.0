@@ -16,11 +16,11 @@ export function AuthCard({
   footer,
 }: AuthCardProps) {
   return (
-    <section className="flex w-full flex-1 items-center justify-center py-12 font-[var(--font-nunito-sans)]">
+    <section className="flex w-full flex-1 items-center justify-center py-12 font-[var(--font-roboto)]">
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-6 text-center">
         <div className="scroll-glow w-full max-w-md rounded-[32px] border border-[color:var(--border-dim)] bg-[color:var(--card)] p-8 shadow-[0_24px_60px_var(--shadow)]">
           <div className="space-y-3">
-            <p className="text-md font-extrabold uppercase tracking-[0.5rem] text-[var(--gold-tone)] font-[var(--font-nunito-sans)]">
+            <p className="text-md font-extrabold uppercase tracking-[0.5rem] text-[var(--gold-tone)] font-[var(--font-roboto)]">
               {eyebrow}
             </p>
             <h1 className="text-3xl font-semibold text-[var(--foreground)]">

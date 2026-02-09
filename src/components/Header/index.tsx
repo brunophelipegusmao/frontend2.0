@@ -23,7 +23,7 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border-dim)] bg-[color:var(--card)] backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border-dim)] bg-[color:var(--card)] font-[var(--font-roboto)] backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3 text-sm uppercase tracking-[0.3rem] text-[var(--foreground)] sm:px-6">
         <Link
           href="/"

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { AuthCard } from "@/components/AuthCard";
 import { signUpWithEmail, startSocialSignIn } from "@/lib/auth";
+import { API_BASE_URL, redirectBasedOnRole } from "@/lib/roleRedirect";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -25,6 +26,27 @@ export function RegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const checkSession = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/me/status`, {
+          credentials: "include",
+        });
+        if (!response.ok || !active) {
+          return;
+        }
+        await redirectBasedOnRole(router);
+      } catch {
+        // ignore
+      }
+    };
+    checkSession();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   const passwordPattern =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{6,}$/;
@@ -69,7 +91,10 @@ export function RegisterForm() {
     }
 
     setSuccess("Cadastro realizado com sucesso.");
-    router.push("/");
+    const target = planId
+      ? `/complete-profile?planId=${encodeURIComponent(planId)}`
+      : "/complete-profile";
+    router.push(target);
   };
 
   const handleGoogleRegister = async () => {
@@ -125,7 +150,7 @@ export function RegisterForm() {
         </>
       }
     >
-      <div className="mt-6 space-y-4 font-[var(--font-nunito-sans)]">
+      <div className="mt-6 space-y-4 font-[var(--font-roboto)]">
         <GoogleLoginButton
           label="Continuar com Google"
           onClick={handleGoogleRegister}
@@ -143,7 +168,7 @@ export function RegisterForm() {
       </div>
 
       <form
-        className="mt-6 space-y-4 text-left font-[var(--font-nunito-sans)]"
+        className="mt-6 space-y-4 text-left font-[var(--font-roboto)]"
         onSubmit={handleSubmit}
       >
         <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]">
@@ -155,7 +180,7 @@ export function RegisterForm() {
             autoComplete="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
           />
         </label>
 
@@ -168,7 +193,7 @@ export function RegisterForm() {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
           />
         </label>
 
@@ -188,7 +213,7 @@ export function RegisterForm() {
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
             />
             <button
               type="button"
@@ -221,7 +246,7 @@ export function RegisterForm() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
-              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-nunito-sans)]"
+              className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 pr-12 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
             />
             <button
               type="button"
@@ -246,8 +271,8 @@ export function RegisterForm() {
           <p className="text-sm text-emerald-300">{success}</p>
         ) : null}
         <p className="text-[0.65rem] text-[var(--muted-foreground)]">
-          Os dados de saúde serão solicitados após a confirmação do pagamento
-          do plano.
+          Após o cadastro, complete CPF, telefone e seus dados de saúde para
+          liberar o acesso ao painel.
         </p>
         {!passwordPattern.test(password) && password ? (
           <p className="text-[0.65rem] text-red-400">
@@ -259,7 +284,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-nunito-sans)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
         >
           {isSubmitting ? "Criando..." : "Criar conta"}
         </button>
