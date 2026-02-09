@@ -56,210 +56,46 @@ const tabs: { id: TabId; label: string; description: string; icon: JSX.Element }
     },
   ];
 
-const mockEvents = [
-  {
-    id: "ev-01",
-    title: "Open Day Premium",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
-    description: "Dia aberto com treinos premium, desafios e networking.",
-    date: "2026-03-12",
-    time: "18:30",
-    endTime: "21:00",
-    location: "Studio Principal",
-    hideLocation: false,
-    access: "registered_only",
-    capacity: 40,
-    paid: true,
-    price: "R$ 120,00",
-    paymentMethod: "PIX",
-    allowGuests: true,
-    requiresConfirmation: true,
-    status: "publicado",
-  },
-  {
-    id: "ev-02",
-    title: "Aula Especial HIIT",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800&auto=format&fit=crop",
-    description: "Sessao intensa de HIIT com coach convidado.",
-    date: "2026-03-20",
-    time: "07:00",
-    endTime: "08:00",
-    location: "Arena",
-    hideLocation: false,
-    access: "open",
-    capacity: null,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: false,
-    requiresConfirmation: false,
-    status: "rascunho",
-  },
-  {
-    id: "ev-03",
-    title: "Workshop Mobilidade",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?q=80&w=800&auto=format&fit=crop",
-    description: "Workshop focado em mobilidade e prevencao de lesoes.",
-    date: "2026-01-20",
-    time: "09:00",
-    endTime: "11:00",
-    location: "Studio B",
-    hideLocation: false,
-    access: "registered_only",
-    capacity: 20,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: true,
-    requiresConfirmation: false,
-    status: "publicado",
-  },
-  {
-    id: "ev-04",
-    title: "Festival Fitness Noturno",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800&auto=format&fit=crop",
-    description: "Festival com aulas tematicas, DJ e areas de recovery.",
-    date: "2026-03-05",
-    time: "19:30",
-    endTime: "22:00",
-    location: "Arena",
-    hideLocation: false,
-    access: "open",
-    capacity: 60,
-    paid: true,
-    price: "R$ 180,00",
-    paymentMethod: "Cartao",
-    allowGuests: true,
-    requiresConfirmation: true,
-    status: "cancelado",
-  },
-  {
-    id: "ev-05",
-    title: "Treino Funcional Open",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?q=80&w=800&auto=format&fit=crop",
-    description: "Treino funcional aberto para todos os niveis.",
-    date: "2026-02-12",
-    time: "07:30",
-    endTime: "08:30",
-    location: "Studio Principal",
-    hideLocation: false,
-    access: "open",
-    capacity: 35,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: true,
-    requiresConfirmation: false,
-    status: "publicado",
-  },
-  {
-    id: "ev-06",
-    title: "Aula Mobility Flow",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800&auto=format&fit=crop",
-    description: "Sequencia guiada de mobilidade e respiracao.",
-    date: "2026-02-14",
-    time: "09:00",
-    endTime: "10:00",
-    location: "Studio B",
-    hideLocation: false,
-    access: "registered_only",
-    capacity: 20,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: true,
-    requiresConfirmation: true,
-    status: "publicado",
-  },
-  {
-    id: "ev-07",
-    title: "Bootcamp Premium",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1517838277536-f5f99be501af?q=80&w=800&auto=format&fit=crop",
-    description: "Bootcamp com desafios de alta intensidade.",
-    date: "2026-02-18",
-    time: "18:00",
-    endTime: "19:30",
-    location: "Arena",
-    hideLocation: false,
-    access: "registered_only",
-    capacity: 30,
-    paid: true,
-    price: "R$ 90,00",
-    paymentMethod: "PIX",
-    allowGuests: false,
-    requiresConfirmation: true,
-    status: "publicado",
-  },
-  {
-    id: "ev-08",
-    title: "Yoga Sunset",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?q=80&w=800&auto=format&fit=crop",
-    description: "Yoga relaxante ao por do sol.",
-    date: "2026-02-21",
-    time: "17:30",
-    endTime: "18:30",
-    location: "Rooftop",
-    hideLocation: false,
-    access: "open",
-    capacity: 25,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: true,
-    requiresConfirmation: false,
-    status: "publicado",
-  },
-  {
-    id: "ev-09",
-    title: "Desafio 5K Indoor",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800&auto=format&fit=crop",
-    description: "Desafio indoor com ranking ao vivo.",
-    date: "2026-02-25",
-    time: "19:00",
-    endTime: "20:30",
-    location: "Arena",
-    hideLocation: false,
-    access: "registered_only",
-    capacity: 40,
-    paid: true,
-    price: "R$ 120,00",
-    paymentMethod: "Cartao",
-    allowGuests: true,
-    requiresConfirmation: true,
-    status: "publicado",
-  },
-  {
-    id: "ev-10",
-    title: "Aulão Carnaval",
-    thumbnailUrl:
-      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800&auto=format&fit=crop",
-    description: "Aula tematica com playlist especial de carnaval.",
-    date: "2026-02-28",
-    time: "10:00",
-    endTime: "11:30",
-    location: "Studio Principal",
-    hideLocation: false,
-    access: "open",
-    capacity: 50,
-    paid: false,
-    price: "Gratuito",
-    paymentMethod: "-",
-    allowGuests: true,
-    requiresConfirmation: false,
-    status: "publicado",
-  },
-];
+type EventItem = {
+  id: string;
+  title: string;
+  thumbnailUrl: string;
+  description: string;
+  date: string;
+  time: string;
+  endTime: string;
+  location: string;
+  hideLocation: boolean;
+  access: "open" | "registered_only";
+  capacity: number | null;
+  paid: boolean;
+  price: string;
+  paymentMethod: string;
+  allowGuests: boolean;
+  requiresConfirmation: boolean;
+  status: "rascunho" | "publicado" | "cancelado";
+};
 
-type EventItem = (typeof mockEvents)[number];
+type EventApiRecord = {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  endTime: string | null;
+  location: string;
+  hideLocation: boolean;
+  accessMode: "open" | "registered_only";
+  capacity: number | null;
+  allowGuests: boolean;
+  requiresConfirmation: boolean;
+  isPaid: boolean;
+  priceCents: number | null;
+  paymentMethod: string | null;
+  thumbnailUrl: string | null;
+  status: "draft" | "published" | "cancelled";
+  isPublished?: boolean;
+};
 
 const mockPayments = [
   { id: "p-01", user: "Carla Mendes", amount: "R$ 120,00", method: "PIX" },
@@ -286,6 +122,7 @@ type AdminUser = {
   address: string | null;
   image: string | null;
   avatarUrl: string | null;
+  birthDate?: string | null;
 };
 
 type CheckinRecord = {
@@ -433,9 +270,25 @@ const parseApiError = async (response: Response, fallback: string) => {
     const data = (await response.json()) as {
       message?: string | string[];
       error?: string;
+      errors?: {
+        fieldErrors?: Record<string, string[] | undefined>;
+        formErrors?: string[];
+      };
     };
     if (Array.isArray(data?.message)) {
       return data.message.join(", ");
+    }
+    if (Array.isArray(data?.errors?.formErrors) && data.errors.formErrors.length) {
+      return data.errors.formErrors[0];
+    }
+    if (data?.errors?.fieldErrors) {
+      const firstField = Object.entries(data.errors.fieldErrors).find(
+        ([, messages]) => Array.isArray(messages) && messages.length > 0,
+      );
+      if (firstField) {
+        const [fieldName, messages] = firstField;
+        return `${fieldName}: ${messages?.[0] ?? "valor inválido"}`;
+      }
     }
     return data?.message || data?.error || fallback;
   } catch {
@@ -443,12 +296,120 @@ const parseApiError = async (response: Response, fallback: string) => {
   }
 };
 
-const toCheckinDateKey = (value: string | Date) => {
+const EVENT_STATUS_LABEL_MAP: Record<EventApiRecord["status"], EventItem["status"]> = {
+  draft: "rascunho",
+  published: "publicado",
+  cancelled: "cancelado",
+};
+
+const mapApiStatusToUiStatus = (status: EventApiRecord["status"]) =>
+  EVENT_STATUS_LABEL_MAP[status] ?? "rascunho";
+
+const formatEventPrice = (isPaid: boolean, priceCents?: number | null) => {
+  if (!isPaid) {
+    return "Gratuito";
+  }
+  if (!priceCents || priceCents < 1) {
+    return "Pago";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(priceCents / 100);
+};
+
+const mapApiEventToItem = (event: EventApiRecord): EventItem => ({
+  id: event.id,
+  title: event.title,
+  thumbnailUrl: event.thumbnailUrl ?? "",
+  description: event.description,
+  date: event.date,
+  time: event.time,
+  endTime: event.endTime ?? "",
+  location: event.location,
+  hideLocation: event.hideLocation,
+  access: event.accessMode,
+  capacity: event.capacity,
+  paid: event.isPaid,
+  price: formatEventPrice(event.isPaid, event.priceCents),
+  paymentMethod: event.isPaid ? event.paymentMethod ?? "-" : "-",
+  allowGuests: event.allowGuests,
+  requiresConfirmation: event.requiresConfirmation,
+  status: mapApiStatusToUiStatus(event.status),
+});
+
+const parseReaisToCents = (value: string) => {
+  const normalized = value.trim().replace(/\./g, "").replace(",", ".");
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return Math.round(parsed * 100);
+};
+
+const toLocalDateKey = (value: Date) => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const toCheckinDateKey = (value?: string | Date | null) => {
+  if (!value) {
+    return "";
+  }
   const parsed = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(parsed.getTime())) {
     return "";
   }
-  return parsed.toISOString().slice(0, 10);
+  return toLocalDateKey(parsed);
+};
+
+const parseBirthDateForAge = (value: string) => {
+  const normalized = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(normalized);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+
+  const isValidDate =
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+  if (!isValidDate) {
+    return null;
+  }
+
+  return parsed;
+};
+
+const calculateAgeFromBirthDate = (value: string) => {
+  const birthDate = parseBirthDateForAge(value);
+  if (!birthDate) {
+    return null;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hadBirthdayThisYear =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() &&
+      today.getDate() >= birthDate.getDate());
+
+  if (!hadBirthdayThisYear) {
+    age -= 1;
+  }
+
+  if (age < 0 || age > 130) {
+    return null;
+  }
+  return age;
 };
 
 const formatCheckinDateTime = (value: string | Date) => {
@@ -556,7 +517,11 @@ export default function DashboardPage() {
     "idle" | "loading" | "ready" | "error"
   >("idle");
   const [plansError, setPlansError] = useState<string | null>(null);
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [eventsStatus, setEventsStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [eventsError, setEventsError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [checkinUser, setCheckinUser] = useState<AdminUser | null>(null);
   const [checkinHistoryByUser, setCheckinHistoryByUser] = useState<
@@ -589,7 +554,7 @@ export default function DashboardPage() {
     endTime: "",
     location: "",
     hideLocation: false,
-    accessMode: "registered_only",
+    accessMode: "registered_only" as "open" | "registered_only",
     capacity: "",
     allowGuests: true,
     requiresConfirmation: false,
@@ -597,6 +562,10 @@ export default function DashboardPage() {
     priceCents: "",
     paymentMethod: "",
   });
+  const [eventImageFile, setEventImageFile] = useState<File | null>(null);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [isCancellingEvent, setIsCancellingEvent] = useState(false);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
   const [eventFilter, setEventFilter] = useState<
     "FUTUROS" | "CANCELADOS" | "REALIZADOS"
   >("FUTUROS");
@@ -622,11 +591,17 @@ export default function DashboardPage() {
   });
   const [saveFeedbackTimer, setSaveFeedbackTimer] =
     useState<NodeJS.Timeout | null>(null);
+  const [userBirthDateInitial, setUserBirthDateInitial] = useState("");
+  const [isLoadingUserBirthDate, setIsLoadingUserBirthDate] = useState(false);
+  const [userBirthDateError, setUserBirthDateError] = useState<string | null>(
+    null,
+  );
   const [userForm, setUserForm] = useState({
     name: "",
     email: "",
     cpf: "",
     phone: "",
+    birthDate: "",
     role: "STUDENT" as AdminUser["role"],
     planId: "",
     address: "",
@@ -771,6 +746,31 @@ export default function DashboardPage() {
     }
   }, []);
 
+  const loadEvents = useCallback(async () => {
+    setEventsStatus("loading");
+    setEventsError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/events`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel carregar eventos."),
+        );
+      }
+      const data = (await response.json()) as EventApiRecord[];
+      const nextEvents = Array.isArray(data) ? data.map(mapApiEventToItem) : [];
+      setEvents(nextEvents);
+      setEventsStatus("ready");
+    } catch (err) {
+      setEvents([]);
+      setEventsStatus("error");
+      setEventsError(
+        err instanceof Error ? err.message : "Falha ao carregar eventos.",
+      );
+    }
+  }, []);
+
   const loadCheckinHistory = useCallback(async (userId: string) => {
     setCheckinHistoryStatus("loading");
     setCheckinHistoryError(null);
@@ -805,7 +805,8 @@ export default function DashboardPage() {
   useEffect(() => {
     loadUsers();
     loadPlans();
-  }, [loadUsers, loadPlans]);
+    loadEvents();
+  }, [loadUsers, loadPlans, loadEvents]);
 
   useEffect(() => {
     if (!checkinUser) {
@@ -852,11 +853,15 @@ export default function DashboardPage() {
   const openUserModal = (user: AdminUser) => {
     setSelectedUser(user);
     setUserSaveError(null);
+    setUserBirthDateInitial("");
+    setIsLoadingUserBirthDate(true);
+    setUserBirthDateError(null);
     setUserForm({
       name: user.name ?? "",
       email: user.email ?? "",
       cpf: user.cpf ?? "",
       phone: user.phone ?? "",
+      birthDate: "",
       role: user.role,
       planId: user.planId ?? "",
       address: user.address ?? "",
@@ -867,6 +872,42 @@ export default function DashboardPage() {
     setMessageText(
       `Ola ${display}, precisamos atualizar alguns dados do seu cadastro.`,
     );
+
+    void (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/health/${user.id}`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error(
+            await parseApiError(
+              response,
+              "Nao foi possivel carregar a data de nascimento.",
+            ),
+          );
+        }
+
+        const healthData = (await response.json()) as HealthProfile | null;
+        const birthDate = healthData?.birthDate ?? "";
+        setUserBirthDateInitial(birthDate);
+        setUserForm((prev) =>
+          prev.birthDate.trim()
+            ? prev
+            : {
+                ...prev,
+                birthDate,
+              },
+        );
+      } catch (err) {
+        setUserBirthDateError(
+          err instanceof Error
+            ? err.message
+            : "Falha ao carregar data de nascimento.",
+        );
+      } finally {
+        setIsLoadingUserBirthDate(false);
+      }
+    })();
   };
 
   const openHealthModal = async (user: AdminUser) => {
@@ -1187,49 +1228,115 @@ export default function DashboardPage() {
     setUserSaveError(null);
     try {
       const payload: Record<string, unknown> = {};
-      if (userForm.name.trim()) {
-        payload.name = userForm.name.trim();
+      const currentName = selectedUser.name?.trim() ?? "";
+      const nextName = userForm.name.trim();
+      if (nextName && nextName !== currentName) {
+        payload.name = nextName;
       }
-      if (userForm.email.trim()) {
-        payload.email = userForm.email.trim().toLowerCase();
+      const currentEmail = (selectedUser.email ?? "").trim().toLowerCase();
+      const nextEmail = userForm.email.trim().toLowerCase();
+      if (nextEmail && nextEmail !== currentEmail) {
+        payload.email = nextEmail;
       }
-      if (userForm.phone.trim()) {
-        payload.phone = userForm.phone.trim();
+      const currentPhone = selectedUser.phone?.trim() ?? "";
+      const nextPhone = userForm.phone.trim();
+      if (nextPhone && nextPhone !== currentPhone) {
+        payload.phone = nextPhone;
       }
-      if (userForm.address.trim()) {
-        payload.address = userForm.address.trim();
+      const currentAddress = selectedUser.address?.trim() ?? "";
+      const nextAddress = userForm.address.trim();
+      if (nextAddress && nextAddress !== currentAddress) {
+        payload.address = nextAddress;
       }
-      if (userForm.image.trim()) {
-        payload.image = userForm.image.trim();
+      const currentImage = selectedUser.image?.trim() ?? "";
+      const nextImage = userForm.image.trim();
+      if (nextImage && nextImage !== currentImage) {
+        payload.image = nextImage;
       }
-      payload.active = userForm.active;
-      payload.role = userForm.role;
+      if (userForm.active !== (selectedUser.active ?? true)) {
+        payload.active = userForm.active;
+      }
+      if (userForm.role !== selectedUser.role) {
+        payload.role = userForm.role;
+      }
 
-      const requiresPlanLock = ["MASTER", "ADMIN", "GUEST"].includes(
+      const requiresPlanLock = [
+        "MASTER",
+        "ADMIN",
+        "STAFF",
+        "COACH",
+        "GUEST",
+      ].includes(
         userForm.role,
       );
-      if (!requiresPlanLock && userForm.planId) {
+      if (
+        !requiresPlanLock &&
+        userForm.planId &&
+        userForm.planId !== (selectedUser.planId ?? "")
+      ) {
         payload.planId = userForm.planId;
       }
+      const currentBirthDate = userBirthDateInitial.trim();
+      const nextBirthDate = userForm.birthDate.trim();
+      const birthDateChanged = nextBirthDate !== currentBirthDate;
 
-      const response = await fetch(
-        `${API_BASE_URL}/admin/users/${selectedUser.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        },
-      );
-      if (!response.ok) {
-        throw new Error(
-          await parseApiError(
-            response,
-            "Nao foi possivel salvar as alteracoes.",
-          ),
+      if (Object.keys(payload).length === 0 && !birthDateChanged) {
+        showSaveFeedback(
+          "success",
+          "Sem alterações",
+          "Nenhuma alteração para salvar.",
         );
+        return;
       }
-      await response.json();
+
+      if (Object.keys(payload).length > 0) {
+        const response = await fetch(
+          `${API_BASE_URL}/admin/users/${selectedUser.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!response.ok) {
+          throw new Error(
+            await parseApiError(
+              response,
+              "Nao foi possivel salvar as alteracoes.",
+            ),
+          );
+        }
+        await response.json();
+      }
+
+      if (birthDateChanged) {
+        if (!nextBirthDate) {
+          throw new Error("Data de nascimento é obrigatória.");
+        }
+        const healthResponse = await fetch(
+          `${API_BASE_URL}/admin/health/${selectedUser.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ birthDate: nextBirthDate }),
+          },
+        );
+        if (!healthResponse.ok) {
+          const errorMessage = await parseApiError(
+            healthResponse,
+            "Nao foi possivel atualizar a data de nascimento.",
+          );
+          if (errorMessage.includes("Perfil de saúde não encontrado")) {
+            throw new Error(
+              'Perfil de saúde não encontrado. Use "Editar saúde" para cadastrar os dados de saúde primeiro.',
+            );
+          }
+          throw new Error(errorMessage);
+        }
+      }
+
       await loadUsers();
       setSelectedUser(null);
       showSaveFeedback(
@@ -1272,8 +1379,7 @@ export default function DashboardPage() {
     }
     for (let day = 1; day <= totalDays; day += 1) {
       const date = new Date(year, month, day);
-      const iso = date.toISOString().split("T")[0];
-      days.push({ date: iso, day });
+      days.push({ date: toLocalDateKey(date), day });
     }
     return days;
   }, [checkinMonth]);
@@ -1298,7 +1404,7 @@ export default function DashboardPage() {
     for (let day = 1; day <= totalDays; day += 1) {
       const date = new Date(year, month, day);
       days.push({
-        date: date.toISOString().split("T")[0],
+        date: toLocalDateKey(date),
         day,
         inMonth: true,
       });
@@ -1336,9 +1442,24 @@ export default function DashboardPage() {
     if (!checkinSelectedDate) {
       return [];
     }
-    return checkinHistory.filter(
-      (item) => toCheckinDateKey(item.checkedInAt) === checkinSelectedDate,
-    );
+    const [year, month, day] = checkinSelectedDate
+      .split("-")
+      .map((value) => Number(value));
+    if (!year || !month || !day) {
+      return [];
+    }
+    const startOfDay = new Date(year, month - 1, day);
+    const endOfDay = new Date(year, month - 1, day + 1);
+    return checkinHistory.filter((item) => {
+      const parsed =
+        typeof item.checkedInAt === "string"
+          ? new Date(item.checkedInAt)
+          : item.checkedInAt;
+      if (Number.isNaN(parsed.getTime())) {
+        return false;
+      }
+      return parsed >= startOfDay && parsed < endOfDay;
+    });
   }, [checkinHistory, checkinSelectedDate]);
 
   const eventsByDate = useMemo(() => {
@@ -1398,24 +1519,265 @@ export default function DashboardPage() {
       priceCents: event?.paid ? parsePriceToReais(event.price ?? "") : "",
       paymentMethod: event?.paid ? event?.paymentMethod ?? "" : "",
     });
+    setEventImageFile(null);
     setIsEventModalOpen(true);
   };
 
-  const cancelEvent = () => {
-    if (!editingEventId) {
+  const buildEventPayloadFromForm = () => {
+    const accessMode = eventForm.accessMode;
+    const parsedCapacity = Number(eventForm.capacity);
+    const capacity =
+      accessMode === "open"
+        ? null
+        : Number.isFinite(parsedCapacity) && parsedCapacity > 0
+          ? Math.trunc(parsedCapacity)
+          : null;
+    const priceCents = eventForm.isPaid
+      ? parseReaisToCents(eventForm.priceCents)
+      : null;
+    const paymentMethod = eventForm.isPaid
+      ? eventForm.paymentMethod.trim() || null
+      : null;
+    const endTime = eventForm.endTime.trim() || null;
+
+    return {
+      title: eventForm.title.trim(),
+      description: eventForm.description.trim(),
+      date: eventForm.date,
+      time: eventForm.time,
+      endTime,
+      location: eventForm.location.trim(),
+      hideLocation: eventForm.hideLocation,
+      accessMode,
+      capacity,
+      allowGuests: eventForm.allowGuests,
+      requiresConfirmation: eventForm.requiresConfirmation,
+      isPaid: eventForm.isPaid,
+      priceCents,
+      paymentMethod,
+    };
+  };
+
+  const validateEventPayload = (
+    payload: ReturnType<typeof buildEventPayloadFromForm>,
+  ) => {
+    if (payload.title.length < 3) {
+      return "Titulo deve ter pelo menos 3 caracteres.";
+    }
+    if (payload.description.length < 3) {
+      return "Descricao deve ter pelo menos 3 caracteres.";
+    }
+    if (!payload.date) {
+      return "Data obrigatoria.";
+    }
+    if (!payload.time) {
+      return "Horario obrigatorio.";
+    }
+    if (payload.location.length < 3) {
+      return "Local deve ter pelo menos 3 caracteres.";
+    }
+
+    if (payload.accessMode === "registered_only") {
+      if (!payload.capacity || payload.capacity < 1) {
+        return "Capacidade obrigatoria para eventos com inscricao.";
+      }
+    } else if (payload.capacity !== null) {
+      return "Capacidade deve ser vazia para eventos abertos.";
+    }
+
+    if (payload.isPaid) {
+      if (!payload.priceCents || payload.priceCents < 1) {
+        return "Valor do evento e obrigatorio.";
+      }
+      if (!payload.paymentMethod || payload.paymentMethod.trim().length < 2) {
+        return "Forma de pagamento e obrigatoria.";
+      }
+      if (!payload.requiresConfirmation) {
+        return "Eventos pagos exigem confirmacao de presenca.";
+      }
+    }
+
+    return null;
+  };
+
+  const handleSaveEvent = async () => {
+    if (isSavingEvent) {
       return;
     }
-    setEvents((prev) =>
-      prev.map((event) =>
-        event.id === editingEventId
-          ? {
-              ...event,
-              status: "cancelado",
-            }
-          : event,
-      ),
-    );
-    setIsEventModalOpen(false);
+
+    const payload = buildEventPayloadFromForm();
+    const validationError = validateEventPayload(payload);
+    if (validationError) {
+      showSaveFeedback("error", "Erro ao salvar evento", validationError);
+      return;
+    }
+
+    setIsSavingEvent(true);
+    try {
+      const isEditMode = eventModalMode === "edit" && Boolean(editingEventId);
+      const response = await fetch(
+        isEditMode
+          ? `${API_BASE_URL}/events/${editingEventId}`
+          : `${API_BASE_URL}/events`,
+        {
+          method: isEditMode ? "PATCH" : "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            isEditMode
+              ? "Nao foi possivel atualizar o evento."
+              : "Nao foi possivel criar o evento.",
+          ),
+        );
+      }
+
+      const savedEvent = (await response.json()) as EventApiRecord;
+
+      if (eventImageFile) {
+        const formData = new FormData();
+        formData.append("file", eventImageFile);
+        const uploadResponse = await fetch(
+          `${API_BASE_URL}/events/${savedEvent.id}/thumbnail`,
+          {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          },
+        );
+        if (!uploadResponse.ok) {
+          throw new Error(
+            await parseApiError(
+              uploadResponse,
+              "Evento salvo, mas nao foi possivel enviar a imagem.",
+            ),
+          );
+        }
+      }
+
+      await loadEvents();
+      setIsEventModalOpen(false);
+      setEditingEventId(null);
+      setEventImageFile(null);
+      showSaveFeedback(
+        "success",
+        isEditMode ? "Evento atualizado" : "Evento criado",
+        isEditMode
+          ? "As alteracoes do evento foram salvas."
+          : "O evento foi criado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao salvar o evento.";
+      showSaveFeedback("error", "Erro ao salvar evento", message);
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
+  const handleCancelEvent = async (eventId?: string | null) => {
+    const targetId = eventId ?? editingEventId;
+    if (!targetId || isCancellingEvent) {
+      return;
+    }
+    setIsCancellingEvent(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/${targetId}/cancel`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel cancelar o evento."),
+        );
+      }
+      await loadEvents();
+      setIsEventModalOpen(false);
+      setEditingEventId(null);
+      showSaveFeedback(
+        "success",
+        "Evento cancelado",
+        "O evento foi cancelado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao cancelar evento.";
+      showSaveFeedback("error", "Erro ao cancelar evento", message);
+    } finally {
+      setIsCancellingEvent(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId?: string | null) => {
+    const targetId = eventId ?? selectedEvent?.id ?? null;
+    if (!targetId || isDeletingEvent) {
+      return;
+    }
+    setIsDeletingEvent(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/${targetId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel apagar o evento."),
+        );
+      }
+      await loadEvents();
+      setIsEventModalOpen(false);
+      setEditingEventId(null);
+      showSaveFeedback(
+        "success",
+        "Evento apagado",
+        "O evento foi apagado com sucesso.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao apagar evento.";
+      showSaveFeedback("error", "Erro ao apagar evento", message);
+    } finally {
+      setIsDeletingEvent(false);
+    }
+  };
+
+  const handleTogglePublishEvent = async (event: EventItem) => {
+    const action = event.status === "publicado" ? "unpublish" : "publish";
+    const actionLabel = action === "publish" ? "publicar" : "despublicar";
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/${event.id}/${action}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            `Nao foi possivel ${actionLabel} o evento.`,
+          ),
+        );
+      }
+      await loadEvents();
+      showSaveFeedback(
+        "success",
+        action === "publish" ? "Evento publicado" : "Evento despublicado",
+        action === "publish"
+          ? "O evento foi publicado com sucesso."
+          : "O evento voltou para rascunho.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : `Falha ao ${actionLabel} evento.`;
+      showSaveFeedback("error", "Erro no evento", message);
+    }
   };
 
   const filteredEvents = useMemo(() => {
@@ -1435,6 +1797,11 @@ export default function DashboardPage() {
     });
   }, [eventFilter, events]);
 
+  const selectedEvent = useMemo(
+    () => selectedDayEvents[0] ?? filteredEvents[0] ?? null,
+    [selectedDayEvents, filteredEvents],
+  );
+
   const handleTabSelect = (tabId: TabId) => {
     setActiveTab(tabId);
     setIsTabMenuOpen(false);
@@ -1443,7 +1810,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const year = eventMonth.getFullYear();
     const month = eventMonth.getMonth();
-    const todayIso = new Date().toISOString().split("T")[0];
+    const todayIso = toLocalDateKey(new Date());
     const todayDate = new Date(`${todayIso}T00:00:00`);
     const isTodayInMonth =
       todayDate.getFullYear() === year && todayDate.getMonth() === month;
@@ -1459,7 +1826,7 @@ export default function DashboardPage() {
       setSelectedEventDate(monthEvents[0].date);
       return;
     }
-    const fallback = new Date(year, month, 1).toISOString().split("T")[0];
+    const fallback = toLocalDateKey(new Date(year, month, 1));
     setSelectedEventDate(fallback);
   }, [eventMonth, events]);
 
@@ -1479,6 +1846,10 @@ export default function DashboardPage() {
   const avatarSrc = currentUser?.avatarUrl || currentUser?.image || "";
   const avatarLabel =
     currentUserStatus === "loading" ? "Carregando" : displayName;
+  const userBirthAge = useMemo(
+    () => calculateAgeFromBirthDate(userForm.birthDate),
+    [userForm.birthDate],
+  );
   const whatsappNumber = userForm.phone.replace(/\D/g, "");
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageText)}`
@@ -1654,7 +2025,7 @@ export default function DashboardPage() {
               <span>CPF</span>
               <span>Telefone</span>
               <span>Perfil</span>
-              <span className="text-right">Acoes</span>
+              <span className="text-right">Ações</span>
             </div>
             <div className="divide-y divide-[color:var(--border-dim)]">
               {usersStatus === "loading" && (
@@ -1770,23 +2141,44 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() =>
-                  openEventModal(
-                    "edit",
-                    selectedDayEvents[0] ?? filteredEvents[0],
-                  )
+                  selectedEvent ? openEventModal("edit", selectedEvent) : undefined
                 }
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                disabled={!selectedEvent}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Editar evento
               </button>
-              <button className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[color:var(--danger)]">
-                Apagar evento
+              <button
+                onClick={() => handleDeleteEvent(selectedEvent?.id)}
+                disabled={!selectedEvent || isDeletingEvent}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeletingEvent ? "Apagando..." : "Apagar evento"}
               </button>
-              <button className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+              <button
+                onClick={() => handleCancelEvent(selectedEvent?.id)}
+                disabled={
+                  !selectedEvent ||
+                  selectedEvent.status === "cancelado" ||
+                  isCancellingEvent
+                }
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
                 Cancelar evento
               </button>
             </div>
           </div>
+
+          {eventsStatus === "loading" && (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Carregando eventos...
+            </p>
+          )}
+          {eventsStatus === "error" && (
+            <p className="text-sm text-[color:var(--danger)]">
+              {eventsError ?? "Nao foi possivel carregar eventos."}
+            </p>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
             <section className="relative w-full overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
@@ -2085,8 +2477,14 @@ export default function DashboardPage() {
                     <Pencil className="h-4 w-4" />
                     Editar
                   </button>
-                  <button className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                    Publicar
+                  <button
+                    onClick={() => handleTogglePublishEvent(event)}
+                    disabled={
+                      event.status === "cancelado" || eventsStatus === "loading"
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {event.status === "publicado" ? "Despublicar" : "Publicar"}
                   </button>
                 </div>
               </article>
@@ -2386,6 +2784,41 @@ export default function DashboardPage() {
                 />
               </label>
               <label className={modalLabelClass}>
+                Data de nascimento
+                <input
+                  type="date"
+                  value={userForm.birthDate}
+                  onChange={(event) =>
+                    setUserForm((prev) => ({
+                      ...prev,
+                      birthDate: event.target.value,
+                    }))
+                  }
+                  className={modalInputClass}
+                />
+                {isLoadingUserBirthDate ? (
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    Carregando data de nascimento do perfil de saúde...
+                  </span>
+                ) : null}
+                {userBirthDateError ? (
+                  <span className="text-xs text-[color:var(--danger)]">
+                    {userBirthDateError}
+                  </span>
+                ) : null}
+                {userForm.birthDate.trim() ? (
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    {userBirthAge === null
+                      ? "Data de nascimento inválida."
+                      : `Idade: ${userBirthAge} anos`}
+                  </span>
+                ) : (
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    Informe a data para exibir a idade.
+                  </span>
+                )}
+              </label>
+              <label className={modalLabelClass}>
                 Perfil
                 <select
                   value={userForm.role}
@@ -2418,7 +2851,9 @@ export default function DashboardPage() {
                 <select
                   value={userForm.planId}
                   disabled={
-                    ["MASTER", "ADMIN", "GUEST"].includes(userForm.role) ||
+                    ["MASTER", "ADMIN", "STAFF", "COACH", "GUEST"].includes(
+                      userForm.role,
+                    ) ||
                     plansStatus === "loading"
                   }
                   onChange={(event) =>
@@ -2447,7 +2882,9 @@ export default function DashboardPage() {
                     {plansError}
                   </span>
                 )}
-                {["MASTER", "ADMIN", "GUEST"].includes(userForm.role) && (
+                {["MASTER", "ADMIN", "STAFF", "COACH", "GUEST"].includes(
+                  userForm.role,
+                ) && (
                   <span className="text-xs text-[var(--muted-foreground)]">
                     Plano definido automaticamente para este perfil.
                   </span>
@@ -3349,7 +3786,10 @@ export default function DashboardPage() {
                 </h3>
               </div>
               <button
-                onClick={() => setIsEventModalOpen(false)}
+                onClick={() => {
+                  setIsEventModalOpen(false);
+                  setEventImageFile(null);
+                }}
                 className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Fechar
@@ -3376,6 +3816,9 @@ export default function DashboardPage() {
                 <input
                   type="file"
                   accept="image/*"
+                  onChange={(event) =>
+                    setEventImageFile(event.target.files?.[0] ?? null)
+                  }
                   className={`${modalInputClass} file:mr-3 file:rounded-full file:border-0 file:bg-[var(--gold-tone)]/10 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-[var(--gold-tone-dark)]`}
                 />
               </label>
@@ -3473,7 +3916,7 @@ export default function DashboardPage() {
                   onChange={(event) =>
                     setEventForm((prev) => ({
                       ...prev,
-                      accessMode: event.target.value,
+                      accessMode: event.target.value as "open" | "registered_only",
                       capacity:
                         event.target.value === "open" ? "" : prev.capacity,
                     }))
@@ -3582,25 +4025,32 @@ export default function DashboardPage() {
             <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
               {eventModalMode === "edit" && (
                 <button
-                  onClick={cancelEvent}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-5 text-sm font-semibold text-[color:var(--danger)]"
+                  onClick={() => handleCancelEvent(editingEventId)}
+                  disabled={isCancellingEvent}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-5 text-sm font-semibold text-[color:var(--danger)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Cancelar evento
+                  {isCancellingEvent ? "Cancelando..." : "Cancelar evento"}
                 </button>
               )}
               <button
-                onClick={() => setIsEventModalOpen(false)}
+                onClick={() => {
+                  setIsEventModalOpen(false);
+                  setEventImageFile(null);
+                }}
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 text-sm font-medium text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => setIsEventModalOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-sm font-semibold text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
+                onClick={handleSaveEvent}
+                disabled={isSavingEvent}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-sm font-semibold text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {eventModalMode === "edit"
-                  ? "Salvar alterações"
-                  : "Salvar evento"}
+                {isSavingEvent
+                  ? "Salvando..."
+                  : eventModalMode === "edit"
+                    ? "Salvar alterações"
+                    : "Salvar evento"}
               </button>
             </div>
           </div>

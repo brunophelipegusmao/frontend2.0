@@ -4,12 +4,12 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const ROLE_ROUTE: Record<string, string> = {
-  MASTER: "/users/masterDashboard",
-  ADMIN: "/users/adminDashboard",
-  STAFF: "/users/staffDashboard",
-  COACH: "/users/coachDashboard",
+  MASTER: "/dashboard",
+  ADMIN: "/dashboard",
+  STAFF: "/dashboard",
+  COACH: "/dashboard",
   STUDENT: "/users/studentDashboad",
-  GUEST: "/users/guestDashboard",
+  GUEST: "/dashboard",
 };
 
 type UserRole = keyof typeof ROLE_ROUTE;
@@ -42,6 +42,6 @@ export async function redirectBasedOnRole(router: {
 
   const user = await userResponse.json();
   const role: UserRole = user.role as UserRole;
-  const target = ROLE_ROUTE[role] ?? "/users/guestDashboard";
+  const target = ROLE_ROUTE[role] ?? "/dashboard";
   router.replace(target);
 }

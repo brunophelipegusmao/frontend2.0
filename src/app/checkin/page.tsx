@@ -9,6 +9,62 @@ import { startSocialSignIn } from "@/lib/auth";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+type ParsedApiError = {
+  message: string;
+  code?: string;
+};
+
+const normalizeErrorText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+const isDuplicateCheckinError = (message: string, code?: string) => {
+  if (code === "CHECKIN_ALREADY_DONE_TODAY") {
+    return true;
+  }
+  const normalized = normalizeErrorText(message);
+  return (
+    normalized.includes("check-in ja registrado neste dia") ||
+    normalized.includes("checkin ja registrado neste dia") ||
+    normalized.includes("check-in ja realizado")
+  );
+};
+
+const isBillingError = (message: string, code?: string) => {
+  if (code === "BILLING_OVERDUE_BUSINESS_DAYS") {
+    return true;
+  }
+  const normalized = normalizeErrorText(message);
+  return (
+    normalized.includes("mensalidade") ||
+    normalized.includes("assinatura") ||
+    normalized.includes("pagamento") ||
+    normalized.includes("plano free")
+  );
+};
+
+const buildCheckinErrorFeedback = (message: string, code?: string) => {
+  if (isDuplicateCheckinError(message, code)) {
+    const duplicateMessage = "Check-in já realizado hoje para este usuário.";
+    return {
+      statusMessage: duplicateMessage,
+      feedbackMessage: duplicateMessage,
+    };
+  }
+  if (isBillingError(message, code)) {
+    return {
+      statusMessage: message,
+      feedbackMessage: `${message}. Direcione-se a um funcionário (staff).`,
+    };
+  }
+  return {
+    statusMessage: message,
+    feedbackMessage: `${message}. Direcione-se a um funcionário (staff).`,
+  };
+};
+
 export default function CheckinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,18 +106,50 @@ export default function CheckinPage() {
     );
   };
 
-  const parseApiError = async (response: Response, fallback: string) => {
+  const closeCheckinFeedback = () => {
+    if (checkinFeedbackTimer) {
+      clearTimeout(checkinFeedbackTimer);
+      setCheckinFeedbackTimer(null);
+    }
+    setCheckinFeedback((prev) => ({ ...prev, open: false }));
+  };
+
+  const parseApiError = async (
+    response: Response,
+    fallback: string,
+  ): Promise<ParsedApiError> => {
     try {
       const data = (await response.json()) as {
-        message?: string | string[];
+        message?: unknown;
         error?: string;
+        code?: string;
       };
       if (Array.isArray(data?.message)) {
-        return data.message.join(", ");
+        return { message: data.message.join(", "), code: data.code };
       }
-      return data?.message || data?.error || fallback;
+      if (typeof data?.message === "string") {
+        return { message: data.message, code: data.code };
+      }
+      if (data?.message && typeof data.message === "object") {
+        const nested = data.message as { message?: unknown; code?: unknown };
+        if (typeof nested.message === "string") {
+          return {
+            message: nested.message,
+            code:
+              typeof nested.code === "string"
+                ? nested.code
+                : typeof data.code === "string"
+                  ? data.code
+                  : undefined,
+          };
+        }
+      }
+      if (typeof data?.error === "string" && data.error.trim()) {
+        return { message: data.error, code: data.code };
+      }
+      return { message: fallback, code: data.code };
     } catch {
-      return fallback;
+      return { message: fallback };
     }
   };
 
@@ -93,11 +181,9 @@ export default function CheckinPage() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          await parseApiError(
-            response,
-            "Nao foi possivel registrar o check-in.",
-          ),
+        throw await parseApiError(
+          response,
+          "Nao foi possivel registrar o check-in.",
         );
       }
 
@@ -109,13 +195,20 @@ export default function CheckinPage() {
       );
       setSearchTerm("");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Falha ao registrar o check-in.";
-      setStatusMessage(message);
+      const fallbackMessage = "Falha ao registrar o check-in.";
+      const parsedError =
+        err && typeof err === "object" && "message" in err
+          ? (err as ParsedApiError)
+          : { message: fallbackMessage };
+      const details = buildCheckinErrorFeedback(
+        parsedError.message || fallbackMessage,
+        parsedError.code,
+      );
+      setStatusMessage(details.statusMessage);
       showCheckinFeedback(
         "error",
         "Erro no check-in",
-        `${message}. Direcione-se a um funcionário (staff).`,
+        details.feedbackMessage,
       );
     } finally {
       setIsCheckingIn(false);
@@ -180,11 +273,9 @@ export default function CheckinPage() {
           body: JSON.stringify({}),
         });
         if (!response.ok) {
-          throw new Error(
-            await parseApiError(
-              response,
-              "Nao foi possivel concluir o check-in.",
-            ),
+          throw await parseApiError(
+            response,
+            "Nao foi possivel concluir o check-in.",
           );
         }
         setStatusMessage("Check-in confirmado com Google.");
@@ -194,15 +285,20 @@ export default function CheckinPage() {
           "Check-in feito com sucesso. Vejo você suado 💪",
         );
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Falha ao confirmar check-in.";
-        setStatusMessage(message);
+        const fallbackMessage = "Falha ao confirmar check-in.";
+        const parsedError =
+          err && typeof err === "object" && "message" in err
+            ? (err as ParsedApiError)
+            : { message: fallbackMessage };
+        const details = buildCheckinErrorFeedback(
+          parsedError.message || fallbackMessage,
+          parsedError.code,
+        );
+        setStatusMessage(details.statusMessage);
         showCheckinFeedback(
           "error",
           "Erro no check-in",
-          `${message}. Direcione-se a um funcionário (staff).`,
+          details.feedbackMessage,
         );
       } finally {
         setIsGoogleLoading(false);
@@ -288,7 +384,16 @@ export default function CheckinPage() {
       {checkinFeedback.open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
           <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)] transition-all duration-300">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start justify-end">
+              <button
+                type="button"
+                onClick={closeCheckinFeedback}
+                className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="mt-3 flex items-center gap-3">
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-full border ${
                   checkinFeedback.status === "success"
