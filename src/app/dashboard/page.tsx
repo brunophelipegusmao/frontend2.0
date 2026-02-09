@@ -11,6 +11,7 @@ import {
   Globe,
   Clock,
   CheckCircle2,
+  LogOut,
   Pencil,
   MessageCircle,
   Stethoscope,
@@ -445,9 +446,20 @@ const toFormValue = (value?: string | number | null) => {
 };
 
 const parsePositive = (value: string) => {
-  const parsed = Number(value);
+  const parsed = Number(value.trim().replace(",", "."));
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return null;
+  }
+  return parsed;
+};
+
+const normalizeHeightCm = (value: string) => {
+  const parsed = parsePositive(value);
+  if (parsed === null) {
+    return null;
+  }
+  if (parsed > 0 && parsed < 3.5) {
+    return parsed * 100;
   }
   return parsed;
 };
@@ -560,6 +572,20 @@ export default function DashboardPage() {
   const [messageText, setMessageText] = useState("");
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [userSaveError, setUserSaveError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    open: boolean;
+    status: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "success",
+    title: "",
+    message: "",
+  });
+  const [saveFeedbackTimer, setSaveFeedbackTimer] =
+    useState<NodeJS.Timeout | null>(null);
   const [userForm, setUserForm] = useState({
     name: "",
     email: "",
@@ -608,6 +634,55 @@ export default function DashboardPage() {
     () => tabs.find((tab) => tab.id === activeTab),
     [activeTab],
   );
+
+  useEffect(() => {
+    return () => {
+      if (saveFeedbackTimer) {
+        clearTimeout(saveFeedbackTimer);
+      }
+    };
+  }, [saveFeedbackTimer]);
+
+  const showSaveFeedback = (
+    status: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    if (saveFeedbackTimer) {
+      clearTimeout(saveFeedbackTimer);
+    }
+    setSaveFeedback({ open: true, status, title, message });
+    setSaveFeedbackTimer(
+      setTimeout(() => {
+        setSaveFeedback((prev) => ({ ...prev, open: false }));
+      }, 5000),
+    );
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel sair."),
+        );
+      }
+      window.location.href = "/users/login";
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao sair da conta.";
+      showSaveFeedback("error", "Erro ao sair", message);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const loadUsers = useCallback(async () => {
     setUsersStatus("loading");
@@ -802,7 +877,7 @@ export default function DashboardPage() {
       thighMm,
     };
 
-    const heightCm = parsePositive(healthForm.heightCm);
+    const heightCm = normalizeHeightCm(healthForm.heightCm);
     if (heightCm) {
       payload.heightCm = heightCm;
     }
@@ -822,7 +897,7 @@ export default function DashboardPage() {
     const timer = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/admin/health/${healthUser.id}/body-composition/compute`,
+          `${API_BASE_URL}/admin/health/body-composition/compute`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -937,20 +1012,19 @@ export default function DashboardPage() {
     setIsSavingHealth(true);
     setHealthError(null);
     try {
-      const payload = {
-        heightCm: healthForm.heightCm.trim(),
-        weightKg: healthForm.weightKg.trim(),
+      const heightCm = normalizeHeightCm(healthForm.heightCm);
+      const weightKg = parsePositive(healthForm.weightKg);
+      if (!heightCm || !weightKg) {
+        throw new Error("Altura e peso precisam ser informados.");
+      }
+
+      const payload: Record<string, unknown> = {
+        heightCm,
+        weightKg,
         bloodType: healthForm.bloodType,
         sex: healthForm.sex,
         birthDate: healthForm.birthDate,
         injuries: healthForm.injuries.trim(),
-        skinfoldChest: healthForm.skinfoldChest.trim(),
-        skinfoldAbdomen: healthForm.skinfoldAbdomen.trim(),
-        skinfoldThigh: healthForm.skinfoldThigh.trim(),
-        skinfoldTriceps: healthForm.skinfoldTriceps.trim(),
-        skinfoldSubscapular: healthForm.skinfoldSubscapular.trim(),
-        skinfoldSuprailiac: healthForm.skinfoldSuprailiac.trim(),
-        skinfoldMidaxillary: healthForm.skinfoldMidaxillary.trim(),
         takesMedication: healthForm.takesMedication,
         medications: healthForm.takesMedication
           ? healthForm.medications.trim()
@@ -966,6 +1040,23 @@ export default function DashboardPage() {
         foodRoutine: healthForm.foodRoutine.trim(),
         notesPublic: healthForm.notesPublic.trim(),
       };
+
+      const optionalNumericFields = [
+        ["skinfoldChest", healthForm.skinfoldChest],
+        ["skinfoldAbdomen", healthForm.skinfoldAbdomen],
+        ["skinfoldThigh", healthForm.skinfoldThigh],
+        ["skinfoldTriceps", healthForm.skinfoldTriceps],
+        ["skinfoldSubscapular", healthForm.skinfoldSubscapular],
+        ["skinfoldSuprailiac", healthForm.skinfoldSuprailiac],
+        ["skinfoldMidaxillary", healthForm.skinfoldMidaxillary],
+      ] as const;
+
+      optionalNumericFields.forEach(([key, value]) => {
+        const parsed = parsePositive(value);
+        if (parsed !== null) {
+          payload[key] = parsed;
+        }
+      });
       const payloadWithPrivateNotes = canViewPrivateNotes
         ? { ...payload, notesPrivate: healthForm.notesPrivate.trim() }
         : payload;
@@ -991,12 +1082,18 @@ export default function DashboardPage() {
       setHealthForm(nextForm);
       setHealthInitial(nextForm);
       setHealthUser(null);
+      showSaveFeedback(
+        "success",
+        "Dados de saúde salvos",
+        "As informações foram atualizadas com sucesso.",
+      );
     } catch (err) {
-      setHealthError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Falha ao salvar dados de saude.",
-      );
+          : "Falha ao salvar dados de saude.";
+      setHealthError(message);
+      showSaveFeedback("error", "Erro ao salvar saúde", message);
     } finally {
       setIsSavingHealth(false);
     }
@@ -1055,12 +1152,18 @@ export default function DashboardPage() {
       await response.json();
       await loadUsers();
       setSelectedUser(null);
+      showSaveFeedback(
+        "success",
+        "Usuário salvo",
+        "As informações do usuário foram atualizadas.",
+      );
     } catch (err) {
-      setUserSaveError(
+      const message =
         err instanceof Error
           ? err.message
-          : "Falha ao salvar alteracoes.",
-      );
+          : "Falha ao salvar alteracoes.";
+      setUserSaveError(message);
+      showSaveFeedback("error", "Erro ao salvar usuário", message);
     } finally {
       setIsSavingUser(false);
     }
@@ -1308,7 +1411,7 @@ export default function DashboardPage() {
     "border-red-400 focus:border-red-400 focus:ring-red-400/40";
   const bmiFallback = useMemo(() => {
     const weightKg = parsePositive(healthForm.weightKg);
-    const heightCm = parsePositive(healthForm.heightCm);
+    const heightCm = normalizeHeightCm(healthForm.heightCm);
     if (!weightKg || !heightCm) {
       return null;
     }
@@ -1358,6 +1461,17 @@ export default function DashboardPage() {
               className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] shadow-[0_4px_12px_-2px_var(--shadow),inset_0_1px_2px_rgba(255,255,255,0.1)] transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(194,165,55,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] sm:hidden"
             >
               <Menu className="h-5 w-5 text-[var(--gold-tone-dark)]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:px-4"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {isLoggingOut ? "Saindo..." : "Sair"}
+              </span>
             </button>
           </div>
         </div>
@@ -3361,6 +3475,33 @@ export default function DashboardPage() {
                   ? "Salvar alterações"
                   : "Salvar evento"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {saveFeedback.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
+            <div className="flex items-center gap-3">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                  saveFeedback.status === "success"
+                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                    : "border-red-400/40 bg-red-500/15 text-red-300"
+                }`}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">{saveFeedback.title}</p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Esta mensagem fecha automaticamente em 5 segundos.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4 text-sm text-[var(--foreground)]">
+              {saveFeedback.message}
             </div>
           </div>
         </div>

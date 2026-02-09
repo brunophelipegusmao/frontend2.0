@@ -17,6 +17,25 @@ const parseApiError = async (response: Response) => {
   }
 };
 
+const parsePositive = (value: string) => {
+  const parsed = Number(value.trim().replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
+
+const normalizeHeightCm = (value: string) => {
+  const parsed = parsePositive(value);
+  if (parsed === null) {
+    return null;
+  }
+  if (parsed > 0 && parsed < 3.5) {
+    return parsed * 100;
+  }
+  return parsed;
+};
+
 const completeProfile = async (payload: {
   cpf: string;
   name?: string;
@@ -100,6 +119,19 @@ export default function CompleteProfilePage() {
   const [healthSubmitting, setHealthSubmitting] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [healthSuccess, setHealthSuccess] = useState<string | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<{
+    open: boolean;
+    status: "success" | "error";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    status: "success",
+    title: "",
+    message: "",
+  });
+  const [saveFeedbackTimer, setSaveFeedbackTimer] =
+    useState<NodeJS.Timeout | null>(null);
   const [profileFieldErrors, setProfileFieldErrors] = useState<
     Partial<Record<"cpf" | "name" | "phone" | "address", string>>
   >({});
@@ -118,6 +150,30 @@ export default function CompleteProfilePage() {
       >
     >
   >({});
+
+  useEffect(() => {
+    return () => {
+      if (saveFeedbackTimer) {
+        clearTimeout(saveFeedbackTimer);
+      }
+    };
+  }, [saveFeedbackTimer]);
+
+  const showSaveFeedback = (
+    status: "success" | "error",
+    title: string,
+    message: string,
+  ) => {
+    if (saveFeedbackTimer) {
+      clearTimeout(saveFeedbackTimer);
+    }
+    setSaveFeedback({ open: true, status, title, message });
+    setSaveFeedbackTimer(
+      setTimeout(() => {
+        setSaveFeedback((prev) => ({ ...prev, open: false }));
+      }, 5000),
+    );
+  };
 
   const sanitizedCpf = useMemo(() => cpf.replace(/\D/g, ""), [cpf]);
 
@@ -281,12 +337,25 @@ export default function CompleteProfilePage() {
       if (needsHealth && role !== "GUEST") {
         setStep("health");
         setSuccess("Perfil atualizado. Agora finalize os dados de saúde.");
+        showSaveFeedback(
+          "success",
+          "Perfil salvo",
+          "Seus dados pessoais foram atualizados.",
+        );
       } else {
         setSuccess("Perfil atualizado. Redirecionando...");
+        showSaveFeedback(
+          "success",
+          "Perfil salvo",
+          "Seus dados pessoais foram atualizados.",
+        );
         await redirectBasedOnRole(router);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Algo inesperado aconteceu.");
+      const message =
+        err instanceof Error ? err.message : "Algo inesperado aconteceu.";
+      setError(message);
+      showSaveFeedback("error", "Erro ao salvar perfil", message);
     } finally {
       setIsSubmitting(false);
     }
@@ -306,32 +375,27 @@ export default function CompleteProfilePage() {
         string
       >
     > = {};
-    if (
-      !healthForm.heightCm ||
-      !healthForm.weightKg ||
-      !healthForm.bloodType ||
-      !healthForm.sex ||
-      !healthForm.birthDate ||
-      (healthForm.hasInjuries && !healthForm.injuries)
-    ) {
-      if (!healthForm.heightCm) {
-        nextErrors.heightCm = "Altura é obrigatória.";
-      }
-      if (!healthForm.weightKg) {
-        nextErrors.weightKg = "Peso é obrigatório.";
-      }
-      if (!healthForm.bloodType) {
-        nextErrors.bloodType = "Tipo sanguíneo é obrigatório.";
-      }
-      if (!healthForm.sex) {
-        nextErrors.sex = "Sexo é obrigatório.";
-      }
-      if (!healthForm.birthDate) {
-        nextErrors.birthDate = "Data de nascimento é obrigatória.";
-      }
-      if (healthForm.hasInjuries && !healthForm.injuries) {
-        nextErrors.injuries = "Informe as lesoes.";
-      }
+    if (!healthForm.heightCm) {
+      nextErrors.heightCm = "Altura é obrigatória.";
+    } else if (!normalizeHeightCm(healthForm.heightCm)) {
+      nextErrors.heightCm = "Altura inválida.";
+    }
+    if (!healthForm.weightKg) {
+      nextErrors.weightKg = "Peso é obrigatório.";
+    } else if (!parsePositive(healthForm.weightKg)) {
+      nextErrors.weightKg = "Peso inválido.";
+    }
+    if (!healthForm.bloodType) {
+      nextErrors.bloodType = "Tipo sanguíneo é obrigatório.";
+    }
+    if (!healthForm.sex) {
+      nextErrors.sex = "Sexo é obrigatório.";
+    }
+    if (!healthForm.birthDate) {
+      nextErrors.birthDate = "Data de nascimento é obrigatória.";
+    }
+    if (healthForm.hasInjuries && !healthForm.injuries) {
+      nextErrors.injuries = "Informe as lesoes.";
     }
     if (healthForm.takesMedication && !healthForm.medications.trim()) {
       nextErrors.medications = "Informe as medicações utilizadas.";
@@ -362,9 +426,14 @@ export default function CompleteProfilePage() {
 
     setHealthSubmitting(true);
     try {
+      const heightCm = normalizeHeightCm(healthForm.heightCm);
+      const weightKg = parsePositive(healthForm.weightKg);
+      if (!heightCm || !weightKg) {
+        throw new Error("Altura e peso precisam ser informados.");
+      }
       const payload = {
-        heightCm: healthForm.heightCm,
-        weightKg: healthForm.weightKg,
+        heightCm,
+        weightKg,
         bloodType: healthForm.bloodType,
         sex: healthForm.sex,
         birthDate: healthForm.birthDate,
@@ -391,33 +460,43 @@ export default function CompleteProfilePage() {
         throw new Error(await parseApiError(response));
       }
       setHealthSuccess("Dados de saude salvos. Redirecionando...");
+      showSaveFeedback(
+        "success",
+        "Saúde salva",
+        "Os dados de saúde foram atualizados.",
+      );
       await redirectBasedOnRole(router);
     } catch (err) {
-      setHealthError(
-        err instanceof Error ? err.message : "Nao foi possivel salvar a saude.",
-      );
+      const message =
+        err instanceof Error ? err.message : "Nao foi possivel salvar a saude.";
+      setHealthError(message);
+      showSaveFeedback("error", "Erro ao salvar saúde", message);
     } finally {
       setHealthSubmitting(false);
     }
   };
 
   return (
-    <AuthCard
-      title="Complete seu perfil"
-      description={
-        step === "profile"
-          ? "Preencha CPF, telefone e seus dados pessoais."
-          : "Finalize os dados de saúde para liberar o acesso ao painel."
-      }
-      footer={
-        <>
-          Ja possui acesso?{" "}
-          <a href="/users/login" className="font-semibold text-[var(--gold-tone-dark)]">
-            Fazer login
-          </a>
-        </>
-      }
-    >
+    <>
+      <AuthCard
+        title="Complete seu perfil"
+        description={
+          step === "profile"
+            ? "Preencha CPF, telefone e seus dados pessoais."
+            : "Finalize os dados de saúde para liberar o acesso ao painel."
+        }
+        footer={
+          <>
+            Ja possui acesso?{" "}
+            <a
+              href="/users/login"
+              className="font-semibold text-[var(--gold-tone-dark)]"
+            >
+              Fazer login
+            </a>
+          </>
+        }
+      >
       {status === "loading" ? (
         <p className="mt-6 text-sm text-[var(--muted-foreground)]">
           Carregando informações...
@@ -968,6 +1047,35 @@ export default function CompleteProfilePage() {
           </div>
         </form>
       ) : null}
-    </AuthCard>
+      </AuthCard>
+      {saveFeedback.open && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
+            <div className="flex items-center gap-3">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                  saveFeedback.status === "success"
+                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
+                    : "border-red-400/40 bg-red-500/15 text-red-300"
+                }`}
+              >
+                <span className="text-base font-semibold">
+                  {saveFeedback.status === "success" ? "OK" : "!"}
+                </span>
+              </span>
+              <div>
+                <p className="text-sm font-semibold">{saveFeedback.title}</p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Esta mensagem fecha automaticamente em 5 segundos.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4 text-sm text-[var(--foreground)]">
+              {saveFeedback.message}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
