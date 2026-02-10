@@ -86,10 +86,16 @@ export function InstallAppButton({
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const [isLikelyChromium, setIsLikelyChromium] = useState(false);
 
   useEffect(() => {
     setIsInstalled(isStandaloneMode());
     setIsIos(isIosDevice());
+    const userAgent = navigator.userAgent.toLowerCase();
+    const chromiumLike =
+      /(chrome|chromium|edg|opr|samsungbrowser)/.test(userAgent) &&
+      !/(firefox|fxios)/.test(userAgent);
+    setIsLikelyChromium(chromiumLike);
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -114,11 +120,21 @@ export function InstallAppButton({
   }, []);
 
   const shouldShowButton = useMemo(() => {
-    return Boolean(deferredPrompt) && !isInstalled;
-  }, [deferredPrompt, isInstalled]);
+    if (isInstalled || isIos) {
+      return false;
+    }
+    return Boolean(deferredPrompt) || isLikelyChromium;
+  }, [deferredPrompt, isInstalled, isIos, isLikelyChromium]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt || isInstalling) {
+    if (isInstalling) {
+      return;
+    }
+
+    if (!deferredPrompt) {
+      window.alert(
+        "Use o menu do navegador e escolha 'Instalar app' ou 'Adicionar à tela inicial'.",
+      );
       return;
     }
 

@@ -55,7 +55,7 @@ export function Header() {
           <div className="flex items-center gap-2">
             <InstallAppButton
               iconOnly
-              className="hidden h-9 w-9 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] md:inline-flex"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
             />
             <button
               type="button"
@@ -283,12 +283,6 @@ export function Header() {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="space-y-2 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3 text-center">
-            <div className="pb-1">
-              <InstallAppButton
-                iconOnly
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] md:hidden"
-              />
-            </div>
             {navItems.map((item) => (
               <Link
                 key={item.label}
