@@ -4293,7 +4293,7 @@ export default function DashboardPage() {
     bmiFallback !== null ? bmiCategoryFromAdult(bmiFallback) : null;
 
   return (
-    <section className="relative flex min-h-screen max-w-full flex-col gap-6 overflow-x-hidden rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6 font-[var(--font-roboto)]">
+    <section className="relative flex min-h-[100dvh] max-w-full flex-col gap-6 overflow-x-hidden rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6 font-[var(--font-roboto)]">
       <header className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">

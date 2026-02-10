@@ -10,6 +10,14 @@ import {
   Phone,
   Youtube,
 } from "lucide-react";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_URL,
+  resolveOgImage,
+  toE164Phone,
+} from "@/lib/seo";
 
 type OperatingSegment = { start: string; end: string };
 type OperatingHours = { day: string; segments: OperatingSegment[] };
@@ -61,10 +69,59 @@ const DAY_LABELS: Record<string, string> = {
   sunday: "Domingo",
 };
 
+const SCHEMA_DAY_OF_WEEK: Record<string, string> = {
+  monday: "https://schema.org/Monday",
+  tuesday: "https://schema.org/Tuesday",
+  wednesday: "https://schema.org/Wednesday",
+  thursday: "https://schema.org/Thursday",
+  friday: "https://schema.org/Friday",
+  saturday: "https://schema.org/Saturday",
+  sunday: "https://schema.org/Sunday",
+};
+
+const buildOpeningHoursSpecification = (hours: OperatingHours[]) =>
+  hours
+    .flatMap((entry) =>
+      (entry.segments ?? []).map((segment) => ({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: SCHEMA_DAY_OF_WEEK[entry.day],
+        opens: segment.start,
+        closes: segment.end,
+      })),
+    )
+    .filter(
+      (item) => item.dayOfWeek && item.opens && item.closes,
+    );
+
 export const metadata: Metadata = {
   title: "Contato",
   description:
     "Fale com a equipe da JM Fitness Studio e confira horários de funcionamento e redes oficiais.",
+  alternates: { canonical: "/contacts" },
+  openGraph: {
+    title: `Contato | ${SITE_NAME}`,
+    description:
+      "Fale com a equipe da JM Fitness Studio e confira horários de funcionamento e redes oficiais.",
+    url: `${SITE_URL}/contacts`,
+    siteName: SITE_NAME,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+    locale: SITE_LOCALE,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Contato | ${SITE_NAME}`,
+    description:
+      "Fale com a equipe da JM Fitness Studio e confira horários de funcionamento e redes oficiais.",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 const buildApiUrl = (path: string) =>
@@ -180,9 +237,38 @@ export default async function ContactsPage() {
     settings?.operatingHours && settings.operatingHours.length > 0
       ? settings.operatingHours
       : FALLBACK_HOURS;
+  const openingHoursSpecification = buildOpeningHoursSpecification(operatingHours);
+  const schemaAddress = {
+    "@type": "PostalAddress",
+    streetAddress: addressParts.line1 || undefined,
+    addressLocality: contact.city || undefined,
+    addressRegion: contact.state || undefined,
+    postalCode: contact.zipCode || undefined,
+    addressCountry: "BR",
+  };
+  const sameAs = socialLinks.map((link) => link.href);
+  const contactSchema = {
+    "@context": "https://schema.org",
+    "@type": "HealthClub",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description:
+      "Fale com a equipe da JM Fitness Studio e confira horários de funcionamento e redes oficiais.",
+    image: [resolveOgImage(DEFAULT_OG_IMAGE)],
+    telephone: toE164Phone(phone),
+    email: FALLBACK_EMAIL,
+    address: schemaAddress,
+    openingHoursSpecification:
+      openingHoursSpecification.length > 0 ? openingHoursSpecification : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+  };
 
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
+      />
       <header className="relative overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-6 py-8 shadow-[0_18px_46px_-24px_var(--shadow)] sm:px-8">
         <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-[var(--gold-tone)]/15 blur-3xl" />
         <p className="text-xs font-semibold uppercase tracking-[0.34rem] text-[var(--gold-tone-dark)]">

@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import { EventsSection } from "@/components/EventsSection";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { PlansSection, type PlanOption } from "@/components/PlansSection";
 import { DEFAULT_HERO_SLIDES, PLAN_PERKS_BY_KEY, type HeroSlide } from "@/constants/home";
 import type { EventHighlight } from "@/types/event";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_URL,
+  resolveOgImage,
+  toE164Phone,
+} from "@/lib/seo";
 
 type CarouselImage = { imageUrl: string; altText?: string | null };
 
@@ -34,6 +44,17 @@ type ApiPlan = {
   durationDays: number | null;
 };
 
+type SystemSettingsResponse = {
+  contact?: {
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zipCode?: string | null;
+    phone?: string | null;
+  } | null;
+  socialLinks?: Record<string, string | null> | null;
+};
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -55,6 +76,52 @@ const fetchJson = async <T,>(path: string): Promise<T | null> => {
   } catch {
     return null;
   }
+};
+
+const FALLBACK_CONTACT = {
+  address: "Rua General Câmara, 18, sala 311",
+  city: "Duque de Caxias",
+  state: "RJ",
+  zipCode: null,
+  phone: "(21) 98099-5749",
+};
+
+const normalizeSocialLinks = (socialLinks?: Record<string, string | null>) =>
+  Object.values(socialLinks ?? {})
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+const getSystemSettings = async (): Promise<SystemSettingsResponse | null> =>
+  fetchJson<SystemSettingsResponse>("/system-settings");
+
+export const metadata: Metadata = {
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: `${SITE_NAME} | Estúdio de Saúde e Bem-Estar`,
+    description:
+      "Treinos boutique, eventos exclusivos e planos pensados para sua rotina em Duque de Caxias.",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+    locale: SITE_LOCALE,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | Estúdio de Saúde e Bem-Estar`,
+    description:
+      "Treinos boutique, eventos exclusivos e planos pensados para sua rotina em Duque de Caxias.",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 const formatDateInput = (date: Date) => {
@@ -192,14 +259,58 @@ const getPlans = async (): Promise<PlanOption[]> => {
 };
 
 export default async function Home() {
-  const [slides, events, plans] = await Promise.all([
+  const [slides, events, plans, settings] = await Promise.all([
     getCarouselSlides(),
     getEvents(),
     getPlans(),
+    getSystemSettings(),
   ]);
+  const contact = settings?.contact ?? FALLBACK_CONTACT;
+  const sameAs = normalizeSocialLinks(settings?.socialLinks ?? undefined);
+  const addressLine = contact.address?.trim();
+  const addressLocality = contact.city?.trim();
+  const addressRegion = contact.state?.trim();
+  const postalCode = contact.zipCode?.trim() || undefined;
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "HealthClub",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+    image: [resolveOgImage(DEFAULT_OG_IMAGE)],
+    telephone: toE164Phone(contact.phone),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: addressLine || undefined,
+      addressLocality: addressLocality || undefined,
+      addressRegion: addressRegion || undefined,
+      postalCode,
+      addressCountry: "BR",
+    },
+    areaServed: addressLocality
+      ? {
+          "@type": "City",
+          name: addressLocality,
+        }
+      : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+  };
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    inLanguage: "pt-BR",
+  };
 
   return (
     <div className="flex flex-col gap-14 pb-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([organizationSchema, websiteSchema]),
+        }}
+      />
       <HeroCarousel slides={slides} />
       <EventsSection events={events} />
       <PlansSection plans={plans} />

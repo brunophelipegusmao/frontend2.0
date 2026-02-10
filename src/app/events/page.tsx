@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 
 type PublicEvent = {
   id?: string;
@@ -63,6 +69,31 @@ export const metadata: Metadata = {
   title: "Eventos",
   description:
     "Agenda de eventos da JM Fitness Studio com treinos especiais e experiencias exclusivas.",
+  alternates: { canonical: "/events" },
+  openGraph: {
+    title: `Eventos | ${SITE_NAME}`,
+    description:
+      "Agenda de eventos da JM Fitness Studio com treinos especiais e experiencias exclusivas.",
+    url: `${SITE_URL}/events`,
+    siteName: SITE_NAME,
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: SITE_NAME,
+      },
+    ],
+    locale: SITE_LOCALE,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Eventos | ${SITE_NAME}`,
+    description:
+      "Agenda de eventos da JM Fitness Studio com treinos especiais e experiencias exclusivas.",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 const buildApiUrl = (path: string) =>
@@ -325,7 +356,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   });
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)]">
           <p className="text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--gold-tone-dark)]">

@@ -37,8 +37,8 @@ export function EventsSection({ events }: { events: EventHighlight[] }) {
 
   return (
     <section id="events" className="space-y-8">
-        <div className="mx-auto max-w-6xl space-y-3 text-center md:text-left">
-        <p className="text-xs uppercase tracking-[0.6rem] text-[var(--gold-tone-dark)]">
+      <div className="mx-auto max-w-6xl space-y-3 text-center md:text-left">
+        <p className="text-[0.6rem] uppercase tracking-[0.3rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
           Eventos e experiências
         </p>
         <h2 className="text-3xl font-semibold text-[var(--foreground)] sm:text-4xl">
@@ -62,7 +62,7 @@ export function EventsSection({ events }: { events: EventHighlight[] }) {
               />
             </div>
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.4rem] text-[var(--gold-tone)]">
+              <p className="text-[0.65rem] uppercase tracking-[0.2rem] text-[var(--gold-tone)] sm:text-xs sm:tracking-[0.4rem]">
                 {dateFormatter.format(eventDate)} • {upcomingEvent.time}
               </p>
               <h3 className="text-2xl font-semibold text-[var(--foreground)]">
@@ -72,7 +72,7 @@ export function EventsSection({ events }: { events: EventHighlight[] }) {
                 {upcomingEvent.description}
               </p>
             </div>
-            <p className="text-xs font-semibold tracking-[0.4rem] text-[#f5d98c]">
+            <p className="text-[0.65rem] font-semibold tracking-[0.2rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
               {upcomingEvent.location}
             </p>
           </article>

@@ -6,6 +6,13 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { ServiceWorkerRegister } from "@/components/PWA/ServiceWorkerRegister";
 import { ThemeProvider } from "@/context/ThemeContext";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -24,46 +31,62 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jmfitnessstudio.com.br"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "JM Fitness Studio",
-    template: "%s | JM Fitness Studio",
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "JM Fitness Studio em Duque de Caxias reúne treinos boutique, eventos exclusivos e um calendário vivo para sua evolução.",
+  description: SITE_DESCRIPTION,
   keywords: [
     "JM Fitness Studio",
     "treinos premium",
     "eventos fitness",
     "Duque de Caxias",
     "check-in fitness",
+    "estudio de treino",
+    "academia boutique",
+    "saude e bem-estar",
   ],
   openGraph: {
-    title: "JM Fitness Studio | Estúdio de Saúde e Bem-Estar",
+    title: `${SITE_NAME} | Estúdio de Saúde e Bem-Estar`,
     description:
       "Treinos boutique, eventos exclusivos e planos pensados para sua rotina em Duque de Caxias.",
-    url: "https://jmfitnessstudio.com.br",
-    siteName: "JM Fitness Studio",
+    url: SITE_URL,
+    siteName: SITE_NAME,
     images: [
       {
-        url: "/banner-01.png",
+        url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "JM Fitness Studio",
+        alt: SITE_NAME,
       },
     ],
-    locale: "pt_BR",
+    locale: SITE_LOCALE,
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} | Estúdio de Saúde e Bem-Estar`,
+    description:
+      "Treinos boutique, eventos exclusivos e planos pensados para sua rotina em Duque de Caxias.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "JM Fitness Studio",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
   icons: {
     icon: [
@@ -77,6 +100,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#0b0b0f",
 };
 
@@ -89,7 +115,7 @@ export default function RootLayout({
         className={`min-h-full antialiased ${roboto.variable} ${roboto.className}`}
       >
         <div
-          className="flex min-h-screen flex-col text-[var(--foreground)]"
+          className="flex min-h-[100dvh] flex-col text-[var(--foreground)]"
           style={{
             backgroundImage: "linear-gradient(180deg, var(--gradient-top), var(--gradient-bottom))",
           }}
@@ -97,7 +123,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ServiceWorkerRegister />
             <Header />
-            <main className="flex flex-1 flex-col pt-[5.5rem] px-4 pb-10 sm:px-6 lg:px-10">
+            <main className="safe-area-x flex flex-1 flex-col pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
               {children}
             </main>
             <Footer />

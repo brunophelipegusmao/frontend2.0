@@ -36,6 +36,11 @@ const getMaintenanceMessage = async () => {
 export const metadata: Metadata = {
   title: "Manutenção",
   description: "Sistema temporariamente em manutenção.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
 };
 
 export default async function MaintenancePage() {

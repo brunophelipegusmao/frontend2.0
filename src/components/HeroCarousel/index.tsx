@@ -57,13 +57,13 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-end gap-4 px-5 pb-6 sm:px-8">
-              <p className="text-xs uppercase tracking-[0.6rem] text-[var(--gold-tone)]">
+              <p className="text-[0.6rem] uppercase tracking-[0.3rem] text-[var(--gold-tone)] sm:text-xs sm:tracking-[0.6rem]">
                 JM Fitness Studio
               </p>
               <h1 className="text-3xl leading-tight text-[var(--foreground)] sm:text-4xl lg:text-5xl">
                 {active.title}
               </h1>
-              <p className="max-w-2xl text-base text-[var(--muted-foreground)] sm:text-lg">
+              <p className="max-w-2xl text-sm text-[var(--muted-foreground)] sm:text-lg">
                 {active.description}
               </p>
             </div>
@@ -73,7 +73,7 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
             type="button"
             onClick={handlePrev}
             aria-label="Slide anterior"
-            className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
+            className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
           >
             ◄
           </button>
@@ -81,7 +81,7 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
             type="button"
             onClick={handleNext}
             aria-label="Próximo slide"
-            className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
+            className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
           >
             ►
           </button>

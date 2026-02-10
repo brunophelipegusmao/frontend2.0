@@ -14,7 +14,7 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
   return (
     <section id="planos" className="space-y-8">
       <div className="mx-auto max-w-6xl space-y-3 text-center">
-        <p className="text-xs uppercase tracking-[0.6rem] text-[var(--gold-tone-dark)]">
+        <p className="text-[0.6rem] uppercase tracking-[0.3rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
           Planos com foco em constância
         </p>
         <h2 className="text-3xl font-semibold text-[var(--foreground)] sm:text-4xl">
@@ -40,7 +40,7 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
                 }`}
               >
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.4rem] text-[#f5d98c]">
+                  <p className="text-[0.65rem] uppercase tracking-[0.22rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
                     {plan.badge ?? "Plano JM"}
                   </p>
                   <h3
@@ -79,7 +79,7 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
                   href={`/users/login${
                     plan.id ? `?planId=${encodeURIComponent(plan.id)}` : ""
                   }`}
-                  className="mt-auto inline-flex items-center justify-center rounded-full border border-[#C2A537]/50 bg-[#C2A537]/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] hover:bg-[#C2A537]/20"
+                  className="mt-auto inline-flex items-center justify-center rounded-full border border-[#C2A537]/50 bg-[#C2A537]/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] hover:bg-[#C2A537]/20 sm:tracking-[0.4rem]"
                 >
                   Garantir vaga
                 </Link>

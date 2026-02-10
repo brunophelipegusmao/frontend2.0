@@ -4,6 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EventRegistrationPanel } from "./EventRegistrationPanel";
+import {
+  DEFAULT_OG_IMAGE,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_URL,
+  buildCanonicalUrl,
+  resolveOgImage,
+} from "@/lib/seo";
 
 type PublicEventDetail = {
   title: string;
@@ -50,6 +58,8 @@ const brCurrencyFormatter = new Intl.NumberFormat("pt-BR", {
 const buildApiUrl = (path: string) =>
   `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
+const TIMEZONE_OFFSET = "-03:00";
+
 const normalizeEventSlug = (rawSlug: string) => {
   const value = rawSlug.trim();
   if (!value) {
@@ -70,6 +80,39 @@ const parseDate = (value: string) => {
     return new Date(year, month - 1, day);
   }
   return new Date(value);
+};
+
+const toIsoDateTime = (date: string, time?: string | null) => {
+  if (!time) {
+    return date;
+  }
+  const normalized = time.trim();
+  if (!normalized) {
+    return date;
+  }
+  if (normalized.includes("T")) {
+    return normalized;
+  }
+  return `${date}T${normalized}${TIMEZONE_OFFSET}`;
+};
+
+const buildEventOgImages = (image?: string | null, altText?: string) => {
+  if (!image) {
+    return [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: altText || SITE_NAME,
+      },
+    ];
+  }
+  return [
+    {
+      url: image,
+      alt: altText || SITE_NAME,
+    },
+  ];
 };
 
 const fetchPublicEvent = async (slug: string): Promise<PublicEventDetail | null> => {
@@ -114,6 +157,10 @@ export async function generateMetadata({
   if (!slug) {
     return {
       title: "Evento",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -121,13 +168,46 @@ export async function generateMetadata({
   if (!event) {
     return {
       title: "Evento",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
+  const canonicalPath = `/events/${rawSlug}`;
+  const canonicalUrl = buildCanonicalUrl(canonicalPath);
+  const description =
+    event.description || "Detalhes de evento da agenda oficial JM Fitness.";
 
   return {
     title: event.title,
-    description:
-      event.description || "Detalhes de evento da agenda oficial JM Fitness.",
+    description,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      title: `${event.title} | ${SITE_NAME}`,
+      description,
+      url: canonicalUrl,
+      siteName: SITE_NAME,
+      images: buildEventOgImages(event.thumbnailUrl, event.title),
+      locale: SITE_LOCALE,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${event.title} | ${SITE_NAME}`,
+      description,
+      images: [event.thumbnailUrl || DEFAULT_OG_IMAGE],
+    },
+    robots:
+      event.status === "cancelled"
+        ? {
+            index: false,
+            follow: false,
+          }
+        : {
+            index: true,
+            follow: true,
+          },
   };
 }
 
@@ -147,9 +227,64 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   const formattedDate = Number.isNaN(parsedDate.getTime())
     ? event.date
     : brDateFormatter.format(parsedDate);
+  const canonicalUrl = buildCanonicalUrl(`/events/${rawSlug}`);
+  const offer =
+    event.isPaid && event.priceCents
+      ? {
+          "@type": "Offer",
+          price: (event.priceCents / 100).toFixed(2),
+          priceCurrency: "BRL",
+          availability: "https://schema.org/InStock",
+          url: canonicalUrl,
+        }
+      : !event.isPaid
+        ? {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+            url: canonicalUrl,
+          }
+        : undefined;
+  const eventSchema = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description:
+      event.description || "Detalhes de evento da agenda oficial JM Fitness.",
+    startDate: toIsoDateTime(event.date, event.time),
+    endDate: event.endTime ? toIsoDateTime(event.date, event.endTime) : undefined,
+    eventStatus:
+      event.status === "cancelled"
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    image: [resolveOgImage(event.thumbnailUrl || DEFAULT_OG_IMAGE)],
+    location: {
+      "@type": "Place",
+      name: event.location || SITE_NAME,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Duque de Caxias",
+        addressRegion: "RJ",
+        addressCountry: "BR",
+      },
+    },
+    organizer: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    isAccessibleForFree: !event.isPaid,
+    offers: offer,
+  };
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
+      />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)]">
           <p className="text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--gold-tone-dark)]">

@@ -310,7 +310,7 @@ function CheckinPageContent() {
   }, [autoCheckinDone, router, searchParams]);
 
   return (
-    <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-2 rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-24px_var(--shadow)]">
           <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--muted-foreground)]">
@@ -424,7 +424,7 @@ export default function CheckinPage() {
   return (
     <Suspense
       fallback={
-        <section className="min-h-screen bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+        <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
           <div className="mx-auto w-full max-w-6xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
             Carregando check-in...
           </div>

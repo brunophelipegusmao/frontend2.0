@@ -14,7 +14,7 @@ export function Footer() {
   return (
     <footer
       id="contatos"
-      className="mt-10 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:px-6 sm:py-10"
+      className="safe-area-x safe-area-bottom mt-10 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] py-6 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:py-10"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">

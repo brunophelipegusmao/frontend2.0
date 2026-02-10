@@ -76,7 +76,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
 
   return (
     <div className="h-full rounded-[30px] border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_40px_var(--shadow)]">
-      <div className="mb-4 flex items-center justify-between text-xs uppercase tracking-[0.4rem] text-[#f5d98c]">
+      <div className="mb-4 flex items-center justify-between text-[0.65rem] uppercase tracking-[0.22rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
         <button
           type="button"
           onClick={() => changeMonth("prev")}
@@ -85,7 +85,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
         >
           ◀
         </button>
-        <span className="text-[0.75rem] font-semibold text-[var(--foreground)]">{formattedMonth}</span>
+        <span className="text-[0.75rem] font-semibold text-[var(--foreground)] sm:text-sm">{formattedMonth}</span>
         <button
           type="button"
           onClick={() => changeMonth("next")}
@@ -96,7 +96,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center text-[0.6rem] font-semibold tracking-[0.4rem] text-[var(--muted-foreground)]">
+      <div className="grid grid-cols-7 gap-2 text-center text-[0.55rem] font-semibold tracking-[0.22rem] text-[var(--muted-foreground)] sm:text-[0.6rem] sm:tracking-[0.4rem]">
         {WEEKDAYS.map((day) => (
           <span key={day}>{day}</span>
         ))}
@@ -104,7 +104,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
 
       <div className="mt-3 grid grid-cols-7 gap-2 text-sm">
         {generateBlankDays().map((blankIndex) => (
-          <span key={`blank-${blankIndex}`} className="h-9" />
+          <span key={`blank-${blankIndex}`} className="h-10" />
         ))}
         {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => {
           const isSelected =
@@ -118,7 +118,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
               key={`day-${day}`}
               type="button"
               onClick={() => setSelectedDate(new Date(year, month, day))}
-            className={`relative flex h-9 items-center justify-center rounded-2xl border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2A537]/70 ${
+            className={`relative flex h-10 items-center justify-center rounded-2xl border text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C2A537]/70 sm:h-9 sm:text-sm ${
               isSelected
                 ? "border-[var(--gold-tone)] bg-gradient-to-br from-[var(--gold-tone)]/90 to-[#D4B547]/80 text-black"
                 : "border-transparent bg-white/5 text-[var(--foreground)]"
@@ -134,7 +134,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
       </div>
 
       <div className="mt-5 space-y-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-        <p className="text-[0.6rem] uppercase tracking-[0.5rem] text-[#f5d98c]">
+        <p className="text-[0.55rem] uppercase tracking-[0.28rem] text-[#f5d98c] sm:text-[0.6rem] sm:tracking-[0.5rem]">
           Eventos para {selectedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
         </p>
         {selectedDayEvents.length === 0 ? (

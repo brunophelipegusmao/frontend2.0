@@ -120,8 +120,11 @@ export function InstallAppButton({
   }, []);
 
   const shouldShowButton = useMemo(() => {
-    if (isInstalled || isIos) {
+    if (isInstalled) {
       return false;
+    }
+    if (isIos) {
+      return true;
     }
     return Boolean(deferredPrompt) || isLikelyChromium;
   }, [deferredPrompt, isInstalled, isIos, isLikelyChromium]);
