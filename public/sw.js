@@ -5,7 +5,6 @@ const STATIC_CACHE = `jm-static-${SW_VERSION}`;
 const SHELL_ASSETS = [
   "/",
   "/manifest.webmanifest",
-  "/favicon.svg",
   "/icon.svg",
   "/images/icon-wt.png",
   "/images/adaptive-icon.png",
@@ -43,7 +42,6 @@ const isStaticAssetRequest = (request, url) => {
 
   if (
     url.pathname.startsWith("/images/") ||
-    url.pathname === "/favicon.svg" ||
     url.pathname === "/icon.svg" ||
     url.pathname === "/manifest.webmanifest"
   ) {

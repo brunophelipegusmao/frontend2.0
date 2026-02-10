@@ -4293,77 +4293,79 @@ export default function DashboardPage() {
     bmiFallback !== null ? bmiCategoryFromAdult(bmiFallback) : null;
 
   return (
-    <section className="relative flex min-h-screen flex-col gap-6 rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6 font-[var(--font-roboto)]">
+    <section className="relative flex min-h-screen max-w-full flex-col gap-6 overflow-x-hidden rounded-2xl border border-[color:var(--border-dim)] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] p-4 text-[var(--foreground)] shadow-[0_20px_60px_var(--shadow)] sm:gap-8 sm:rounded-[32px] sm:p-6 font-[var(--font-roboto)]">
       <header className="flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex w-full items-start gap-3 sm:w-auto sm:items-center">
-            <div className="flex flex-1 items-center gap-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] aspect-square">
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt={`Avatar de ${avatarLabel}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span>{getInitials(displayName)}</span>
-                )}
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] aspect-square">
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt={`Avatar de ${avatarLabel}`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>{getInitials(displayName)}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                    Usuario autenticado
+                  </p>
+                  <p className="mt-1 truncate text-base font-semibold text-[var(--foreground)]">
+                    {currentUserStatus === "loading"
+                      ? "Carregando..."
+                      : displayName}
+                  </p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    {currentUserStatus === "error"
+                      ? "Sessao indisponivel"
+                      : displayRole}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[0.65rem] uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                  Usuario autenticado
-                </p>
-                <p className="mt-1 truncate text-base font-semibold text-[var(--foreground)]">
-                  {currentUserStatus === "loading"
-                    ? "Carregando..."
-                    : displayName}
-                </p>
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  {currentUserStatus === "error"
-                    ? "Sessao indisponivel"
-                    : displayRole}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsTabMenuOpen((prev) => !prev)}
-              aria-label="Menu do dashboard"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] shadow-[0_4px_12px_-2px_var(--shadow),inset_0_1px_2px_rgba(255,255,255,0.1)] transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(194,165,55,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] sm:hidden"
-            >
-              <Menu className="h-5 w-5 text-[var(--gold-tone-dark)]" />
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:px-4"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                {isLoggingOut ? "Saindo..." : "Sair"}
-              </span>
-            </button>
-            {canSeePlanRequestsIndicator && (
+            <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap sm:justify-start">
               <button
                 type="button"
-                onClick={() => handleTabSelect("admin")}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:px-4"
-                aria-label="Abrir solicitações de plano"
+                onClick={() => setIsTabMenuOpen((prev) => !prev)}
+                aria-label="Menu do dashboard"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] shadow-[0_4px_12px_-2px_var(--shadow),inset_0_1px_2px_rgba(255,255,255,0.1)] transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(194,165,55,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] sm:hidden"
               >
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Solicitacoes</span>
-                <span
-                  className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[0.62rem] font-semibold tracking-normal ${
-                    pendingPlanRequestsCount > 0
-                      ? "border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
-                      : "border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--muted-foreground)]"
-                  }`}
-                >
-                  {planRequestsIndicatorLabel}
+                <Menu className="h-5 w-5 text-[var(--gold-tone-dark)]" />
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:px-4"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {isLoggingOut ? "Saindo..." : "Sair"}
                 </span>
               </button>
-            )}
+              {canSeePlanRequestsIndicator && (
+                <button
+                  type="button"
+                  onClick={() => handleTabSelect("admin")}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:px-4"
+                  aria-label="Abrir solicitações de plano"
+                >
+                  <Clock className="h-4 w-4" />
+                  <span className="hidden sm:inline">Solicitacoes</span>
+                  <span
+                    className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[0.62rem] font-semibold tracking-normal ${
+                      pendingPlanRequestsCount > 0
+                        ? "border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] text-[color:var(--danger)]"
+                        : "border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    {planRequestsIndicatorLabel}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -4538,7 +4540,7 @@ export default function DashboardPage() {
                           <span className="block uppercase tracking-[0.3em] md:hidden">
                             Email
                           </span>
-                          <span className="text-sm md:text-[var(--muted-foreground)]">
+                          <span className="break-all text-sm md:text-[var(--muted-foreground)]">
                             {user.email}
                           </span>
                         </div>
