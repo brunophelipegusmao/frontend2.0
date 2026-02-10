@@ -49,6 +49,61 @@ server {
     root /var/www/certbot;
   }
 
+  # Better Auth precisa manter o prefixo /api/auth no backend.
+  # Excecoes: endpoints customizados do projeto que vivem em /auth/*.
+  location = /api/auth/logout {
+    proxy_pass http://backend_upstream/auth/logout;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 120s;
+  }
+
+  location = /api/auth/password {
+    proxy_pass http://backend_upstream/auth/password;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 120s;
+  }
+
+  location = /api/auth {
+    proxy_pass http://backend_upstream/api/auth;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 120s;
+  }
+
+  # Para /api/auth/*, preserva /api/auth/* no upstream.
+  location /api/auth/ {
+    proxy_pass http://backend_upstream/api/auth/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 120s;
+    proxy_connect_timeout 120s;
+  }
+
   location /api/ {
     proxy_pass http://backend_upstream/;
     proxy_http_version 1.1;
