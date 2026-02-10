@@ -1,0 +1,72 @@
+name: jmfitness
+
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.com/api}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.com/api}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    networks:
+      - jm-network
+
+  backend:
+    build:
+      context: ${BACKEND_REPO_PATH:-../../backend}
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./env/backend.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      FRONTEND_URL: ${FRONTEND_URL:-https://jmfitnessstudio.com.com,https://www.jmfitnessstudio.com.com}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://jmfitnessstudio.com.com}
+    restart: unless-stopped
+    expose:
+      - "3001"
+    networks:
+      - jm-network
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    depends_on:
+      - frontend
+      - backend
+    environment:
+      DOMAIN: ${DOMAIN:-jmfitnessstudio.com.com}
+      WWW_DOMAIN: ${WWW_DOMAIN:-www.jmfitnessstudio.com.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    restart: unless-stopped
+    networks:
+      - jm-network
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    networks:
+      - jm-network
+
+networks:
+  jm-network:
+    driver: bridge
+
+volumes:
+  certbot-etc:
+  certbot-www:

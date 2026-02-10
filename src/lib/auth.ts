@@ -3,7 +3,9 @@ type AuthResult<T> =
   | { ok: false; error: string };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-const AUTH_BASE_PATH = "/api/auth";
+const AUTH_BASE_PATH = API_BASE_URL.replace(/\/+$/, "").endsWith("/api")
+  ? "/auth"
+  : "/api/auth";
 
 const buildAuthUrl = (path: string) => {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
