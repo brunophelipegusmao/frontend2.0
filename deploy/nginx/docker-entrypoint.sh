@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-DOMAIN="${DOMAIN:-jmfitnessstudio.com.com}"
-WWW_DOMAIN="${WWW_DOMAIN:-www.jmfitnessstudio.com.com}"
+DOMAIN="${DOMAIN:-jmfitnessstudio.com.br}"
+WWW_DOMAIN="${WWW_DOMAIN:-www.jmfitnessstudio.com.br}"
 CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
 FULLCHAIN="$CERT_DIR/fullchain.pem"
 PRIVKEY="$CERT_DIR/privkey.pem"

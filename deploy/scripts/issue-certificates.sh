@@ -7,8 +7,8 @@ if [[ -f ./.env ]]; then
   source ./.env
   set +a
 fi
-DOMAIN="${DOMAIN:-jmfitnessstudio.com.com}"
-WWW_DOMAIN="${WWW_DOMAIN:-www.jmfitnessstudio.com.com}"
+DOMAIN="${DOMAIN:-jmfitnessstudio.com.br}"
+WWW_DOMAIN="${WWW_DOMAIN:-www.jmfitnessstudio.com.br}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"
 
 if [[ -z "$LETSENCRYPT_EMAIL" ]]; then

@@ -160,23 +160,23 @@ Edite:
 Campos críticos:
 
 - `LETSENCRYPT_EMAIL`
-- `NEXT_PUBLIC_API_URL=https://jmfitnessstudio.com.com/api`
-- `BETTER_AUTH_URL=https://jmfitnessstudio.com.com`
-- `FRONTEND_URL=https://jmfitnessstudio.com.com,https://www.jmfitnessstudio.com.com`
+- `NEXT_PUBLIC_API_URL=https://jmfitnessstudio.com.br/api`
+- `BETTER_AUTH_URL=https://jmfitnessstudio.com.br`
+- `FRONTEND_URL=https://jmfitnessstudio.com.br,https://www.jmfitnessstudio.com.br`
 - credenciais reais (`DATABASE_URL`, Google, Cloudinary, etc.)
 
 ### 3. DNS (obrigatório antes do Certbot)
 
 Crie registros DNS:
 
-- `A` para `jmfitnessstudio.com.com` apontando para IP da VPS
-- `A` para `www.jmfitnessstudio.com.com` apontando para IP da VPS
+- `A` para `jmfitnessstudio.com.br` apontando para IP da VPS
+- `A` para `www.jmfitnessstudio.com.br` apontando para IP da VPS
 
 Valide:
 
 ```bash
-dig +short jmfitnessstudio.com.com
-dig +short www.jmfitnessstudio.com.com
+dig +short jmfitnessstudio.com.br
+dig +short www.jmfitnessstudio.com.br
 ```
 
 ### 4. Subir stack e emitir HTTPS
@@ -189,7 +189,7 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 Esse script:
 
 - sobe nginx/frontend/backend
-- emite certificado para `jmfitnessstudio.com.com` e `www.jmfitnessstudio.com.com`
+- emite certificado para `jmfitnessstudio.com.br` e `www.jmfitnessstudio.com.br`
 - recarrega o nginx com o certificado válido
 
 ### 5. Renovação automática
@@ -202,8 +202,8 @@ Adicione no `crontab` do host:
 
 ### 6. Checklist pós-deploy
 
-- `https://jmfitnessstudio.com.com` abre sem aviso de certificado
-- `https://www.jmfitnessstudio.com.com` abre sem aviso de certificado
+- `https://jmfitnessstudio.com.br` abre sem aviso de certificado
+- `https://www.jmfitnessstudio.com.br` abre sem aviso de certificado
 - login funciona
 - chamadas para API usam `/api/*` (mesmo domínio)
 - dashboard e check-in funcionando

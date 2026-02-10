@@ -6,11 +6,11 @@ services:
       context: ..
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.com/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.br/api}
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.com/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://jmfitnessstudio.com.br/api}
     restart: unless-stopped
     expose:
       - "3000"
@@ -27,8 +27,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      FRONTEND_URL: ${FRONTEND_URL:-https://jmfitnessstudio.com.com,https://www.jmfitnessstudio.com.com}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://jmfitnessstudio.com.com}
+      FRONTEND_URL: ${FRONTEND_URL:-https://jmfitnessstudio.com.br,https://www.jmfitnessstudio.com.br}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://jmfitnessstudio.com.br}
     restart: unless-stopped
     expose:
       - "3001"
@@ -43,8 +43,8 @@ services:
       - frontend
       - backend
     environment:
-      DOMAIN: ${DOMAIN:-jmfitnessstudio.com.com}
-      WWW_DOMAIN: ${WWW_DOMAIN:-www.jmfitnessstudio.com.com}
+      DOMAIN: ${DOMAIN:-jmfitnessstudio.com.br}
+      WWW_DOMAIN: ${WWW_DOMAIN:-www.jmfitnessstudio.com.br}
     ports:
       - "80:80"
       - "443:443"
