@@ -1,14 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const API_BASE_URL =
+  process.env.API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.API_URL ||
   "http://127.0.0.1:3001";
 
 const MAINTENANCE_PATH = "/maintenance";
 const CHECKIN_PATH = "/checkin";
 const DASHBOARD_PATH = "/dashboard";
+const MAINTENANCE_CACHE_TTL_MS = 15000;
 
 type SystemSettingsPayload = {
   maintenanceMode?: boolean;
@@ -18,11 +19,34 @@ type CurrentUserPayload = {
   role?: string | null;
 };
 
+type MaintenanceCache = {
+  value: boolean;
+  expiresAt: number;
+};
+
+let maintenanceCache: MaintenanceCache | null = null;
+
 const normalizePath = (value: string) => {
   if (!value || value === "/") {
     return "/";
   }
   return value.endsWith("/") ? value.slice(0, -1) : value;
+};
+
+const isDocumentNavigationRequest = (request: NextRequest) => {
+  if (request.method !== "GET") {
+    return false;
+  }
+  if (request.headers.get("next-router-prefetch")) {
+    return false;
+  }
+  const purpose =
+    request.headers.get("purpose") ?? request.headers.get("sec-purpose");
+  if (purpose?.toLowerCase().includes("prefetch")) {
+    return false;
+  }
+  const accept = request.headers.get("accept") ?? "";
+  return accept.includes("text/html");
 };
 
 const isCheckinPath = (path: string) =>
@@ -40,6 +64,11 @@ const getCookieHeader = (request: NextRequest): HeadersInit | undefined => {
 };
 
 const getMaintenanceMode = async (request: NextRequest) => {
+  const now = Date.now();
+  if (maintenanceCache && maintenanceCache.expiresAt > now) {
+    return maintenanceCache.value;
+  }
+
   try {
     const response = await fetch(buildApiUrl("/system-settings"), {
       method: "GET",
@@ -47,11 +76,22 @@ const getMaintenanceMode = async (request: NextRequest) => {
       cache: "no-store",
     });
     if (!response.ok) {
+      if (maintenanceCache) {
+        return maintenanceCache.value;
+      }
       return false;
     }
     const payload = (await response.json()) as SystemSettingsPayload;
-    return payload.maintenanceMode === true;
+    const maintenanceMode = payload.maintenanceMode === true;
+    maintenanceCache = {
+      value: maintenanceMode,
+      expiresAt: now + MAINTENANCE_CACHE_TTL_MS,
+    };
+    return maintenanceMode;
   } catch {
+    if (maintenanceCache) {
+      return maintenanceCache.value;
+    }
     return false;
   }
 };
@@ -77,6 +117,10 @@ const getCurrentRole = async (request: NextRequest) => {
 };
 
 export async function proxy(request: NextRequest) {
+  if (!isDocumentNavigationRequest(request)) {
+    return NextResponse.next();
+  }
+
   const path = normalizePath(request.nextUrl.pathname);
   const maintenanceEnabled = await getMaintenanceMode(request);
 
