@@ -25,7 +25,7 @@ echo "Subindo stack (nginx com certificado temporario)..."
 docker compose -f "$COMPOSE_FILE" --env-file ./.env up -d nginx frontend backend
 
 echo "Limpando configuracao de renovacao quebrada (se existir)..."
-docker compose -f "$COMPOSE_FILE" --env-file ./.env run --rm certbot sh -lc \
+docker compose -f "$COMPOSE_FILE" --env-file ./.env run --rm --entrypoint sh certbot -lc \
   "f='/etc/letsencrypt/renewal/$DOMAIN.conf'; if [ -f \"\$f\" ] && ! grep -q '^fullchain = ' \"\$f\"; then rm -f \"\$f\"; fi"
 
 echo "Emitindo certificado para $DOMAIN e $WWW_DOMAIN..."
