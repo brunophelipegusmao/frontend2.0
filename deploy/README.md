@@ -57,6 +57,30 @@ cd /opt/jmfitness/frontend/deploy
 docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
+### Deploy unificado com rollback
+
+O script `deploy/scripts/deploy-jm.sh` atualiza backend + frontend, reconstrói a stack e faz rollback automático para os commits anteriores em caso de erro.
+
+Instalação na VPS (em `/root/deploy-jm.sh`):
+
+```bash
+cd /opt/jmfitness/frontend
+install -m 750 deploy/scripts/deploy-jm.sh /root/deploy-jm.sh
+```
+
+Uso:
+
+```bash
+# deploy da main
+/root/deploy-jm.sh
+
+# deploy de outra branch
+/root/deploy-jm.sh minha-branch
+
+# deploy com migration
+RUN_MIGRATIONS=1 /root/deploy-jm.sh
+```
+
 ## 5) Emitir HTTPS (Let's Encrypt)
 
 ```bash
