@@ -16,6 +16,7 @@ import {
   Stethoscope,
   Menu,
 } from "lucide-react";
+import { isHiddenPlanSlug } from "@/lib/plans";
 
 type TabId = "users" | "events" | "financial" | "admin" | "system";
 type DashboardRole =
@@ -1527,7 +1528,11 @@ export default function DashboardPage() {
         );
       }
       const data = (await response.json()) as PlanOption[];
-      setPlans(Array.isArray(data) ? data : []);
+      setPlans(
+        Array.isArray(data)
+          ? data.filter((plan) => !isHiddenPlanSlug(plan.slug))
+          : [],
+      );
       setPlansStatus("ready");
     } catch (err) {
       setPlans([]);

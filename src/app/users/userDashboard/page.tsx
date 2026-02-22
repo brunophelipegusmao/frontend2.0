@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { isHiddenPlanSlug } from "@/lib/plans";
 import { API_BASE_URL } from "@/lib/roleRedirect";
 
 type DashboardUser = {
@@ -236,6 +237,7 @@ export default function UserDashboardPage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [sendingPlanRequest, setSendingPlanRequest] = useState(false);
   const [isMasterPreview, setIsMasterPreview] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const loadData = useCallback(
     async (mode: "initial" | "refresh" = "initial") => {
@@ -390,8 +392,14 @@ export default function UserDashboardPage() {
   }, [loadData]);
 
   const planOptions = useMemo(() => {
-    const blockedSlugs = new Set(["guest", "free", "padrao"]);
-    return plans.filter((plan) => !blockedSlugs.has(plan.slug.toLowerCase()));
+    const blockedSlugs = new Set(["guest"]);
+    return plans.filter((plan) => {
+      const normalizedSlug = plan.slug.trim().toLowerCase();
+      if (blockedSlugs.has(normalizedSlug)) {
+        return false;
+      }
+      return !isHiddenPlanSlug(normalizedSlug);
+    });
   }, [plans]);
 
   const handleProfileChange = (
@@ -639,6 +647,29 @@ export default function UserDashboardPage() {
     }
   };
 
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
+    setFeedback(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(await parseApiError(response, "Nao foi possivel sair."));
+      }
+      router.replace("/users/login");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao sair da conta.";
+      setFeedback({ tone: "error", message });
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   if (loading) {
     return (
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-4">
@@ -666,14 +697,24 @@ export default function UserDashboardPage() {
                 : "Aqui voce gerencia seus dados pessoais, plano, historico de check-ins e participacao em eventos."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void loadData("refresh")}
-            disabled={refreshing}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {refreshing ? "Atualizando..." : "Atualizar"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void loadData("refresh")}
+              disabled={refreshing}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {refreshing ? "Atualizando..." : "Atualizar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut ? "Saindo..." : "Sair"}
+            </button>
+          </div>
         </div>
       </header>
 

@@ -13,6 +13,7 @@ import {
   resolveOgImage,
   toE164Phone,
 } from "@/lib/seo";
+import { isHiddenPlanSlug } from "@/lib/plans";
 
 type CarouselImage = { imageUrl: string; altText?: string | null };
 
@@ -247,15 +248,17 @@ const getPlans = async (): Promise<PlanOption[]> => {
   if (!response) {
     return [];
   }
-  return response.map((plan) => ({
-    id: plan.id,
-    title: plan.name,
-    price: formatPlanPrice(plan),
-    description: plan.description ?? "Plano desenvolvido para sua rotina.",
-    perks: resolvePlanPerks(plan),
-    featured: plan.popular ?? false,
-    badge: plan.popular ? "Mais procurado" : undefined,
-  }));
+  return response
+    .filter((plan) => !isHiddenPlanSlug(plan.slug))
+    .map((plan) => ({
+      id: plan.id,
+      title: plan.name,
+      price: formatPlanPrice(plan),
+      description: plan.description ?? "Plano desenvolvido para sua rotina.",
+      perks: resolvePlanPerks(plan),
+      featured: plan.popular ?? false,
+      badge: plan.popular ? "Mais procurado" : undefined,
+    }));
 };
 
 export default async function Home() {
