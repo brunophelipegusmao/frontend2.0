@@ -2,12 +2,14 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, UserCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Sparkles, UserCheck } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { startSocialSignIn } from "@/lib/auth";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const CHECKIN_SUCCESS_MESSAGE =
+  "Seu checkin foi realizado com sucesso, vejo você suado!!! 💪🏻";
 
 type ParsedApiError = {
   message: string;
@@ -191,7 +193,7 @@ function CheckinPageContent() {
       showCheckinFeedback(
         "success",
         "Check-in realizado",
-        "Check-in feito com sucesso. Vejo você suado 💪",
+        CHECKIN_SUCCESS_MESSAGE,
       );
       setSearchTerm("");
     } catch (err) {
@@ -282,7 +284,7 @@ function CheckinPageContent() {
         showCheckinFeedback(
           "success",
           "Check-in realizado",
-          "Check-in feito com sucesso. Vejo você suado 💪",
+          CHECKIN_SUCCESS_MESSAGE,
         );
       } catch (err) {
         const fallbackMessage = "Falha ao confirmar check-in.";
@@ -382,9 +384,45 @@ function CheckinPageContent() {
         </div>
       </div>
       {checkinFeedback.open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)] transition-all duration-300">
-            <div className="flex items-start justify-end">
+        <div className="checkin-feedback-backdrop fixed inset-0 z-[70] flex items-center justify-center bg-black/65 px-4 py-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-live="polite"
+            className={`checkin-feedback-modal relative w-full max-w-md overflow-hidden rounded-3xl border bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_30px_90px_-35px_var(--shadow)] ${
+              checkinFeedback.status === "success"
+                ? "border-emerald-400/35"
+                : "border-red-400/35"
+            }`}
+          >
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-2xl ${
+                checkinFeedback.status === "success"
+                  ? "bg-emerald-400/25"
+                  : "bg-red-400/20"
+              }`}
+            />
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full blur-2xl ${
+                checkinFeedback.status === "success"
+                  ? "bg-[var(--gold-tone)]/15"
+                  : "bg-red-500/10"
+              }`}
+            />
+
+            <div className="relative flex items-center justify-between gap-3">
+              <div
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.22rem] ${
+                  checkinFeedback.status === "success"
+                    ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                    : "border-red-400/30 bg-red-500/15 text-red-200"
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Aviso
+              </div>
               <button
                 type="button"
                 onClick={closeCheckinFeedback}
@@ -393,25 +431,48 @@ function CheckinPageContent() {
                 Fechar
               </button>
             </div>
-            <div className="mt-3 flex items-center gap-3">
+
+            <div className="relative mt-5 flex items-center gap-3">
               <span
-                className={`flex h-10 w-10 items-center justify-center rounded-full border ${
+                className={`flex h-12 w-12 items-center justify-center rounded-full border ${
                   checkinFeedback.status === "success"
-                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-300"
-                    : "border-red-400/40 bg-red-500/15 text-red-300"
+                    ? "checkin-feedback-icon--success border-emerald-400/45 bg-emerald-500/20 text-emerald-200"
+                    : "border-red-400/45 bg-red-500/20 text-red-200"
                 }`}
               >
-                <CheckCircle2 className="h-5 w-5" />
+                {checkinFeedback.status === "success" ? (
+                  <CheckCircle2 className="h-6 w-6" />
+                ) : (
+                  <AlertTriangle className="h-6 w-6" />
+                )}
               </span>
               <div>
-                <p className="text-sm font-semibold">{checkinFeedback.title}</p>
-                <p className="text-xs text-[var(--muted-foreground)]">
+                <p className="text-base font-semibold">{checkinFeedback.title}</p>
+                <p className="text-xs tracking-[0.05em] text-[var(--muted-foreground)]">
                   Esta mensagem fecha automaticamente em 5 segundos.
                 </p>
               </div>
             </div>
-            <div className="mt-4 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4 text-sm text-[var(--foreground)]">
+
+            <div
+              className={`relative mt-4 rounded-2xl border p-4 text-sm leading-relaxed ${
+                checkinFeedback.status === "success"
+                  ? "border-emerald-400/25 bg-emerald-500/10"
+                  : "border-red-400/25 bg-red-500/10"
+              }`}
+            >
               {checkinFeedback.message}
+            </div>
+
+            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--border-dim)]">
+              <span
+                aria-hidden="true"
+                className={`checkin-feedback-progress block h-full rounded-full ${
+                  checkinFeedback.status === "success"
+                    ? "bg-gradient-to-r from-emerald-300 to-[var(--gold-tone)]"
+                    : "bg-gradient-to-r from-red-300 to-red-500"
+                }`}
+              />
             </div>
           </div>
         </div>
