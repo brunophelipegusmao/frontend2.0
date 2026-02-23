@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { AppExperienceLayer } from "@/components/AppExperience/AppExperienceLayer";
 import { ServiceWorkerRegister } from "@/components/PWA/ServiceWorkerRegister";
 import { ThemeProvider } from "@/context/ThemeContext";
 import {
@@ -123,8 +124,8 @@ export default function RootLayout({
           <ThemeProvider>
             <ServiceWorkerRegister />
             <Header />
-            <main className="safe-area-x flex flex-1 flex-col pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
-              {children}
+            <main className="safe-area-x flex flex-1 flex-col pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(6.2rem+env(safe-area-inset-bottom))] md:pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+              <AppExperienceLayer>{children}</AppExperienceLayer>
             </main>
             <Footer />
           </ThemeProvider>
