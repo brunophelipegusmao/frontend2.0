@@ -73,6 +73,7 @@ body {
 body {
   line-height: 1.6;
   transition: background 0.4s ease, color 0.4s ease;
+  overflow-x: hidden;
 }
 
 html {
@@ -91,6 +92,13 @@ input,
 textarea,
 select {
   font-family: inherit;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
 }
 
 h1,
@@ -234,12 +242,33 @@ h6 {
 
 @media (max-width: 640px) {
   .uppercase {
-    letter-spacing: 0.14em !important;
+    letter-spacing: 0.12em !important;
   }
 
   input,
   select,
   textarea {
     font-size: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .safe-area-x {
+    padding-left: calc(0.85rem + var(--safe-left));
+    padding-right: calc(0.85rem + var(--safe-right));
+  }
+
+  .safe-area-bottom {
+    padding-bottom: calc(0.75rem + var(--safe-bottom));
+  }
+
+  .scroll-glow {
+    box-shadow: 0 0 14px var(--border-glow);
+  }
+
+  .checkin-feedback-modal {
+    max-width: min(94vw, 420px);
+    border-radius: 1.25rem;
+    padding: 1.1rem;
   }
 }

@@ -172,7 +172,7 @@ export function RegisterForm() {
         className="mt-6 space-y-4 text-left font-[var(--font-roboto)]"
         onSubmit={handleSubmit}
       >
-        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]">
+        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]">
           Nome
           <input
             type="text"
@@ -185,7 +185,7 @@ export function RegisterForm() {
           />
         </label>
 
-        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]">
+        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]">
           Email
           <input
             type="email"
@@ -201,7 +201,7 @@ export function RegisterForm() {
         <div className="space-y-2">
           <label
             htmlFor="password"
-            className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]"
+            className="text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]"
           >
             Senha
           </label>
@@ -234,7 +234,7 @@ export function RegisterForm() {
         <div className="space-y-2">
           <label
             htmlFor="confirm-password"
-            className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]"
+            className="text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]"
           >
             Confirmar senha
           </label>
@@ -285,7 +285,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)] sm:tracking-[0.4rem]"
         >
           {isSubmitting ? "Criando..." : "Criar conta"}
         </button>

@@ -307,7 +307,7 @@ export default async function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-14 pb-6">
+    <div className="flex flex-col gap-10 pb-6 sm:gap-14">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

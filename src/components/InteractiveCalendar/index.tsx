@@ -75,8 +75,8 @@ export function InteractiveCalendar({ events }: CalendarProps) {
   };
 
   return (
-    <div className="h-full rounded-[30px] border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_40px_var(--shadow)]">
-      <div className="mb-4 flex items-center justify-between text-[0.65rem] uppercase tracking-[0.22rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
+    <div className="h-full rounded-[26px] border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_20px_40px_var(--shadow)] sm:rounded-[30px] sm:p-5">
+      <div className="mb-4 flex items-center justify-between text-[0.62rem] uppercase tracking-[0.14rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
         <button
           type="button"
           onClick={() => changeMonth("prev")}
@@ -96,7 +96,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center text-[0.55rem] font-semibold tracking-[0.22rem] text-[var(--muted-foreground)] sm:text-[0.6rem] sm:tracking-[0.4rem]">
+      <div className="grid grid-cols-7 gap-2 text-center text-[0.55rem] font-semibold tracking-[0.14rem] text-[var(--muted-foreground)] sm:text-[0.6rem] sm:tracking-[0.4rem]">
         {WEEKDAYS.map((day) => (
           <span key={day}>{day}</span>
         ))}
@@ -134,7 +134,7 @@ export function InteractiveCalendar({ events }: CalendarProps) {
       </div>
 
       <div className="mt-5 space-y-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-        <p className="text-[0.55rem] uppercase tracking-[0.28rem] text-[#f5d98c] sm:text-[0.6rem] sm:tracking-[0.5rem]">
+        <p className="text-[0.55rem] uppercase tracking-[0.14rem] text-[#f5d98c] sm:text-[0.6rem] sm:tracking-[0.5rem]">
           Eventos para {selectedDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
         </p>
         {selectedDayEvents.length === 0 ? (

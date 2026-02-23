@@ -269,9 +269,9 @@ export default async function ContactsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
       />
-      <header className="relative overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-6 py-8 shadow-[0_18px_46px_-24px_var(--shadow)] sm:px-8">
+      <header className="relative overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-6 shadow-[0_18px_46px_-24px_var(--shadow)] sm:px-8 sm:py-8">
         <div className="pointer-events-none absolute -right-14 -top-16 h-48 w-48 rounded-full bg-[var(--gold-tone)]/15 blur-3xl" />
-        <p className="text-xs font-semibold uppercase tracking-[0.34rem] text-[var(--gold-tone-dark)]">
+        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.34rem]">
           Contato JM
         </p>
         <h1 className="mt-2 text-3xl font-semibold text-[var(--foreground)] sm:text-4xl">
@@ -284,10 +284,10 @@ export default async function ContactsPage() {
       </header>
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
           <div className="space-y-4">
             <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+              <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
                 Endereço
               </p>
               <p className="mt-2 text-base font-semibold text-[var(--foreground)]">
@@ -311,7 +311,7 @@ export default async function ContactsPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4">
-                <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+                <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
                   Telefone / WhatsApp
                 </p>
                 {phone ? (
@@ -336,7 +336,7 @@ export default async function ContactsPage() {
               </div>
 
               <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4">
-                <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+                <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
                   Ligação direta
                 </p>
                 {telHref ? (
@@ -356,7 +356,7 @@ export default async function ContactsPage() {
             </div>
 
             <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+              <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
                 E-mail
               </p>
               <Link
@@ -371,8 +371,8 @@ export default async function ContactsPage() {
         </article>
 
         <div className="grid gap-5">
-          <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
-            <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+          <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
+            <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
               Horário de funcionamento
             </p>
             <div className="mt-4 grid gap-2">
@@ -392,8 +392,8 @@ export default async function ContactsPage() {
             </div>
           </article>
 
-          <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
-            <p className="text-xs uppercase tracking-[0.32rem] text-[var(--gold-tone-dark)]">
+          <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_18px_44px_-24px_var(--shadow)] sm:p-6">
+            <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.32rem]">
               Redes sociais
             </p>
             {socialLinks.length > 0 ? (

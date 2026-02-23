@@ -12,15 +12,15 @@ export interface PlanOption {
 
 export function PlansSection({ plans }: { plans: PlanOption[] }) {
   return (
-    <section id="planos" className="space-y-8">
+    <section id="planos" className="space-y-6 sm:space-y-8">
       <div className="mx-auto max-w-6xl space-y-3 text-center">
-        <p className="text-[0.6rem] uppercase tracking-[0.3rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
+        <p className="text-[0.58rem] uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
           Planos com foco em constância
         </p>
-        <h2 className="text-3xl font-semibold text-[var(--foreground)] sm:text-4xl">
+        <h2 className="text-2xl font-semibold text-[var(--foreground)] sm:text-4xl">
           Escolha o caminho que combina com seu ritmo
         </h2>
-        <p className="mx-auto max-w-2xl text-base text-[var(--muted-foreground)]">
+        <p className="mx-auto max-w-2xl text-sm text-[var(--muted-foreground)] sm:text-base">
           Cada plano foi desenhado para garantir acompanhamento técnico e espaço acolhedor. Qualquer etapa pode ser ajustada para
           ampliar o seu desempenho.
         </p>
@@ -33,14 +33,14 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
             return (
               <article
                 key={plan.title}
-                className={`flex flex-col gap-5 rounded-[28px] border px-6 py-6 shadow-[0_20px_40px_var(--shadow)] transition-all ${
+                className={`flex flex-col gap-5 rounded-[24px] border px-5 py-5 shadow-[0_20px_40px_var(--shadow)] transition-all sm:rounded-[28px] sm:px-6 sm:py-6 ${
                   isFeatured
                     ? "border-[var(--gold-tone)] bg-gradient-to-br from-[#151513] via-[#1b190f] to-[#11100a]"
                     : "border-[color:var(--border-dim)] bg-[color:var(--card)]"
                 }`}
               >
                 <div className="space-y-2">
-                  <p className="text-[0.65rem] uppercase tracking-[0.22rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
+                  <p className="text-[0.62rem] uppercase tracking-[0.18rem] text-[#f5d98c] sm:text-xs sm:tracking-[0.4rem]">
                     {plan.badge ?? "Plano JM"}
                   </p>
                   <h3
@@ -60,7 +60,7 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-4xl font-bold text-[var(--gold-tone)]">{plan.price}</p>
+                  <p className="text-3xl font-bold text-[var(--gold-tone)] sm:text-4xl">{plan.price}</p>
                   <ul
                     className={`space-y-2 text-sm ${
                       isFeatured ? "text-white/90" : "text-[var(--foreground)]"
@@ -79,7 +79,7 @@ export function PlansSection({ plans }: { plans: PlanOption[] }) {
                   href={`/users/login${
                     plan.id ? `?planId=${encodeURIComponent(plan.id)}` : ""
                   }`}
-                  className="mt-auto inline-flex items-center justify-center rounded-full border border-[#C2A537]/50 bg-[#C2A537]/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] hover:bg-[#C2A537]/20 sm:tracking-[0.4rem]"
+                  className="mt-auto inline-flex items-center justify-center rounded-full border border-[#C2A537]/50 bg-[#C2A537]/10 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] hover:bg-[#C2A537]/20 sm:tracking-[0.4rem]"
                 >
                   Garantir vaga
                 </Link>

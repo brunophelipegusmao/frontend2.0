@@ -498,7 +498,7 @@ export function EventRegistrationPanel({
                 setGuestStep("hidden");
                 setGuestFormError(null);
               }}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] sm:tracking-[0.2rem]"
             >
               Cancelar
             </button>
@@ -516,7 +516,7 @@ export function EventRegistrationPanel({
               type="button"
               onClick={handleGuestConfirmRegistration}
               disabled={isSubmitting}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs font-semibold uppercase tracking-[0.14rem] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60 sm:tracking-[0.2rem]"
             >
               {isSubmitting ? "Confirmando..." : "Confirmar inscricao"}
             </button>
@@ -524,7 +524,7 @@ export function EventRegistrationPanel({
               type="button"
               onClick={() => setGuestStep("form")}
               disabled={isSubmitting}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-60 sm:tracking-[0.2rem]"
             >
               Voltar
             </button>
@@ -548,8 +548,8 @@ export function EventRegistrationPanel({
 
       {isChoosingProfile && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_24px_60px_-24px_var(--shadow)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--gold-tone-dark)]">
+          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_24px_60px_-24px_var(--shadow)] sm:p-5">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.3rem]">
               Tipo de inscricao
             </p>
             <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
@@ -585,7 +585,7 @@ export function EventRegistrationPanel({
               <button
                 type="button"
                 onClick={() => setIsChoosingProfile(false)}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-5 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-5 text-xs font-semibold uppercase tracking-[0.14rem] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:tracking-[0.2rem]"
               >
                 Fechar
               </button>

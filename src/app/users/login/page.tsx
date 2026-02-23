@@ -253,7 +253,7 @@ function LoginPageContent() {
         />
       </div>
 
-      <div className="mt-6 flex items-center gap-4 text-[0.65rem] uppercase tracking-[0.5rem] text-[var(--muted-foreground)] font-[var(--font-roboto)]">
+      <div className="mt-6 flex items-center gap-4 text-[0.62rem] uppercase tracking-[0.16rem] text-[var(--muted-foreground)] font-[var(--font-roboto)] sm:text-[0.65rem] sm:tracking-[0.5rem]">
         <span className="h-px flex-1 bg-[color:var(--border-dim)] font-[var(--font-roboto)]" />
         <span className="font-bold text-md text-[var(--gold-tone)] font-[var(--font-roboto)]">
           Ou continue com
@@ -265,7 +265,7 @@ function LoginPageContent() {
         className="mt-6 space-y-4 text-left font-[var(--font-roboto)]"
         onSubmit={handleSubmit}
       >
-        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-roboto)]">
+        <label className="space-y-2 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] font-[var(--font-roboto)] sm:tracking-[0.3rem]">
           E-mail
           <input
             type="email"
@@ -279,7 +279,7 @@ function LoginPageContent() {
         </label>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)] font-[var(--font-roboto)]">
+          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] font-[var(--font-roboto)] sm:tracking-[0.3rem]">
             <label htmlFor="password">Senha</label>
             <a
               href="/users/forgot-password"
@@ -323,7 +323,7 @@ function LoginPageContent() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-extrabold uppercase tracking-[0.4rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-extrabold uppercase tracking-[0.18rem] text-[var(--gold-tone)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)] sm:tracking-[0.4rem]"
         >
           {isSubmitting ? "Entrando..." : "Entrar"}
         </button>

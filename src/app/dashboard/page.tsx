@@ -1,5 +1,7 @@
 "use client";
 
+import type { ApexOptions } from "apexcharts";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Users,
@@ -17,6 +19,8 @@ import {
   Menu,
 } from "lucide-react";
 import { isHiddenPlanSlug } from "@/lib/plans";
+
+const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 type TabId = "users" | "events" | "financial" | "admin" | "system";
 type DashboardRole =
@@ -144,6 +148,14 @@ const dashboardRoleOptions: DashboardRole[] = [
   "STUDENT",
   "GUEST",
   "USER",
+];
+
+const dashboardPreviewRoleOptions: DashboardRole[] = [
+  "MASTER",
+  "ADMIN",
+  "STAFF",
+  "COACH",
+  "STUDENT",
 ];
 
 const dashboardTabsByRole: Record<DashboardRole, TabId[]> = {
@@ -618,6 +630,18 @@ type AuthenticatedUser = {
   role?: string | null;
   avatarUrl?: string | null;
   image?: string | null;
+};
+
+type UsersDashboardAnalytics = {
+  activeStudents: number;
+  checkins: {
+    day: number;
+    week: number;
+    month: number;
+    year: number;
+    yearRef: number;
+  };
+  generatedAt: string;
 };
 
 const parseApiError = async (response: Response, fallback: string) => {
@@ -1284,6 +1308,26 @@ export default function DashboardPage() {
   const [currentUserStatus, setCurrentUserStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle");
+  const [usersAnalytics, setUsersAnalytics] =
+    useState<UsersDashboardAnalytics | null>(null);
+  const [usersAnalyticsStatus, setUsersAnalyticsStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [usersAnalyticsError, setUsersAnalyticsError] = useState<string | null>(
+    null,
+  );
+  const [usersChartPeriod, setUsersChartPeriod] = useState<"day" | "week">("day");
+  const [showUsersChartsOnMobile, setShowUsersChartsOnMobile] = useState(false);
+  const [showUsersListOnMobile, setShowUsersListOnMobile] = useState(false);
+  const [showEventsCalendarOnMobile, setShowEventsCalendarOnMobile] =
+    useState(false);
+  const [showEventsListOnMobile, setShowEventsListOnMobile] = useState(false);
+  const [showFinancialDetailsOnMobile, setShowFinancialDetailsOnMobile] =
+    useState(false);
+  const [showAdminDetailsOnMobile, setShowAdminDetailsOnMobile] =
+    useState(false);
+  const [showSystemSectionOnMobile, setShowSystemSectionOnMobile] =
+    useState(false);
   const [messageText, setMessageText] = useState("");
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [userSaveError, setUserSaveError] = useState<string | null>(null);
@@ -1382,6 +1426,9 @@ export default function DashboardPage() {
   const canSwitchDashboardView = currentDashboardRole === "MASTER";
   const isStaffFinancialRestricted = effectiveDashboardRole === "STAFF";
   const isCoachDashboard = effectiveDashboardRole === "COACH";
+  const canSeeUsersAnalytics = ["MASTER", "ADMIN", "COACH"].includes(
+    effectiveDashboardRole,
+  );
   const availableTabs = useMemo(
     () =>
       tabs.filter((tab) =>
@@ -1400,6 +1447,140 @@ export default function DashboardPage() {
     () => availableTabs.find((tab) => tab.id === activeTab),
     [activeTab, availableTabs],
   );
+  const usersCheckinPeriodLabel = usersChartPeriod === "day" ? "dia" : "semana";
+  const usersCheckinPeriodLegend =
+    usersChartPeriod === "day" ? "do dia" : "da semana";
+  const usersPeriodCheckins = useMemo(() => {
+    if (!usersAnalytics) {
+      return 0;
+    }
+    return usersChartPeriod === "day"
+      ? usersAnalytics.checkins.day
+      : usersAnalytics.checkins.week;
+  }, [usersAnalytics, usersChartPeriod]);
+  const usersMonthlyCheckins = usersAnalytics?.checkins.month ?? 0;
+
+  const toggleUsersChartPeriod = useCallback(() => {
+    setUsersChartPeriod((prev) => (prev === "day" ? "week" : "day"));
+  }, []);
+
+  const usersPeriodChartOptions = useMemo<ApexOptions>(
+    () => ({
+      chart: {
+        type: "bar",
+        toolbar: { show: false },
+        animations: { enabled: true, speed: 380, easing: "easeinout" },
+        events: {
+          click: () => toggleUsersChartPeriod(),
+        },
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 8,
+          columnWidth: "58%",
+        },
+      },
+      colors: ["#b58c21", "#8fe7b4"],
+      dataLabels: {
+        enabled: true,
+      },
+      xaxis: {
+        categories: [`Visão ${usersCheckinPeriodLabel}`],
+      },
+      yaxis: {
+        min: 0,
+        forceNiceScale: true,
+      },
+      grid: {
+        borderColor: "rgba(255,255,255,0.08)",
+        strokeDashArray: 4,
+      },
+      legend: {
+        show: true,
+        position: "top",
+      },
+      tooltip: {
+        theme: "dark",
+      },
+    }),
+    [toggleUsersChartPeriod, usersCheckinPeriodLabel],
+  );
+
+  const usersPeriodChartSeries = useMemo(
+    () => [
+      {
+        name: "Alunos ativos",
+        data: [usersAnalytics?.activeStudents ?? 0],
+      },
+      {
+        name: `Check-ins ${usersCheckinPeriodLegend}`,
+        data: [usersPeriodCheckins],
+      },
+    ],
+    [usersAnalytics?.activeStudents, usersCheckinPeriodLegend, usersPeriodCheckins],
+  );
+
+  const usersMonthlyChartOptions = useMemo<ApexOptions>(
+    () => ({
+      chart: {
+        type: "bar",
+        toolbar: { show: false },
+        animations: { enabled: true, speed: 380, easing: "easeinout" },
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 8,
+          columnWidth: "58%",
+        },
+      },
+      colors: ["#b58c21", "#6fb1ff"],
+      dataLabels: {
+        enabled: true,
+      },
+      xaxis: {
+        categories: ["Mês atual"],
+      },
+      yaxis: {
+        min: 0,
+        forceNiceScale: true,
+      },
+      grid: {
+        borderColor: "rgba(255,255,255,0.08)",
+        strokeDashArray: 4,
+      },
+      legend: {
+        show: true,
+        position: "top",
+      },
+      tooltip: {
+        theme: "dark",
+      },
+    }),
+    [],
+  );
+
+  const usersMonthlyChartSeries = useMemo(
+    () => [
+      {
+        name: "Alunos ativos",
+        data: [usersAnalytics?.activeStudents ?? 0],
+      },
+      {
+        name: "Check-ins do mês",
+        data: [usersMonthlyCheckins],
+      },
+    ],
+    [usersAnalytics?.activeStudents, usersMonthlyCheckins],
+  );
+
+  const openStudentDashboardPreview = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.location.href = "/users/userDashboard?preview=student";
+  };
 
   useEffect(() => {
     return () => {
@@ -1437,6 +1618,16 @@ export default function DashboardPage() {
       setIsTabMenuOpen(false);
     }
   }, [activeTab, availableTabs]);
+
+  useEffect(() => {
+    setShowUsersChartsOnMobile(false);
+    setShowUsersListOnMobile(false);
+    setShowEventsCalendarOnMobile(false);
+    setShowEventsListOnMobile(false);
+    setShowFinancialDetailsOnMobile(false);
+    setShowAdminDetailsOnMobile(false);
+    setShowSystemSectionOnMobile(false);
+  }, [activeTab]);
 
   useEffect(() => {
     if (availableSystemSections.length === 0) {
@@ -1508,6 +1699,36 @@ export default function DashboardPage() {
       setUsersStatus("error");
       setUsersError(
         err instanceof Error ? err.message : "Falha ao carregar usuarios.",
+      );
+    }
+  }, []);
+
+  const loadUsersAnalytics = useCallback(async () => {
+    setUsersAnalyticsStatus("loading");
+    setUsersAnalyticsError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/checkin/analytics/dashboard`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(
+            response,
+            "Nao foi possivel carregar os indicadores de check-in.",
+          ),
+        );
+      }
+      const payload = (await response.json()) as UsersDashboardAnalytics;
+      setUsersAnalytics(payload);
+      setUsersAnalyticsStatus("ready");
+    } catch (err) {
+      setUsersAnalytics(null);
+      setUsersAnalyticsStatus("error");
+      setUsersAnalyticsError(
+        err instanceof Error
+          ? err.message
+          : "Falha ao carregar os indicadores de check-in.",
       );
     }
   }, []);
@@ -1874,6 +2095,17 @@ export default function DashboardPage() {
     }
     void loadPlanRequests();
   }, [activeTab, availableTabs, loadPlanRequests]);
+
+  useEffect(() => {
+    if (
+      activeTab !== "users" ||
+      !availableTabs.some((tab) => tab.id === "users") ||
+      !canSeeUsersAnalytics
+    ) {
+      return;
+    }
+    void loadUsersAnalytics();
+  }, [activeTab, availableTabs, canSeeUsersAnalytics, loadUsersAnalytics]);
 
   useEffect(() => {
     if (!checkinUser) {
@@ -4383,16 +4615,22 @@ export default function DashboardPage() {
                 </p>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   MASTER pode simular os perfis existentes para validar o acesso.
+                  O perfil de aluno abre o dashboard dedicado.
                 </p>
               </div>
               <select
                 value={effectiveDashboardRole}
-                onChange={(event) =>
-                  setDashboardViewRole(event.target.value as DashboardRole)
-                }
+                onChange={(event) => {
+                  const nextRole = event.target.value as DashboardRole;
+                  if (nextRole === "STUDENT") {
+                    openStudentDashboardPreview();
+                    return;
+                  }
+                  setDashboardViewRole(nextRole);
+                }}
                 className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] sm:w-auto"
               >
-                {dashboardRoleOptions.map((role) => (
+                {dashboardPreviewRoleOptions.map((role) => (
                   <option key={role} value={role}>
                     {dashboardRoleLabelMap[role]}
                   </option>
@@ -4450,152 +4688,271 @@ export default function DashboardPage() {
 
       {availableTabs.length === 0 && (
         <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
-          O dashboard exclusivo de aluno/usuário será disponibilizado em breve.
+          {effectiveDashboardRole === "STUDENT" ? (
+            <div className="flex flex-col gap-3">
+              <p>Este perfil usa o dashboard dedicado de aluno.</p>
+              <button
+                type="button"
+                onClick={openStudentDashboardPreview}
+                className="inline-flex h-10 w-fit items-center justify-center rounded-full border border-[var(--gold-tone)]/45 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20"
+              >
+                Abrir dashboard do aluno
+              </button>
+            </div>
+          ) : (
+            <p>Este perfil não possui dashboard administrativo.</p>
+          )}
         </div>
       )}
 
       {activeTab === "users" && availableTabs.some((tab) => tab.id === "users") && (
         <div className="space-y-6">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-2xl font-semibold">Usuarios cadastrados</h2>
-            {!isCoachDashboard && (
-              <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-                Novo usuario
-              </button>
-            )}
-          </div>
-
-          <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 sm:flex-wrap sm:gap-3 sm:p-3">
-            {filterOptions.map((option) => (
+          {canSeeUsersAnalytics && (
+            <div className="space-y-3">
               <button
-                key={option.value}
-                onClick={() => setUserFilter(option.value)}
-                className={`shrink-0 rounded-full border px-3 py-2 text-[0.55rem] uppercase tracking-[0.25em] transition sm:px-4 sm:text-xs sm:tracking-[0.35em] ${
-                  userFilter === option.value
-                    ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone)]"
-                    : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:border-[color:var(--gold-tone-dark)] hover:text-[var(--foreground)]"
-                }`}
+                type="button"
+                onClick={() =>
+                  setShowUsersChartsOnMobile((prev) => !prev)
+                }
+                aria-expanded={showUsersChartsOnMobile}
+                className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
               >
-                {option.label}
+                {showUsersChartsOnMobile ? "Ocultar gráficos" : "Mostrar gráficos"}
               </button>
-            ))}
-          </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[color:var(--border-dim)]">
-            <div className="hidden grid-cols-[1.4fr_1.4fr_1fr_1fr_1fr_0.9fr] gap-2 bg-[color:var(--card)] px-4 py-3 text-[0.6rem] uppercase tracking-[0.35em] text-[var(--muted-foreground)] md:grid">
-              <span>Nome</span>
-              <span>Email</span>
-              <span>CPF</span>
-              <span>Telefone</span>
-              <span>Perfil</span>
-              <span className="text-right">Ações</span>
+              <div className={`${showUsersChartsOnMobile ? "block" : "hidden"} sm:block`}>
+                <section className="grid gap-4 xl:grid-cols-2">
+                  <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[0.62rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                          Indicadores de usuários
+                        </p>
+                        <h3 className="mt-2 text-lg font-semibold">
+                          Alunos ativos x check-ins ({usersCheckinPeriodLabel})
+                        </h3>
+                        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                          Clique no gráfico para alternar entre visão diária e semanal.
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-1 text-[0.58rem] uppercase tracking-[0.2em] text-[var(--gold-tone-dark)]">
+                        {usersCheckinPeriodLabel}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-3">
+                      {usersAnalyticsStatus === "loading" && (
+                        <p className="text-sm text-[var(--muted-foreground)]">
+                          Carregando gráfico...
+                        </p>
+                      )}
+                      {usersAnalyticsStatus === "error" && (
+                        <p className="text-sm text-[color:var(--danger)]">
+                          {usersAnalyticsError ??
+                            "Nao foi possivel carregar o gráfico de check-ins."}
+                        </p>
+                      )}
+                      {usersAnalyticsStatus === "ready" && usersAnalytics && (
+                        <ApexChart
+                          type="bar"
+                          height={280}
+                          options={usersPeriodChartOptions}
+                          series={usersPeriodChartSeries}
+                        />
+                      )}
+                    </div>
+                  </article>
+
+                  <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                    <div>
+                      <p className="text-[0.62rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Indicadores mensais
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold">
+                        Alunos ativos x check-ins (mês atual)
+                      </h3>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-3">
+                      {usersAnalyticsStatus === "loading" && (
+                        <p className="text-sm text-[var(--muted-foreground)]">
+                          Carregando gráfico mensal...
+                        </p>
+                      )}
+                      {usersAnalyticsStatus === "error" && (
+                        <p className="text-sm text-[color:var(--danger)]">
+                          {usersAnalyticsError ??
+                            "Nao foi possivel carregar o gráfico mensal."}
+                        </p>
+                      )}
+                      {usersAnalyticsStatus === "ready" && usersAnalytics && (
+                        <ApexChart
+                          type="bar"
+                          height={280}
+                          options={usersMonthlyChartOptions}
+                          series={usersMonthlyChartSeries}
+                        />
+                      )}
+                    </div>
+                  </article>
+                </section>
+              </div>
             </div>
-            <div className="divide-y divide-[color:var(--border-dim)]">
-              {usersStatus === "loading" && (
-                <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                  Carregando usuarios...
-                </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowUsersListOnMobile((prev) => !prev)}
+            aria-expanded={showUsersListOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showUsersListOnMobile ? "Ocultar usuários" : "Mostrar usuários"}
+          </button>
+
+          <div
+            className={`${showUsersListOnMobile ? "block" : "hidden"} space-y-6 sm:block`}
+          >
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+              <h2 className="text-2xl font-semibold">Usuarios cadastrados</h2>
+              {!isCoachDashboard && (
+                <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
+                  Novo usuario
+                </button>
               )}
-              {usersStatus === "error" && (
-                <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                  {usersError || "Nao foi possivel carregar usuarios."}
-                </div>
-              )}
-              {usersStatus === "ready" && users.length === 0 && (
-                <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                  Nenhum usuario encontrado.
-                </div>
-              )}
-              {users
-                .filter((user) => {
-                  if (userFilter === "ALL") {
-                    return true;
-                  }
-                  if (userFilter === "ADMIN") {
-                    return user.role === "ADMIN" || user.role === "MASTER";
-                  }
-                  return user.role === userFilter;
-                })
-                .map((user) => {
-                  const displayName =
-                    user.name?.trim() || user.email || "Sem nome";
-                  const avatarUrl = user.avatarUrl || user.image || "";
-                  const roleLabel = roleLabelMap[user.role];
-                  return (
-                    <div
-                      key={user.id}
-                      className="flex flex-col gap-3 bg-[color:var(--card)] px-4 py-4 text-sm text-[var(--foreground)] md:grid md:grid-cols-[1.4fr_1.4fr_1fr_1fr_1fr_0.9fr] md:items-center md:gap-2"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-xs font-semibold text-[var(--foreground)] aspect-square">
-                          {avatarUrl ? (
-                            <img
-                              src={avatarUrl}
-                              alt={`Foto de ${displayName}`}
-                              className="h-full w-full object-cover"
-                            />
+            </div>
+
+            <div className="flex w-full items-center gap-2 overflow-x-auto rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2 sm:flex-wrap sm:gap-3 sm:p-3">
+              {filterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setUserFilter(option.value)}
+                  className={`shrink-0 rounded-full border px-3 py-2 text-[0.55rem] uppercase tracking-[0.25em] transition sm:px-4 sm:text-xs sm:tracking-[0.35em] ${
+                    userFilter === option.value
+                      ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone)]"
+                      : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:border-[color:var(--gold-tone-dark)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[color:var(--border-dim)]">
+              <div className="hidden grid-cols-[1.4fr_1.4fr_1fr_1fr_1fr_0.9fr] gap-2 bg-[color:var(--card)] px-4 py-3 text-[0.6rem] uppercase tracking-[0.35em] text-[var(--muted-foreground)] md:grid">
+                <span>Nome</span>
+                <span>Email</span>
+                <span>CPF</span>
+                <span>Telefone</span>
+                <span>Perfil</span>
+                <span className="text-right">Ações</span>
+              </div>
+              <div className="divide-y divide-[color:var(--border-dim)]">
+                {usersStatus === "loading" && (
+                  <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
+                    Carregando usuarios...
+                  </div>
+                )}
+                {usersStatus === "error" && (
+                  <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
+                    {usersError || "Nao foi possivel carregar usuarios."}
+                  </div>
+                )}
+                {usersStatus === "ready" && users.length === 0 && (
+                  <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
+                    Nenhum usuario encontrado.
+                  </div>
+                )}
+                {users
+                  .filter((user) => {
+                    if (userFilter === "ALL") {
+                      return true;
+                    }
+                    if (userFilter === "ADMIN") {
+                      return user.role === "ADMIN" || user.role === "MASTER";
+                    }
+                    return user.role === userFilter;
+                  })
+                  .map((user) => {
+                    const displayName =
+                      user.name?.trim() || user.email || "Sem nome";
+                    const avatarUrl = user.avatarUrl || user.image || "";
+                    const roleLabel = roleLabelMap[user.role];
+                    return (
+                      <div
+                        key={user.id}
+                        className="flex flex-col gap-3 bg-[color:var(--card)] px-4 py-4 text-sm text-[var(--foreground)] md:grid md:grid-cols-[1.4fr_1.4fr_1fr_1fr_1fr_0.9fr] md:items-center md:gap-2"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-xs font-semibold text-[var(--foreground)] aspect-square">
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={`Foto de ${displayName}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{getInitials(displayName)}</span>
+                            )}
+                          </div>
+                          <span className="font-semibold">{displayName}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-xs text-[var(--muted-foreground)] md:contents">
+                          <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
+                            <span className="block uppercase tracking-[0.3em] md:hidden">
+                              Email
+                            </span>
+                            <span className="break-all text-sm md:text-[var(--muted-foreground)]">
+                              {user.email}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
+                            <span className="block uppercase tracking-[0.3em] md:hidden">
+                              CPF
+                            </span>
+                            <span className="text-sm md:text-[var(--muted-foreground)]">
+                              {user.cpf || "-"}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
+                            <span className="block uppercase tracking-[0.3em] md:hidden">
+                              Telefone
+                            </span>
+                            <span className="text-sm md:text-[var(--muted-foreground)]">
+                              {user.phone || "-"}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
+                            <span className="block uppercase tracking-[0.3em] md:hidden">
+                              Perfil
+                            </span>
+                            <span className="text-sm md:text-[var(--muted-foreground)]">
+                              {roleLabel}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-start gap-2 pt-1 md:justify-end md:pt-0">
+                          {isCoachDashboard ? (
+                            <button
+                              onClick={() => void openHealthModal(user)}
+                              className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                            >
+                              <Stethoscope className="h-3.5 w-3.5" />
+                              Saude
+                            </button>
                           ) : (
-                            <span>{getInitials(displayName)}</span>
+                            <button
+                              onClick={() => openUserModal(user)}
+                              className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Editar
+                            </button>
                           )}
                         </div>
-                        <span className="font-semibold">{displayName}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-xs text-[var(--muted-foreground)] md:contents">
-                        <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
-                          <span className="block uppercase tracking-[0.3em] md:hidden">
-                            Email
-                          </span>
-                          <span className="break-all text-sm md:text-[var(--muted-foreground)]">
-                            {user.email}
-                          </span>
-                        </div>
-                        <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
-                          <span className="block uppercase tracking-[0.3em] md:hidden">
-                            CPF
-                          </span>
-                          <span className="text-sm md:text-[var(--muted-foreground)]">
-                            {user.cpf || "-"}
-                          </span>
-                        </div>
-                        <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
-                          <span className="block uppercase tracking-[0.3em] md:hidden">
-                            Telefone
-                          </span>
-                          <span className="text-sm md:text-[var(--muted-foreground)]">
-                            {user.phone || "-"}
-                          </span>
-                        </div>
-                        <div className="space-y-1 text-xs text-[var(--muted-foreground)] md:text-sm">
-                          <span className="block uppercase tracking-[0.3em] md:hidden">
-                            Perfil
-                          </span>
-                          <span className="text-sm md:text-[var(--muted-foreground)]">
-                            {roleLabel}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-start gap-2 pt-1 md:justify-end md:pt-0">
-                        {isCoachDashboard ? (
-                          <button
-                            onClick={() => void openHealthModal(user)}
-                            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
-                          >
-                            <Stethoscope className="h-3.5 w-3.5" />
-                            Saude
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => openUserModal(user)}
-                            className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Editar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </div>
@@ -4653,369 +5010,393 @@ export default function DashboardPage() {
             </p>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-            <section className="relative w-full overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[var(--gold-tone)]/10 blur-3xl animate-[float_8s_ease-in-out_infinite]" />
-              <div className="pointer-events-none absolute -left-16 -bottom-16 h-52 w-52 rounded-full bg-[var(--gold-tone-dark)]/10 blur-3xl animate-[float_10s_ease-in-out_infinite]" />
+          <button
+            type="button"
+            onClick={() => setShowEventsCalendarOnMobile((prev) => !prev)}
+            aria-expanded={showEventsCalendarOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showEventsCalendarOnMobile ? "Ocultar agenda" : "Mostrar agenda"}
+          </button>
 
-              <div className="relative flex items-center justify-center gap-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3">
-                <p className="text-sm font-semibold text-[var(--gold-tone-dark)]">
-                  {eventMonthLabel}
-                </p>
-                <div className="absolute right-4 flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      setEventMonth(
-                        (prev) =>
-                          new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
-                      )
-                    }
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    onClick={() =>
-                      setEventMonth(
-                        (prev) =>
-                          new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
-                      )
-                    }
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
-                  >
-                    ›
-                  </button>
-                </div>
-              </div>
+          <div className={`${showEventsCalendarOnMobile ? "block" : "hidden"} sm:block`}>
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+              <section className="relative w-full overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[var(--gold-tone)]/10 blur-3xl animate-[float_8s_ease-in-out_infinite]" />
+                <div className="pointer-events-none absolute -left-16 -bottom-16 h-52 w-52 rounded-full bg-[var(--gold-tone-dark)]/10 blur-3xl animate-[float_10s_ease-in-out_infinite]" />
 
-              <div className="mt-4 w-full">
-                <div className="grid grid-cols-7 gap-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                  {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(
-                    (label) => (
-                      <span
-                        key={label}
-                        className={`text-center ${
-                          label === "Dom" || label === "Sab"
-                            ? "text-[var(--gold-tone-dark)]"
-                            : ""
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    ),
-                  )}
-                </div>
-                <div className="mt-3 grid grid-cols-7 gap-2">
-                  {eventMonthDays.map((day, index) => {
-                    if (!day.inMonth || !day.day) {
-                      return <div key={`empty-${index}`} className="h-12 w-full" />;
-                    }
-                    const events = eventsByDate.get(day.date) ?? [];
-                    const hasEvent = events.length > 0;
-                    const weekdayIndex = index % 7;
-                    const isWeekend = weekdayIndex === 0 || weekdayIndex === 6;
-                    const isSelected = selectedEventDate === day.date;
-                    return (
-                      <button
-                        type="button"
-                        key={day.date}
-                        onClick={() => setSelectedEventDate(day.date)}
-                        className={`group relative flex h-12 min-w-0 flex-1 items-center justify-center rounded-xl text-xs font-semibold transition duration-200 ease-out ${
-                          day.inMonth
-                            ? "bg-[color:var(--calendar-day-bg)] text-[color:var(--calendar-day-text)]"
-                            : "bg-[color:var(--calendar-day-muted-bg)] text-[color:var(--calendar-day-muted-text)]"
-                        } ${
-                          isWeekend && day.inMonth
-                            ? "text-[var(--calendar-weekend-text)]"
-                            : ""
-                        } ${
-                          hasEvent
-                            ? "ring-1 ring-[var(--gold-tone)]/50 shadow-[0_10px_22px_-16px_var(--gold-tone)]"
-                            : ""
-                        } ${
-                          isSelected
-                            ? "outline outline-2 outline-[var(--gold-tone)] outline-offset-2"
-                            : ""
-                        } hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_12px_24px_-16px_var(--gold-tone)]`}
-                      >
-                        {hasEvent && (
-                          <span className="pointer-events-none absolute inset-1 rounded-xl bg-gradient-to-br from-[var(--gold-tone)]/20 via-transparent to-[var(--gold-tone-dark)]/20 opacity-0 transition duration-200 group-hover:opacity-100" />
-                        )}
-                        {day.day}
-                        {hasEvent && (
-                          <span className="absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--gold-tone)] animate-[float_4s_ease-in-out_infinite] transition group-hover:scale-125" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-
-            <aside className="w-full rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-              <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                Eventos do dia
-              </p>
-              <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                {selectedEventDate
-                  ? new Intl.DateTimeFormat("pt-BR", {
-                      dateStyle: "full",
-                    }).format(new Date(`${selectedEventDate}T00:00:00`))
-                  : "Selecione uma data"}
-              </p>
-              <div className="mt-4 space-y-3">
-                {selectedDayEvents.length === 0 && (
-                  <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-                    <p>Nada foi agendado para este dia.</p>
+                <div className="relative flex items-center justify-center gap-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-3">
+                  <p className="text-sm font-semibold text-[var(--gold-tone-dark)]">
+                    {eventMonthLabel}
+                  </p>
+                  <div className="absolute right-4 flex items-center gap-2">
                     <button
                       onClick={() =>
-                        openEventModal(
-                          "create",
-                          undefined,
-                          selectedEventDate ?? undefined,
+                        setEventMonth(
+                          (prev) =>
+                            new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
                         )
                       }
-                      className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
                     >
-                      Criar evento
+                      ‹
+                    </button>
+                    <button
+                      onClick={() =>
+                        setEventMonth(
+                          (prev) =>
+                            new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
+                        )
+                      }
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
+                    >
+                      ›
                     </button>
                   </div>
-                )}
-                {selectedDayEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
-                  >
-                    {event.thumbnailUrl ? (
-                      <img
-                        src={event.thumbnailUrl}
-                        alt={`Imagem do evento ${event.title}`}
-                        className="h-36 w-full rounded-xl object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-36 w-full items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                        Sem imagem
-                      </div>
+                </div>
+
+                <div className="mt-4 w-full">
+                  <div className="grid grid-cols-7 gap-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(
+                      (label) => (
+                        <span
+                          key={label}
+                          className={`text-center ${
+                            label === "Dom" || label === "Sab"
+                              ? "text-[var(--gold-tone-dark)]"
+                              : ""
+                          }`}
+                        >
+                          {label}
+                        </span>
+                      ),
                     )}
-                    <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      {event.date} • {event.time}
-                      {event.endTime ? ` - ${event.endTime}` : ""} •{" "}
-                      {event.location}
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-                      {event.title}
-                    </p>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      {event.description}
-                    </p>
-                    <div className="mt-3 grid gap-2 text-xs text-[var(--muted-foreground)]">
-                      <span>
-                        Status:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.status === "cancelado"
-                            ? "Cancelado"
-                            : event.status}
-                        </strong>
-                      </span>
-                      <span>
-                        Acesso:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.access === "open"
-                            ? "Aberto"
-                            : "Com inscricao"}
-                        </strong>
-                      </span>
-                      <span>
-                        Capacidade:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.capacity ?? "Livre"}
-                        </strong>
-                      </span>
-                      <span>
-                        Confirmadas:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.access === "open"
-                            ? "-"
-                            : `${event.confirmedRegistrations}${
-                                event.capacity !== null ? ` / ${event.capacity}` : ""
-                              }`}
-                        </strong>
-                      </span>
-                      <span>
-                        Confirmacao:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
-                        </strong>
-                      </span>
-                      <span>
-                        Pagamento:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.paid ? event.price : "Gratuito"}
-                        </strong>
-                      </span>
-                      {event.paid && (
+                  </div>
+                  <div className="mt-3 grid grid-cols-7 gap-2">
+                    {eventMonthDays.map((day, index) => {
+                      if (!day.inMonth || !day.day) {
+                        return <div key={`empty-${index}`} className="h-12 w-full" />;
+                      }
+                      const events = eventsByDate.get(day.date) ?? [];
+                      const hasEvent = events.length > 0;
+                      const weekdayIndex = index % 7;
+                      const isWeekend = weekdayIndex === 0 || weekdayIndex === 6;
+                      const isSelected = selectedEventDate === day.date;
+                      return (
+                        <button
+                          type="button"
+                          key={day.date}
+                          onClick={() => setSelectedEventDate(day.date)}
+                          className={`group relative flex h-12 min-w-0 flex-1 items-center justify-center rounded-xl text-xs font-semibold transition duration-200 ease-out ${
+                            day.inMonth
+                              ? "bg-[color:var(--calendar-day-bg)] text-[color:var(--calendar-day-text)]"
+                              : "bg-[color:var(--calendar-day-muted-bg)] text-[color:var(--calendar-day-muted-text)]"
+                          } ${
+                            isWeekend && day.inMonth
+                              ? "text-[var(--calendar-weekend-text)]"
+                              : ""
+                          } ${
+                            hasEvent
+                              ? "ring-1 ring-[var(--gold-tone)]/50 shadow-[0_10px_22px_-16px_var(--gold-tone)]"
+                              : ""
+                          } ${
+                            isSelected
+                              ? "outline outline-2 outline-[var(--gold-tone)] outline-offset-2"
+                              : ""
+                          } hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-[0_12px_24px_-16px_var(--gold-tone)]`}
+                        >
+                          {hasEvent && (
+                            <span className="pointer-events-none absolute inset-1 rounded-xl bg-gradient-to-br from-[var(--gold-tone)]/20 via-transparent to-[var(--gold-tone-dark)]/20 opacity-0 transition duration-200 group-hover:opacity-100" />
+                          )}
+                          {day.day}
+                          {hasEvent && (
+                            <span className="absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[var(--gold-tone)] animate-[float_4s_ease-in-out_infinite] transition group-hover:scale-125" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              <aside className="w-full rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                  Eventos do dia
+                </p>
+                <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                  {selectedEventDate
+                    ? new Intl.DateTimeFormat("pt-BR", {
+                        dateStyle: "full",
+                      }).format(new Date(`${selectedEventDate}T00:00:00`))
+                    : "Selecione uma data"}
+                </p>
+                <div className="mt-4 space-y-3">
+                  {selectedDayEvents.length === 0 && (
+                    <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
+                      <p>Nada foi agendado para este dia.</p>
+                      <button
+                        onClick={() =>
+                          openEventModal(
+                            "create",
+                            undefined,
+                            selectedEventDate ?? undefined,
+                          )
+                        }
+                        className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
+                      >
+                        Criar evento
+                      </button>
+                    </div>
+                  )}
+                  {selectedDayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                    >
+                      {event.thumbnailUrl ? (
+                        <img
+                          src={event.thumbnailUrl}
+                          alt={`Imagem do evento ${event.title}`}
+                          className="h-36 w-full rounded-xl object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-36 w-full items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                          Sem imagem
+                        </div>
+                      )}
+                      <p className="mt-3 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        {event.date} • {event.time}
+                        {event.endTime ? ` - ${event.endTime}` : ""} •{" "}
+                        {event.location}
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[var(--foreground)]">
+                        {event.title}
+                      </p>
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        {event.description}
+                      </p>
+                      <div className="mt-3 grid gap-2 text-xs text-[var(--muted-foreground)]">
                         <span>
-                          Forma de pagamento:{" "}
+                          Status:{" "}
                           <strong className="text-[var(--foreground)]">
-                            {event.paymentMethod}
+                            {event.status === "cancelado"
+                              ? "Cancelado"
+                              : event.status}
                           </strong>
                         </span>
-                      )}
-                      <span>
-                        Convidados:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.allowGuests ? "Permitidos" : "Somente alunos"}
-                        </strong>
-                      </span>
-                      <span>
-                        Destaque:{" "}
-                        <strong className="text-[var(--foreground)]">
-                          {event.isFeatured ? "Sim" : "Nao"}
-                        </strong>
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => openEventModal("edit", event)}
-                        className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
-                      >
-                        Editar evento
-                      </button>
-                      <button
-                        onClick={() => openEventManagementModal(event)}
-                        className="inline-flex h-9 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
-                      >
-                        Gerenciar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </aside>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {(["FUTUROS", "CANCELADOS", "REALIZADOS"] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setEventFilter(status)}
-                className={`rounded-full border px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] transition ${
-                  eventFilter === status
-                    ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
-                    : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-4">
-            {filteredEvents.map((event) => (
-              <article
-                key={event.id}
-                className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                      {event.status === "cancelado"
-                        ? "Cancelado"
-                        : event.status}
-                    </p>
-                    <h3 className="text-lg font-semibold">{event.title}</h3>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      {event.date} • {event.time} • {event.location}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {event.isFeatured && (
-                      <div className="rounded-xl border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]">
-                        Destaque
+                        <span>
+                          Acesso:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.access === "open"
+                              ? "Aberto"
+                              : "Com inscricao"}
+                          </strong>
+                        </span>
+                        <span>
+                          Capacidade:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.capacity ?? "Livre"}
+                          </strong>
+                        </span>
+                        <span>
+                          Confirmadas:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.access === "open"
+                              ? "-"
+                              : `${event.confirmedRegistrations}${
+                                  event.capacity !== null ? ` / ${event.capacity}` : ""
+                                }`}
+                          </strong>
+                        </span>
+                        <span>
+                          Confirmacao:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
+                          </strong>
+                        </span>
+                        <span>
+                          Pagamento:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.paid ? event.price : "Gratuito"}
+                          </strong>
+                        </span>
+                        {event.paid && (
+                          <span>
+                            Forma de pagamento:{" "}
+                            <strong className="text-[var(--foreground)]">
+                              {event.paymentMethod}
+                            </strong>
+                          </span>
+                        )}
+                        <span>
+                          Convidados:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.allowGuests ? "Permitidos" : "Somente alunos"}
+                          </strong>
+                        </span>
+                        <span>
+                          Destaque:{" "}
+                          <strong className="text-[var(--foreground)]">
+                            {event.isFeatured ? "Sim" : "Nao"}
+                          </strong>
+                        </span>
                       </div>
-                    )}
-                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      {event.paid ? "Pago" : "Gratuito"}
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => openEventModal("edit", event)}
+                          className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                        >
+                          Editar evento
+                        </button>
+                        <button
+                          onClick={() => openEventManagementModal(event)}
+                          className="inline-flex h-9 items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                        >
+                          Gerenciar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowEventsListOnMobile((prev) => !prev)}
+            aria-expanded={showEventsListOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showEventsListOnMobile ? "Ocultar lista de eventos" : "Mostrar lista de eventos"}
+          </button>
+
+          <div
+            className={`${showEventsListOnMobile ? "block" : "hidden"} space-y-6 sm:block`}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              {(["FUTUROS", "CANCELADOS", "REALIZADOS"] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setEventFilter(status)}
+                  className={`rounded-full border px-4 py-2 text-[0.6rem] uppercase tracking-[0.3em] transition ${
+                    eventFilter === status
+                      ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                      : "border-[color:var(--border-dim)] text-[var(--muted-foreground)] hover:text-[var(--gold-tone-dark)]"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-4">
+              {filteredEvents.map((event) => (
+                <article
+                  key={event.id}
+                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
+                        {event.status === "cancelado"
+                          ? "Cancelado"
+                          : event.status}
+                      </p>
+                      <h3 className="text-lg font-semibold">{event.title}</h3>
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        {event.date} • {event.time} • {event.location}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {event.isFeatured && (
+                        <div className="rounded-xl border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]">
+                          Destaque
+                        </div>
+                      )}
+                      <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        {event.paid ? "Pago" : "Gratuito"}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-4 grid gap-3 md:grid-cols-5">
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      Vagas
-                    </p>
-                    <p className="mt-1 text-[var(--foreground)]">
-                      {event.capacity ?? "Livre"}
-                    </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-5">
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Vagas
+                      </p>
+                      <p className="mt-1 text-[var(--foreground)]">
+                        {event.capacity ?? "Livre"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Confirmadas
+                      </p>
+                      <p className="mt-1 text-[var(--foreground)]">
+                        {event.access === "open"
+                          ? "-"
+                          : `${event.confirmedRegistrations}${
+                              event.capacity !== null ? ` / ${event.capacity}` : ""
+                            }`}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Confirmacao
+                      </p>
+                      <p className="mt-1 text-[var(--foreground)]">
+                        {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Pagamento
+                      </p>
+                      <p className="mt-1 text-[var(--foreground)]">{event.price}</p>
+                    </div>
+                    <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                        Convidados
+                      </p>
+                      <p className="mt-1 text-[var(--foreground)]">
+                        {event.allowGuests ? "Permitidos" : "Somente alunos"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      Confirmadas
-                    </p>
-                    <p className="mt-1 text-[var(--foreground)]">
-                      {event.access === "open"
-                        ? "-"
-                        : `${event.confirmedRegistrations}${
-                            event.capacity !== null ? ` / ${event.capacity}` : ""
-                          }`}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      Confirmacao
-                    </p>
-                    <p className="mt-1 text-[var(--foreground)]">
-                      {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      Pagamento
-                    </p>
-                    <p className="mt-1 text-[var(--foreground)]">{event.price}</p>
-                  </div>
-                  <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
-                    <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                      Convidados
-                    </p>
-                    <p className="mt-1 text-[var(--foreground)]">
-                      {event.allowGuests ? "Permitidos" : "Somente alunos"}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => openEventModal("edit", event)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => openEventManagementModal(event)}
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]"
-                  >
-                    Gerenciar
-                  </button>
-                  <button
-                    onClick={() => handleTogglePublishEvent(event)}
-                    disabled={
-                      event.status === "cancelado" || eventsStatus === "loading"
-                    }
-                    className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {event.status === "publicado" ? "Despublicar" : "Publicar"}
-                  </button>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => openEventModal("edit", event)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => openEventManagementModal(event)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone-dark)]"
+                    >
+                      Gerenciar
+                    </button>
+                    <button
+                      onClick={() => handleTogglePublishEvent(event)}
+                      disabled={
+                        event.status === "cancelado" || eventsStatus === "loading"
+                      }
+                      className="inline-flex items-center gap-2 rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {event.status === "publicado" ? "Despublicar" : "Publicar"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {filteredEvents.length === 0 && (
+                <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
+                  Nenhum evento encontrado para este filtro.
                 </div>
-              </article>
-            ))}
-            {filteredEvents.length === 0 && (
-              <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
-                Nenhum evento encontrado para este filtro.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -5073,28 +5454,42 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {financialStatus === "loading" && (
-            <p className="text-sm text-[var(--muted-foreground)]">
-              Carregando financeiro...
-            </p>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowFinancialDetailsOnMobile((prev) => !prev)}
+            aria-expanded={showFinancialDetailsOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showFinancialDetailsOnMobile
+              ? "Ocultar detalhes financeiros"
+              : "Mostrar detalhes financeiros"}
+          </button>
 
-          {financialStatus === "error" && (
-            <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
-              <p className="text-sm text-[color:var(--danger)]">
-                {financialError ?? "Nao foi possivel carregar o financeiro."}
+          <div
+            className={`${showFinancialDetailsOnMobile ? "block" : "hidden"} space-y-6 sm:block`}
+          >
+            {financialStatus === "loading" && (
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Carregando financeiro...
               </p>
-              <button
-                onClick={() => void loadFinancial()}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          )}
+            )}
 
-          {financialStatus === "ready" && (
-            <>
+            {financialStatus === "error" && (
+              <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
+                <p className="text-sm text-[color:var(--danger)]">
+                  {financialError ?? "Nao foi possivel carregar o financeiro."}
+                </p>
+                <button
+                  onClick={() => void loadFinancial()}
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--danger-border)] px-4 text-xs uppercase tracking-[0.3em] text-[color:var(--danger)]"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            )}
+
+            {financialStatus === "ready" && (
+              <>
               {!isStaffFinancialRestricted && (
                 <>
                   <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -5886,8 +6281,9 @@ export default function DashboardPage() {
                   )}
                 </div>
               </section>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -5900,7 +6296,21 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+          <button
+            type="button"
+            onClick={() => setShowAdminDetailsOnMobile((prev) => !prev)}
+            aria-expanded={showAdminDetailsOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showAdminDetailsOnMobile
+              ? "Ocultar painel administrativo"
+              : "Mostrar painel administrativo"}
+          </button>
+
+          <div
+            className={`${showAdminDetailsOnMobile ? "block" : "hidden"} space-y-6 sm:block`}
+          >
+            <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
@@ -6068,9 +6478,9 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
-          </section>
+            </section>
 
-          <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+            <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
               Selecione os relatorios
             </p>
@@ -6117,6 +6527,7 @@ export default function DashboardPage() {
                 Limpar selecao
               </button>
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -6149,6 +6560,17 @@ export default function DashboardPage() {
             </p>
           </section>
 
+          <button
+            type="button"
+            onClick={() => setShowSystemSectionOnMobile((prev) => !prev)}
+            aria-expanded={showSystemSectionOnMobile}
+            className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 text-xs font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] hover:bg-[var(--gold-tone)]/20 sm:hidden"
+          >
+            {showSystemSectionOnMobile
+              ? "Ocultar seção de configuração"
+              : "Mostrar seção de configuração"}
+          </button>
+
           {systemSettingsStatus === "loading" && (
             <p className="text-sm text-[var(--muted-foreground)]">
               Carregando configurações...
@@ -6170,8 +6592,9 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {systemSettingsStatus !== "loading" && (
-            <>
+          <div className={`${showSystemSectionOnMobile ? "block" : "hidden"} sm:block`}>
+            {systemSettingsStatus !== "loading" && (
+              <>
               {systemSection === "studio" && (
                 <section className="grid gap-4 lg:grid-cols-2">
                   <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
@@ -6526,8 +6949,9 @@ export default function DashboardPage() {
                   </button>
                 </section>
               )}
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       )}
 

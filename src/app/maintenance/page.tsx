@@ -47,11 +47,11 @@ export default async function MaintenancePage() {
   const maintenanceMessage = await getMaintenanceMessage();
 
   return (
-    <section className="mx-auto flex w-full max-w-4xl flex-1 items-center justify-center py-14">
-      <article className="relative w-full overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-8 shadow-[0_24px_60px_-30px_var(--shadow)] sm:p-10">
+    <section className="mx-auto flex w-full max-w-4xl flex-1 items-center justify-center py-10 sm:py-14">
+      <article className="relative w-full overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_24px_60px_-30px_var(--shadow)] sm:p-10">
         <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[var(--gold-tone)]/15 blur-3xl" />
         <div className="relative">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--danger)]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[color:var(--danger)] sm:text-xs sm:tracking-[0.3em]">
             <ShieldAlert className="h-4 w-4" />
             Manutenção
           </div>

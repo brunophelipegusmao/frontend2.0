@@ -682,10 +682,10 @@ export default function UserDashboardPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 text-[var(--foreground)]">
-      <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)]">
+      <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--gold-tone-dark)]">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.3rem]">
               Area do aluno
             </p>
             <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
@@ -702,7 +702,7 @@ export default function UserDashboardPage() {
               type="button"
               onClick={() => void loadData("refresh")}
               disabled={refreshing}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.14rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:tracking-[0.22rem]"
             >
               {refreshing ? "Atualizando..." : "Atualizar"}
             </button>
@@ -710,7 +710,7 @@ export default function UserDashboardPage() {
               type="button"
               onClick={() => void handleLogout()}
               disabled={isLoggingOut}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.14rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:tracking-[0.22rem]"
             >
               {isLoggingOut ? "Saindo..." : "Sair"}
             </button>
@@ -746,8 +746,8 @@ export default function UserDashboardPage() {
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Dados pessoais
           </h2>
           <form className="mt-4 space-y-4" onSubmit={handleSaveProfile}>
@@ -825,8 +825,8 @@ export default function UserDashboardPage() {
           </form>
         </article>
 
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Perfil atual
           </h2>
           <div className="mt-4 space-y-2 text-sm text-[var(--muted-foreground)]">
@@ -862,8 +862,8 @@ export default function UserDashboardPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Alterar senha
           </h2>
           <form className="mt-4 space-y-4" onSubmit={handleSavePassword}>
@@ -902,8 +902,8 @@ export default function UserDashboardPage() {
           </form>
         </article>
 
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Planos
           </h2>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
@@ -964,8 +964,8 @@ export default function UserDashboardPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Historico de check-in
           </h2>
           <div className="mt-4 max-h-96 space-y-2 overflow-auto pr-1">
@@ -989,8 +989,8 @@ export default function UserDashboardPage() {
           </div>
         </article>
 
-        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+        <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
             Eventos inscritos
           </h2>
           <div className="mt-4 max-h-96 space-y-3 overflow-auto pr-1">
@@ -1032,8 +1032,8 @@ export default function UserDashboardPage() {
         </article>
       </section>
 
-      <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+      <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
           Eventos disponiveis
         </h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">

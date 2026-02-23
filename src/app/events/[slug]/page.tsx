@@ -280,14 +280,14 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
   };
 
   return (
-    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-6 text-[var(--foreground)] sm:px-8 sm:py-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(eventSchema) }}
       />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--gold-tone-dark)]">
+        <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
             Detalhes do evento
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--foreground)] sm:text-3xl">
@@ -310,7 +310,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             />
           </div>
 
-          <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
+          <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
             <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm">
               <span className="font-semibold">Data:</span> {formattedDate}
             </p>
@@ -350,7 +350,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/events"
-            className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-5 text-sm font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-5 text-[0.85rem] font-semibold text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:text-sm"
           >
             Voltar para agenda
           </Link>

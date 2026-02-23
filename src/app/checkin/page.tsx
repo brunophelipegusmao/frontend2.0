@@ -312,10 +312,10 @@ function CheckinPageContent() {
   }, [autoCheckinDone, router, searchParams]);
 
   return (
-    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-6 text-[var(--foreground)] sm:px-8 sm:py-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-2 rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-24px_var(--shadow)]">
-          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--muted-foreground)]">
+        <header className="flex flex-col gap-2 rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-24px_var(--shadow)] sm:p-6">
+          <div className="flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] sm:text-xs sm:tracking-[0.35rem]">
             <UserCheck className="h-4 w-4 text-[var(--gold-tone-dark)]" />
             Check-in
           </div>
@@ -329,10 +329,10 @@ function CheckinPageContent() {
         </header>
 
         <div className="grid gap-6">
-          <div className="flex flex-col gap-6 rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-24px_var(--shadow)]">
+          <div className="flex flex-col gap-6 rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-24px_var(--shadow)] sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--muted-foreground)]">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] sm:text-xs sm:tracking-[0.3rem]">
                   Check-in rápido
                 </p>
                 <h2 className="text-lg font-semibold">Identificação</h2>
@@ -348,7 +348,7 @@ function CheckinPageContent() {
                   onClick={handleGoogleCheckin}
                   className="h-12 rounded-2xl text-xs uppercase tracking-[0.2rem] text-[var(--muted-foreground)] transition-all duration-300 hover:-translate-y-0.5"
                 />
-                <div className="flex items-center gap-3 text-[0.65rem] font-semibold uppercase tracking-[0.3rem] text-[var(--muted-foreground)]">
+                <div className="flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--muted-foreground)] sm:text-[0.65rem] sm:tracking-[0.3rem]">
                   <span className="h-px flex-1 bg-[color:var(--border-dim)]" />
                   ou
                   <span className="h-px flex-1 bg-[color:var(--border-dim)]" />
@@ -389,7 +389,7 @@ function CheckinPageContent() {
             role="dialog"
             aria-modal="true"
             aria-live="polite"
-            className={`checkin-feedback-modal relative w-full max-w-md overflow-hidden rounded-3xl border bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_30px_90px_-35px_var(--shadow)] ${
+            className={`checkin-feedback-modal relative w-full max-w-md overflow-hidden rounded-3xl border bg-[color:var(--card)] p-5 text-[var(--foreground)] shadow-[0_30px_90px_-35px_var(--shadow)] sm:p-6 ${
               checkinFeedback.status === "success"
                 ? "border-emerald-400/35"
                 : "border-red-400/35"
@@ -414,7 +414,7 @@ function CheckinPageContent() {
 
             <div className="relative flex items-center justify-between gap-3">
               <div
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.22rem] ${
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.16rem] sm:text-[0.62rem] sm:tracking-[0.22rem] ${
                   checkinFeedback.status === "success"
                     ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
                     : "border-red-400/30 bg-red-500/15 text-red-200"
@@ -485,7 +485,7 @@ export default function CheckinPage() {
   return (
     <Suspense
       fallback={
-        <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+        <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-6 text-[var(--foreground)] sm:px-8 sm:py-8">
           <div className="mx-auto w-full max-w-6xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-sm text-[var(--muted-foreground)]">
             Carregando check-in...
           </div>

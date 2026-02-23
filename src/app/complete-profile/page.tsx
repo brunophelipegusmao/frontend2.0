@@ -639,7 +639,7 @@ export default function CompleteProfilePage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:tracking-[0.4rem]"
           >
             {isSubmitting ? "Salvando..." : "Salvar e continuar"}
           </button>
@@ -1034,14 +1034,14 @@ export default function CompleteProfilePage() {
             <button
               type="button"
               onClick={() => setStep("profile")}
-              className="flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)]"
+              className="flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] sm:tracking-[0.4rem]"
             >
               Voltar
             </button>
             <button
               type="submit"
               disabled={healthSubmitting}
-              className="flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:tracking-[0.4rem]"
             >
               {healthSubmitting ? "Salvando..." : "Salvar saude"}
             </button>

@@ -25,17 +25,17 @@ export function Header() {
 
   return (
     <header className="safe-area-top fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border-dim)] bg-[color:var(--card)] font-[var(--font-roboto)] backdrop-blur-xl">
-      <div className="safe-area-x mx-auto flex w-full max-w-6xl items-center gap-4 py-2 text-xs uppercase tracking-[0.2rem] text-[var(--foreground)] sm:py-3 sm:text-sm sm:tracking-[0.3rem]">
+      <div className="safe-area-x mx-auto flex w-full max-w-6xl items-center gap-3 py-2 text-[0.65rem] uppercase tracking-[0.16rem] text-[var(--foreground)] sm:gap-4 sm:py-3 sm:text-sm sm:tracking-[0.3rem]">
         <Link
           href="/"
-          className="text-lg font-semibold tracking-[0.6rem] text-[var(--gold-tone)]"
+          className="text-lg font-semibold tracking-[0.35rem] text-[var(--gold-tone)] sm:tracking-[0.6rem]"
         >
           <Image
             src={theme === "light" ? logoLight : logoDark}
             alt="JM Studio Logo"
             width={160}
             height={40}
-            className={`h-8 w-auto sm:h-10${theme === "light" ? " origin-left scale-x-[1.55]" : ""}`}
+            className={`h-7 w-auto sm:h-10${theme === "light" ? " origin-left scale-x-[1.55]" : ""}`}
           />
         </Link>
 
@@ -55,13 +55,13 @@ export function Header() {
           <div className="flex items-center gap-2">
             <InstallAppButton
               iconOnly
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] text-[var(--background)] shadow-[0_10px_24px_-12px_var(--gold-tone)] sm:h-10 sm:w-10"
             />
             <button
               type="button"
               onClick={toggleTheme}
               aria-label="Alternar tema"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)]"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] sm:h-10 sm:w-10"
             >
               <span className="sr-only">Alternar tema</span>
               {theme === "dark" ? (
@@ -77,7 +77,7 @@ export function Header() {
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95, y: 1 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 shadow-[0_4px_12px_-2px_var(--shadow),inset_0_1px_2px_rgba(255,255,255,0.1)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(194,165,55,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] md:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-2.5 shadow-[0_4px_12px_-2px_var(--shadow),inset_0_1px_2px_rgba(255,255,255,0.1)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_8px_24px_-4px_rgba(194,165,55,0.2),inset_0_1px_2px_rgba(255,255,255,0.2)] md:hidden"
             >
               <motion.div
                 animate={{
@@ -282,12 +282,12 @@ export function Header() {
 
       {isMenuOpen && (
         <div className="md:hidden">
-          <div className="safe-area-x space-y-2 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] py-3 text-center">
+          <div className="safe-area-x max-h-[65vh] space-y-2 overflow-y-auto border-t border-[color:var(--border-dim)] bg-[color:var(--card)] py-3 text-center">
             {navItems.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="block rounded-2xl border border-[color:var(--border-dim)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--gold-tone-dark)] transition hover:bg-[#C2A537]/10"
+                className="block rounded-2xl border border-[color:var(--border-dim)] px-4 py-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] transition hover:bg-[#C2A537]/10"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.label}

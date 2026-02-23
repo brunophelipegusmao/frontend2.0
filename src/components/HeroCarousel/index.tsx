@@ -43,10 +43,10 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
   }
 
   return (
-    <section id="inicio" aria-label="Hero" className="space-y-6">
+    <section id="inicio" aria-label="Hero" className="space-y-5 sm:space-y-6">
       <div className="mx-auto max-w-6xl space-y-4">
-        <div className="relative overflow-hidden rounded-[32px] border border-white/10 shadow-2xl shadow-black/60">
-          <div className="relative h-[280px] sm:h-[320px] md:h-[380px]">
+        <div className="relative overflow-hidden rounded-[24px] border border-white/10 shadow-2xl shadow-black/60 sm:rounded-[32px]">
+          <div className="relative h-[240px] sm:h-[320px] md:h-[380px]">
             <Image
               src={active.src}
               alt={active.title}
@@ -56,14 +56,14 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent" />
-            <div className="absolute inset-0 flex flex-col justify-end gap-4 px-5 pb-6 sm:px-8">
-              <p className="text-[0.6rem] uppercase tracking-[0.3rem] text-[var(--gold-tone)] sm:text-xs sm:tracking-[0.6rem]">
+            <div className="absolute inset-0 flex flex-col justify-end gap-3 px-4 pb-5 sm:gap-4 sm:px-8 sm:pb-6">
+              <p className="text-[0.58rem] uppercase tracking-[0.2rem] text-[var(--gold-tone)] sm:text-xs sm:tracking-[0.6rem]">
                 JM Fitness Studio
               </p>
-              <h1 className="text-3xl leading-tight text-[var(--foreground)] sm:text-4xl lg:text-5xl">
+              <h1 className="text-[1.75rem] leading-tight text-[var(--foreground)] sm:text-4xl lg:text-5xl">
                 {active.title}
               </h1>
-              <p className="max-w-2xl text-sm text-[var(--muted-foreground)] sm:text-lg">
+              <p className="max-w-2xl text-[0.9rem] text-[var(--muted-foreground)] sm:text-lg">
                 {active.description}
               </p>
             </div>
@@ -73,7 +73,7 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
             type="button"
             onClick={handlePrev}
             aria-label="Slide anterior"
-            className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
+            className="absolute left-4 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] sm:flex"
           >
             ◄
           </button>
@@ -81,13 +81,21 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
             type="button"
             onClick={handleNext}
             aria-label="Próximo slide"
-            className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)]"
+            className="absolute right-4 top-1/2 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-[#C2A537]/40 bg-black/40 text-sm text-[var(--gold-tone)] transition hover:border-[var(--gold-tone)] sm:flex"
           >
             ►
           </button>
         </div>
 
         <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrev}
+            aria-label="Slide anterior"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.62rem] font-semibold uppercase tracking-[0.12rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] sm:hidden"
+          >
+            Anterior
+          </button>
           {slidesToShow.map((_, index) => {
             const isActive = index === safeActiveSlide;
             return (
@@ -95,7 +103,7 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
                 key={_.src}
                 type="button"
                 onClick={() => handleDotClick(index)}
-                className={`h-2 w-8 rounded-full transition-all duration-300 ${
+                className={`h-2 w-6 rounded-full transition-all duration-300 sm:w-8 ${
                   isActive
                     ? "bg-gradient-to-r from-[#FFE17D] to-[#D4B547]"
                     : "bg-white/5"
@@ -104,6 +112,14 @@ export function HeroCarousel({ slides }: { slides?: HeroSlide[] }) {
               />
             );
           })}
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-label="Próximo slide"
+            className="inline-flex h-8 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.62rem] font-semibold uppercase tracking-[0.12rem] text-[var(--gold-tone-dark)] transition hover:border-[var(--gold-tone)] sm:hidden"
+          >
+            Próximo
+          </button>
         </div>
       </div>
     </section>

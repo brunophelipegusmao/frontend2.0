@@ -14,11 +14,11 @@ export function Footer() {
   return (
     <footer
       id="contatos"
-      className="safe-area-x safe-area-bottom mt-10 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] py-6 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:py-10"
+      className="safe-area-x safe-area-bottom mt-8 border-t border-[color:var(--border-dim)] bg-[color:var(--card)] py-6 text-sm text-[var(--muted-foreground)] backdrop-blur-xl sm:mt-10 sm:py-10"
     >
       <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
-          <p className="text-[0.6rem] uppercase tracking-[0.5rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
+          <p className="text-[0.58rem] uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.6rem]">
             JM Fitness Studio
           </p>
           <p className="text-sm font-semibold text-[var(--foreground)] sm:text-base">
@@ -30,16 +30,16 @@ export function Footer() {
           </p>
         </div>
 
-        <div className="hidden space-y-3 md:block">
-          <p className="text-xs uppercase tracking-[0.4rem] text-[var(--gold-tone-dark)]">
+        <div className="space-y-3">
+          <p className="text-[0.62rem] uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.4rem]">
             Navegue
           </p>
-          <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.3rem]">
+          <div className="flex flex-wrap gap-2 text-[0.62rem] uppercase tracking-[0.14rem] sm:gap-3 sm:text-xs sm:tracking-[0.3rem]">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="rounded-full border border-[color:var(--border-dim)] px-3 py-1 transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
+                className="rounded-full border border-[color:var(--border-dim)] px-3 py-1.5 transition hover:border-[var(--gold-tone)] hover:text-[var(--gold-tone)]"
               >
                 {link.label}
               </Link>

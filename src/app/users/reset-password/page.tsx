@@ -66,7 +66,7 @@ function ResetPasswordPageContent() {
         <div className="space-y-2">
           <label
             htmlFor="new-password"
-            className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]"
+            className="text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]"
           >
             Nova senha
           </label>
@@ -99,7 +99,7 @@ function ResetPasswordPageContent() {
         <div className="space-y-2">
           <label
             htmlFor="confirm-new-password"
-            className="text-xs font-semibold uppercase tracking-[0.3rem] text-[var(--foreground)]"
+            className="text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] sm:tracking-[0.3rem]"
           >
             Confirmar senha
           </label>
@@ -138,7 +138,7 @@ function ResetPasswordPageContent() {
         <button
           type="submit"
           disabled={isSubmitting || !token}
-          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)]"
+          className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 font-[var(--font-roboto)] sm:tracking-[0.4rem]"
         >
           {isSubmitting ? "Salvando..." : "Atualizar senha"}
         </button>

@@ -356,10 +356,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   });
 
   return (
-    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-8 text-[var(--foreground)] sm:px-8">
+    <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-6 text-[var(--foreground)] sm:px-8 sm:py-8">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 shadow-[0_16px_40px_-20px_var(--shadow)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.4rem] text-[var(--gold-tone-dark)]">
+        <header className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
+          <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.4rem]">
             Agenda Oficial
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--foreground)] sm:text-3xl">
@@ -370,22 +370,22 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             comunidade JM. O calendario e atualizado em tempo real pela equipe.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-xs uppercase tracking-[0.24rem] text-[var(--foreground)]">
+            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-[0.65rem] uppercase tracking-[0.16rem] text-[var(--foreground)] sm:text-xs sm:tracking-[0.24rem]">
               {totalEvents} eventos
             </span>
-            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-xs uppercase tracking-[0.24rem] text-[var(--foreground)]">
+            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-[0.65rem] uppercase tracking-[0.16rem] text-[var(--foreground)] sm:text-xs sm:tracking-[0.24rem]">
               {openEvents} abertos
             </span>
-            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-xs uppercase tracking-[0.24rem] text-[var(--foreground)]">
+            <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-[0.65rem] uppercase tracking-[0.16rem] text-[var(--foreground)] sm:text-xs sm:tracking-[0.24rem]">
               {paidEvents} pagos
             </span>
           </div>
         </header>
 
-        <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
+        <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--gold-tone-dark)]">
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
                 Aniversariantes do mes
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
@@ -395,16 +395,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             <div className="flex items-center gap-2">
               <Link
                 href={`/events?birthMonth=${previousBirthMonthRef}`}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-[0.62rem] font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.24rem]"
               >
                 Anterior
               </Link>
-              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-xs uppercase tracking-[0.24rem] text-[var(--foreground)]">
+              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-[0.62rem] uppercase tracking-[0.14rem] text-[var(--foreground)] sm:text-xs sm:tracking-[0.24rem]">
                 {birthdayEvents.length} aniversariantes
               </span>
               <Link
                 href={`/events?birthMonth=${nextBirthMonthRef}`}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-xs font-semibold uppercase tracking-[0.24rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-[0.62rem] font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.24rem]"
               >
                 Proximo
               </Link>
@@ -420,9 +420,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               {birthdayEvents.map((event) => (
                 <article
                   key={event.slug}
-                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4"
+                  className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-3 sm:p-4"
                 >
-                  <p className="text-xs font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.28rem]">
                     {formatBirthdayDate(event)}
                   </p>
                   <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
@@ -438,9 +438,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         </section>
 
         {featuredEvent ? (
-          <article className="relative grid gap-5 overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_22px_52px_-28px_var(--shadow)] md:grid-cols-[1.2fr_1fr] md:p-6">
+          <article className="relative grid gap-5 overflow-hidden rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 shadow-[0_22px_52px_-28px_var(--shadow)] sm:p-4 md:grid-cols-[1.2fr_1fr] md:p-6">
             {isCancelledEvent(featuredEvent) && (
-              <span className="pointer-events-none absolute -right-16 top-6 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-20 py-1 text-[0.58rem] font-bold uppercase tracking-[0.28rem] text-white shadow-[0_12px_26px_-14px_var(--shadow)]">
+              <span className="pointer-events-none absolute -right-20 top-5 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-20 py-1 text-[0.52rem] font-bold uppercase tracking-[0.16rem] text-white shadow-[0_12px_26px_-14px_var(--shadow)] sm:-right-16 sm:top-6 sm:text-[0.58rem] sm:tracking-[0.28rem]">
                 CANCELADO
               </span>
             )}
@@ -457,7 +457,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
             <div className="flex flex-col justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.35rem] text-[var(--gold-tone-dark)]">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
                   Proximo em destaque
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
@@ -555,7 +555,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               const cardContent = (
                 <>
                   {isCancelled && (
-                    <span className="pointer-events-none absolute -right-14 top-5 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-16 py-1 text-[0.58rem] font-bold uppercase tracking-[0.25rem] text-white shadow-[0_10px_24px_-12px_var(--shadow)]">
+                    <span className="pointer-events-none absolute -right-16 top-5 z-20 rotate-45 border border-[color:var(--danger-border)] bg-[color:var(--danger)] px-16 py-1 text-[0.52rem] font-bold uppercase tracking-[0.14rem] text-white shadow-[0_10px_24px_-12px_var(--shadow)] sm:-right-14 sm:text-[0.58rem] sm:tracking-[0.25rem]">
                       CANCELADO
                     </span>
                   )}
