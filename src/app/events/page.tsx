@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  DEFAULT_OG_IMAGE,
-  SITE_LOCALE,
-  SITE_NAME,
-  SITE_URL,
-} from "@/lib/seo";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DEFAULT_OG_IMAGE, SITE_LOCALE, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 type PublicEvent = {
   id?: string;
@@ -209,7 +205,8 @@ const getBirthdayEventsOfMonth = async (
       .map((event) => ({
         title: event.title,
         slug: event.slug,
-        path: "path" in event && event.path ? event.path : toEventPath(event.slug),
+        path:
+          "path" in event && event.path ? event.path : toEventPath(event.slug),
         description: event.description,
         date: event.date,
         time: event.time,
@@ -333,6 +330,16 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   }).format(
     new Date(parsedSelectedMonth.year, parsedSelectedMonth.month - 1, 1),
   );
+  const birthdayMonthShortLabel = new Intl.DateTimeFormat("pt-BR", {
+    month: "short",
+    year: "2-digit",
+  })
+    .format(
+      new Date(parsedSelectedMonth.year, parsedSelectedMonth.month - 1, 1),
+    )
+    .replace(".", "")
+    .replace(" de ", "/")
+    .toUpperCase();
 
   const [events, birthdayEvents] = await Promise.all([
     getPublicEvents(),
@@ -341,7 +348,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
   const totalEvents = events.length;
   const paidEvents = events.filter((event) => event.isPaid).length;
-  const openEvents = events.filter((event) => event.accessMode === "open").length;
+  const openEvents = events.filter(
+    (event) => event.accessMode === "open",
+  ).length;
   const featuredEvent =
     events.find((event) => event.isFeatured && !isCancelledEvent(event)) ??
     events.find((event) => !isCancelledEvent(event)) ??
@@ -383,7 +392,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         </header>
 
         <section className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_16px_40px_-20px_var(--shadow)] sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
                 Aniversariantes do mes
@@ -391,22 +400,29 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
                 Celebrando {birthdayMonthLabel}
               </h2>
+              <p className="mt-1 text-[0.68rem] uppercase tracking-[0.12rem] text-[var(--muted-foreground)] sm:text-xs sm:tracking-[0.2rem]">
+                {birthdayEvents.length} aniversariantes neste mes
+              </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
               <Link
                 href={`/events?birthMonth=${previousBirthMonthRef}`}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-[0.62rem] font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.24rem]"
+                aria-label="Mes anterior"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:w-auto sm:px-4 sm:text-xs"
               >
-                Anterior
+                <ChevronLeft className="h-4 w-4 sm:hidden" />
+                <span className="hidden sm:inline">&lt; Anterior</span>
               </Link>
-              <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-2 text-[0.62rem] uppercase tracking-[0.14rem] text-[var(--foreground)] sm:text-xs sm:tracking-[0.24rem]">
-                {birthdayEvents.length} aniversariantes
+              <span className="inline-flex h-10 min-w-[5.6rem] items-center justify-center rounded-full border border-[var(--gold-tone)]/35 bg-[linear-gradient(180deg,rgba(181,140,33,0.14),rgba(181,140,33,0.06))] px-3 text-[0.62rem] font-semibold uppercase tracking-[0.14rem] text-[var(--gold-tone-dark)] shadow-[0_10px_22px_-14px_var(--gold-tone)] sm:min-w-[6.4rem] sm:px-4 sm:text-[0.7rem] sm:tracking-[0.2rem]">
+                {birthdayMonthShortLabel}
               </span>
               <Link
                 href={`/events?birthMonth=${nextBirthMonthRef}`}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 text-[0.62rem] font-semibold uppercase tracking-[0.14rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.24rem]"
+                aria-label="Próximo mes"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:w-auto sm:px-4 sm:text-xs"
               >
-                Proximo
+                <ChevronRight className="h-4 w-4 sm:hidden" />
+                <span className="hidden sm:inline">Próximo &gt;</span>
               </Link>
             </div>
           </div>
@@ -498,7 +514,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {!isCancelledEvent(featuredEvent) && !isEventFull(featuredEvent) ? (
+                {!isCancelledEvent(featuredEvent) &&
+                !isEventFull(featuredEvent) ? (
                   <>
                     <Link
                       href={featuredEvent.path}
@@ -521,7 +538,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                         : "border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)]"
                     }`}
                   >
-                    {isCancelledEvent(featuredEvent) ? "Evento cancelado" : "Evento lotado"}
+                    {isCancelledEvent(featuredEvent)
+                      ? "Evento cancelado"
+                      : "Evento lotado"}
                   </span>
                 )}
               </div>
@@ -596,7 +615,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                     <div className="space-y-1 text-xs text-[var(--muted-foreground)]">
                       <p>{formatEventDate(event)}</p>
                       <p>{formatEventTime(event)}</p>
-                      <p>{event.location || "Local enviado apos confirmacao"}</p>
+                      <p>
+                        {event.location || "Local enviado apos confirmacao"}
+                      </p>
                       <p>{formatEventPrice(event)}</p>
                       <p>
                         {event.accessMode === "open"
@@ -614,7 +635,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
               if (isCancelled) {
                 return (
-                  <article key={`${event.slug}-${event.date}-${event.time}`} className={cardClasses}>
+                  <article
+                    key={`${event.slug}-${event.date}-${event.time}`}
+                    className={cardClasses}
+                  >
                     {cardContent}
                   </article>
                 );

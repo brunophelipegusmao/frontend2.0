@@ -23,10 +23,11 @@ export function Footer() {
           </p>
           <p className="text-sm font-semibold text-[var(--foreground)] sm:text-base">
             Rua General Câmara, 18, sala 311
-            <br />25 de Agosto, Duque de Caxias - RJ
+            <br />
+            25 de Agosto, Duque de Caxias - RJ
           </p>
           <p className="text-xs text-[var(--gold-tone-dark)] sm:text-sm">
-            (21) 98099-5749 • atendimento@jmfitness.com.br
+            (21) 98099-5749 • email
           </p>
         </div>
 
@@ -49,7 +50,10 @@ export function Footer() {
 
         <div className="space-y-1 text-[0.65rem] text-[var(--muted-foreground)] sm:text-xs">
           <p>© {currentYear} JM Fitness Studio</p>
-          <p>Projeto inspirado no branding oficial do estúdio.</p>
+          <p>
+            Projeto criado pela{" "}
+            <Link href="https://mypage-two-jade.vercel.app/">Corelayer</Link>
+          </p>
         </div>
       </div>
     </footer>

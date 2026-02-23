@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import logoLight from "./logo-bl.svg";
-import logoDark from "./logo-wt.svg";
+import logo from "./logo-wt.svg";
 import { useTheme } from "@/context/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 import { InstallAppButton } from "@/components/PWA/InstallAppButton";
@@ -31,11 +30,11 @@ export function Header() {
           className="text-lg font-semibold tracking-[0.35rem] text-[var(--gold-tone)] sm:tracking-[0.6rem]"
         >
           <Image
-            src={theme === "light" ? logoLight : logoDark}
+            src={logo}
             alt="JM Studio Logo"
             width={160}
             height={40}
-            className={`h-7 w-auto sm:h-10${theme === "light" ? " origin-left scale-x-[1.55]" : ""}`}
+            className="h-7 w-auto drop-shadow-[0_1px_6px_rgba(0,0,0,0.38)] sm:h-10"
           />
         </Link>
 

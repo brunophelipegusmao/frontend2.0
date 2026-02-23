@@ -1,14 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Image from "next/image";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CalendarCheck2,
-  Home,
-  LayoutDashboard,
-  LogIn,
-} from "lucide-react";
 import SwupProgressPlugin from "@swup/progress-plugin";
 import {
   useCallback,
@@ -18,39 +13,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import headerLogo from "@/components/Header/logo-wt.svg";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001").replace(
   /\/+$/,
   "",
 );
+const REVEAL_DURATION_MS = 1000;
+const BOOT_MIN_DURATION_MS = 6500;
 
-const MOBILE_DOCK_LINKS = [
+const MobileAppDock = dynamic(
+  () => import("./MobileAppDock").then((module) => module.MobileAppDock),
   {
-    href: "/",
-    label: "Inicio",
-    Icon: Home,
+    ssr: false,
   },
-  {
-    href: "/checkin",
-    label: "Check-in",
-    Icon: CalendarCheck2,
-  },
-  {
-    href: "/events",
-    label: "Eventos",
-    Icon: CalendarCheck2,
-  },
-  {
-    href: "/dashboard",
-    label: "Painel",
-    Icon: LayoutDashboard,
-  },
-  {
-    href: "/users/login",
-    label: "Conta",
-    Icon: LogIn,
-  },
-] as const;
+);
 
 const getRequestUrl = (input: RequestInfo | URL): string => {
   if (typeof input === "string") {
@@ -113,35 +90,76 @@ const isInternalNavigationClick = (
   return true;
 };
 
-function MobileAppDock({ pathname }: { pathname: string }) {
-  return (
-    <nav className="app-mobile-dock md:hidden" aria-label="Navegacao rapida">
-      {MOBILE_DOCK_LINKS.map(({ href, label, Icon }) => {
-        const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`app-mobile-dock__item ${isActive ? "app-mobile-dock__item--active" : ""}`}
-            aria-current={isActive ? "page" : undefined}
-          >
-            <Icon className="h-4 w-4" />
-            <span>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function AppExperienceLayer({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pendingApiRequests, setPendingApiRequests] = useState(0);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [bootMinElapsed, setBootMinElapsed] = useState(false);
   const [showBootLoader, setShowBootLoader] = useState(true);
+  const [isNextContainer, setIsNextContainer] = useState(false);
   const pendingRequestsRef = useRef(0);
   const swupProgressRef = useRef<SwupProgressPlugin | null>(null);
+  const lastNavigationOriginRef = useRef({ x: 0.5, y: 0.5 });
+  const revealTimeoutRef = useRef<number | null>(null);
+  const revealRafOneRef = useRef<number | null>(null);
+  const revealRafTwoRef = useRef<number | null>(null);
+  const previousPathnameRef = useRef(pathname);
+
+  const clearRevealTimers = useCallback(() => {
+    if (revealTimeoutRef.current !== null) {
+      window.clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+    if (revealRafOneRef.current !== null) {
+      window.cancelAnimationFrame(revealRafOneRef.current);
+      revealRafOneRef.current = null;
+    }
+    if (revealRafTwoRef.current !== null) {
+      window.cancelAnimationFrame(revealRafTwoRef.current);
+      revealRafTwoRef.current = null;
+    }
+  }, []);
+
+  const setRevealOrigin = useCallback((x: number, y: number) => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const normalizedX = Math.min(0.95, Math.max(0.05, x));
+    const normalizedY = Math.min(0.95, Math.max(0.05, y));
+
+    document.documentElement.style.setProperty("--click-x", normalizedX.toString());
+    document.documentElement.style.setProperty("--click-y", normalizedY.toString());
+    lastNavigationOriginRef.current = { x: normalizedX, y: normalizedY };
+  }, []);
+
+  const triggerCircleReveal = useCallback(
+    (x: number, y: number) => {
+      if (typeof window === "undefined" || typeof document === "undefined") {
+        return;
+      }
+
+      setRevealOrigin(x, y);
+      clearRevealTimers();
+
+      const html = document.documentElement;
+      html.classList.add("is-changing", "to-circle");
+
+      setIsNextContainer(true);
+      revealRafOneRef.current = window.requestAnimationFrame(() => {
+        revealRafTwoRef.current = window.requestAnimationFrame(() => {
+          setIsNextContainer(false);
+        });
+      });
+
+      revealTimeoutRef.current = window.setTimeout(() => {
+        html.classList.remove("is-changing", "to-circle");
+        revealTimeoutRef.current = null;
+      }, REVEAL_DURATION_MS + 120);
+    },
+    [clearRevealTimers, setRevealOrigin],
+  );
 
   const ensureSwupProgress = useCallback(() => {
     if (swupProgressRef.current) {
@@ -211,7 +229,7 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setBootMinElapsed(true);
-    }, 900);
+    }, BOOT_MIN_DURATION_MS);
     return () => {
       window.clearTimeout(timer);
     };
@@ -221,9 +239,18 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
     if (!bootMinElapsed || pendingApiRequests > 0) {
       return;
     }
+    setRevealOrigin(0.5, 0.5);
     setShowBootLoader(false);
-    stopSwupProgress();
-  }, [bootMinElapsed, pendingApiRequests, stopSwupProgress]);
+
+    const revealDelay = window.setTimeout(() => {
+      triggerCircleReveal(0.5, 0.5);
+      setIsRouteLoading(false);
+    }, 70);
+
+    return () => {
+      window.clearTimeout(revealDelay);
+    };
+  }, [bootMinElapsed, pendingApiRequests, setRevealOrigin, triggerCircleReveal]);
 
   useEffect(() => {
     const shouldShowProgress = showBootLoader || isRouteLoading || pendingApiRequests > 0;
@@ -241,14 +268,55 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
   ]);
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    const syncAuthState = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/me/status`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!active) {
+          return;
+        }
+        setIsAuthenticated(response.ok);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setIsAuthenticated(false);
+      }
+    };
+
+    void syncAuthState();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [pathname]);
+
+  useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
       if (!isInternalNavigationClick(event, pathname)) {
         return;
       }
+      setRevealOrigin(
+        event.clientX / window.innerWidth,
+        event.clientY / window.innerHeight,
+      );
       setIsRouteLoading(true);
     };
 
     const handlePopState = () => {
+      setRevealOrigin(0.5, 0.5);
       setIsRouteLoading(true);
     };
 
@@ -259,7 +327,24 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
       document.removeEventListener("click", handleDocumentClick, true);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [pathname]);
+  }, [pathname, setRevealOrigin]);
+
+  useEffect(() => {
+    if (showBootLoader) {
+      previousPathnameRef.current = pathname;
+      return;
+    }
+
+    if (previousPathnameRef.current !== pathname) {
+      const { x, y } = lastNavigationOriginRef.current;
+      triggerCircleReveal(x, y);
+      previousPathnameRef.current = pathname;
+      setIsRouteLoading(false);
+      return;
+    }
+
+    previousPathnameRef.current = pathname;
+  }, [pathname, showBootLoader, triggerCircleReveal]);
 
   useEffect(() => {
     if (!isRouteLoading) {
@@ -267,27 +352,28 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
     }
     const timeout = window.setTimeout(() => {
       setIsRouteLoading(false);
-    }, 260);
+    }, 1900);
 
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [isRouteLoading, pathname]);
+  }, [isRouteLoading]);
+
+  useEffect(() => {
+    return () => {
+      clearRevealTimers();
+      document.documentElement.classList.remove("is-changing", "to-circle");
+    };
+  }, [clearRevealTimers]);
 
   return (
     <>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={pathname}
-          initial={{ opacity: 0, y: 14, scale: 0.992 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.996 }}
-          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="app-route-content"
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
+      <div
+        id="swup"
+        className={`app-route-content transition-reveal ${isNextContainer ? "is-next-container" : ""}`}
+      >
+        {children}
+      </div>
 
       <AnimatePresence>
         {showBootLoader && (
@@ -298,19 +384,28 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="app-boot-loader__panel">
-              <p className="app-boot-loader__brand">JM FITNESS STUDIO</p>
+            <div className="app-boot-loader__canvas">
+              <div className="app-boot-loader__logo-shell" aria-hidden="true">
+                <Image
+                  src={headerLogo}
+                  alt=""
+                  width={320}
+                  height={80}
+                  className="app-boot-loader__logo"
+                  priority
+                />
+              </div>
               <p className="app-boot-loader__text">
                 {pendingApiRequests > 0
-                  ? "Sincronizando dados da sua conta..."
-                  : "Preparando sua experiencia..."}
+                  ? "Sincronizando dados..."
+                  : "Preparando experiencia..."}
               </p>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <MobileAppDock pathname={pathname} />
+      <MobileAppDock pathname={pathname} isAuthenticated={isAuthenticated} />
     </>
   );
 }

@@ -78,6 +78,8 @@ body {
 }
 
 html {
+  --origin-x: calc(var(--click-x, 0.5) * 100%);
+  --origin-y: calc(var(--click-y, 0.5) * 100%);
   scroll-padding-top: calc(4.5rem + var(--safe-top));
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -86,10 +88,6 @@ html {
 body {
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
-}
-
-main {
-  isolation: isolate;
 }
 
 button,
@@ -182,6 +180,27 @@ h6 {
   }
 }
 
+@keyframes appBootLogoPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 12px rgba(181, 140, 33, 0.22));
+  }
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 24px rgba(181, 140, 33, 0.38));
+  }
+}
+
+@keyframes appBootRingSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer base {
   body {
     @apply bg-[#030303] text-[#f9f5e0];
@@ -247,45 +266,100 @@ h6 {
 
 .app-route-content {
   min-height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.transition-reveal {
+  clip-path: circle(150% at 50% 50%);
+}
+
+html.is-changing .transition-reveal {
+  transition: clip-path 1s cubic-bezier(0.5, 0, 0.15, 1);
+  will-change: clip-path;
+}
+
+html.to-circle .transition-reveal {
+  clip-path: circle(150% at 50% 50%);
+}
+
+html.to-circle .transition-reveal.is-next-container {
+  clip-path: circle(0% at var(--origin-x) var(--origin-y));
 }
 
 .app-boot-loader {
   position: fixed;
   inset: 0;
   z-index: 110;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  padding: clamp(1rem, 2.4vw, 1.8rem);
   background:
-    radial-gradient(circle at 20% 20%, rgba(181, 140, 33, 0.16), transparent 42%),
-    radial-gradient(circle at 80% 72%, rgba(181, 140, 33, 0.12), transparent 46%),
-    rgba(3, 3, 3, 0.94);
-  backdrop-filter: blur(8px);
+    radial-gradient(circle at 18% 18%, rgba(181, 140, 33, 0.22), transparent 43%),
+    radial-gradient(circle at 84% 78%, rgba(181, 140, 33, 0.18), transparent 48%),
+    linear-gradient(155deg, rgba(5, 5, 5, 0.98), rgba(10, 10, 10, 0.98) 52%, rgba(18, 18, 18, 0.98));
 }
 
-.app-boot-loader__panel {
-  width: min(94vw, 420px);
-  border: 1px solid var(--border-dim);
-  border-radius: 1.4rem;
-  background: linear-gradient(180deg, rgba(14, 14, 14, 0.96), rgba(8, 8, 8, 0.96));
-  padding: 1.35rem 1.1rem 1.15rem;
+.app-boot-loader__canvas {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  width: min(92vw, 26rem);
   text-align: center;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
-.app-boot-loader__brand {
-  margin: 0;
-  font-size: 0.64rem;
-  letter-spacing: 0.24rem;
-  text-transform: uppercase;
-  color: var(--gold-tone-dark);
+.app-boot-loader__logo-shell {
+  position: relative;
+  width: min(68vw, 12rem);
+  aspect-ratio: 1 / 1;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(9px);
+  box-shadow:
+    0 22px 56px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.app-boot-loader__logo-shell::before {
+  content: "";
+  position: absolute;
+  inset: -0.3rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(181, 140, 33, 0.2);
+  border-top-color: rgba(181, 140, 33, 0.92);
+  border-right-color: rgba(181, 140, 33, 0.55);
+  animation: appBootRingSpin 1.1s linear infinite;
+}
+
+.app-boot-loader__logo {
+  width: min(56vw, 9.8rem);
+  height: auto;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.34));
+  animation: appBootLogoPulse 1.45s ease-in-out infinite;
 }
 
 .app-boot-loader__text {
-  margin: 0.75rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted-foreground);
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+  color: rgba(241, 234, 208, 0.75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-changing .transition-reveal {
+    transition: none;
+  }
+
+  .app-boot-loader__logo-shell::before,
+  .app-boot-loader__logo {
+    animation: none;
+  }
 }
 
 .swup-progress-bar {
