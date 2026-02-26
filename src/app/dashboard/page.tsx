@@ -18,6 +18,7 @@ import {
   Stethoscope,
   Menu,
 } from "lucide-react";
+import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { isHiddenPlanSlug } from "@/lib/plans";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -2553,6 +2554,17 @@ export default function DashboardPage() {
       const nextEmail = userForm.email.trim().toLowerCase();
       if (nextEmail && nextEmail !== currentEmail) {
         payload.email = nextEmail;
+      }
+      const currentCpf = normalizeCpf(selectedUser.cpf ?? "");
+      const nextCpf = normalizeCpf(userForm.cpf).slice(0, 11);
+      if (nextCpf && nextCpf.length !== 11) {
+        throw new Error("CPF deve conter 11 digitos numericos.");
+      }
+      if (nextCpf && !isValidCpf(nextCpf)) {
+        throw new Error("CPF invalido.");
+      }
+      if (nextCpf && nextCpf !== currentCpf) {
+        payload.cpf = nextCpf;
       }
       const currentPhone = selectedUser.phone?.trim() ?? "";
       const nextPhone = userForm.phone.trim();
@@ -7225,11 +7237,18 @@ export default function DashboardPage() {
                 />
               </label>
               <label className={modalLabelClass}>
-                CPF (bloqueado)
+                CPF
                 <input
                   value={userForm.cpf}
-                  disabled
-                  className={`${modalInputClass} disabled:bg-[color:var(--card)] disabled:text-[var(--muted-foreground)]`}
+                  onChange={(event) =>
+                    setUserForm((prev) => ({
+                      ...prev,
+                      cpf: normalizeCpf(event.target.value).slice(0, 11),
+                    }))
+                  }
+                  inputMode="numeric"
+                  maxLength={11}
+                  className={modalInputClass}
                 />
               </label>
               <label className={modalLabelClass}>

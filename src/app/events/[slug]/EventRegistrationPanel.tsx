@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 
 type EventRegistrationPanelProps = {
   slug: string;
@@ -85,7 +86,6 @@ export function EventRegistrationPanel({
   const isAtCapacity =
     capacity !== null && Number(confirmedRegistrations) >= capacity;
 
-  const normalizeCpf = (value: string) => value.replace(/\D/g, "");
   const normalizePhone = (value: string) => value.trim();
 
   const parseRegistrationStatus = (
@@ -180,6 +180,10 @@ export function EventRegistrationPanel({
     }
     if (cpf.length !== 11) {
       setGuestFormError("CPF deve conter 11 digitos.");
+      return;
+    }
+    if (!isValidCpf(cpf)) {
+      setGuestFormError("CPF invalido.");
       return;
     }
     if (phone.length < 8) {
@@ -465,8 +469,13 @@ export function EventRegistrationPanel({
               <input
                 value={guestForm.cpf}
                 onChange={(event) =>
-                  setGuestForm((prev) => ({ ...prev, cpf: event.target.value }))
+                  setGuestForm((prev) => ({
+                    ...prev,
+                    cpf: normalizeCpf(event.target.value).slice(0, 11),
+                  }))
                 }
+                inputMode="numeric"
+                maxLength={11}
                 className="mt-1 h-10 w-full rounded-lg border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-sm text-[var(--foreground)]"
               />
             </label>

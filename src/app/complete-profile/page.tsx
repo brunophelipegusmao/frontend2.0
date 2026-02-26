@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { redirectBasedOnRole } from "@/lib/roleRedirect";
 import { AuthCard } from "@/components/AuthCard";
+import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -176,7 +177,7 @@ export default function CompleteProfilePage() {
     );
   };
 
-  const sanitizedCpf = useMemo(() => cpf.replace(/\D/g, ""), [cpf]);
+  const sanitizedCpf = useMemo(() => normalizeCpf(cpf), [cpf]);
 
   useEffect(() => {
     let active = true;
@@ -299,6 +300,8 @@ export default function CompleteProfilePage() {
 
     if (sanitizedCpf.length !== 11) {
       nextErrors.cpf = "CPF deve conter 11 digitos numericos.";
+    } else if (!isValidCpf(sanitizedCpf)) {
+      nextErrors.cpf = "CPF invalido.";
     }
     if (!trimmedPhone) {
       nextErrors.phone = "Telefone é obrigatório.";
@@ -521,7 +524,7 @@ export default function CompleteProfilePage() {
               autoComplete="off"
               value={sanitizedCpf}
               onChange={(event) => {
-                const rawValue = event.target.value.replace(/\D/g, "");
+                const rawValue = normalizeCpf(event.target.value);
                 setCpf(rawValue.slice(0, 11));
                 setProfileFieldErrors((prev) => ({ ...prev, cpf: undefined }));
               }}
