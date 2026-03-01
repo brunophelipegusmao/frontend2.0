@@ -17,7 +17,7 @@ export function ServiceWorkerRegister() {
     }
 
     navigator.serviceWorker.register("/sw.js").catch(() => {
-      // noop: falha de registro nao deve quebrar a aplicacao
+      // noop: falha de registro não deve quebrar a aplicacao
     });
   }, []);
 

@@ -65,7 +65,7 @@ export function RegisterForm() {
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas nao conferem.");
+      setError("As senhas não conferem.");
       return;
     }
 
@@ -180,7 +180,9 @@ export function RegisterForm() {
             placeholder="Digite seu nome"
             autoComplete="name"
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) =>
+              setName(event.target.value.toLocaleUpperCase("pt-BR"))
+            }
             className="w-full rounded-xl border border-[color:var(--border-dim)] bg-transparent px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--gold-tone-dark)] focus:outline-none font-[var(--font-roboto)]"
           />
         </label>

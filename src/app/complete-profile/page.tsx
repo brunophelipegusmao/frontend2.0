@@ -12,9 +12,9 @@ const API_BASE_URL =
 const parseApiError = async (response: Response) => {
   try {
     const data = (await response.json()) as { message?: string; error?: string };
-    return data?.message || data?.error || "Nao foi possivel completar o perfil.";
+    return data?.message || data?.error || "Não foi possível completar o perfil.";
   } catch {
-    return "Nao foi possivel completar o perfil.";
+    return "Não foi possível completar o perfil.";
   }
 };
 
@@ -205,7 +205,7 @@ export default function CompleteProfilePage() {
         }
         if (userData) {
           setRole(userData.role ?? null);
-          setName(userData.name ?? "");
+          setName((userData.name ?? "").toLocaleUpperCase("pt-BR"));
           setPhone(userData.phone ?? "");
           setAddress(userData.address ?? "");
           setCpf(userData.cpf ?? "");
@@ -301,7 +301,7 @@ export default function CompleteProfilePage() {
     if (sanitizedCpf.length !== 11) {
       nextErrors.cpf = "CPF deve conter 11 digitos numericos.";
     } else if (!isValidCpf(sanitizedCpf)) {
-      nextErrors.cpf = "CPF invalido.";
+      nextErrors.cpf = "CPF inválido.";
     }
     if (!trimmedPhone) {
       nextErrors.phone = "Telefone é obrigatório.";
@@ -463,7 +463,7 @@ export default function CompleteProfilePage() {
       if (!response.ok) {
         throw new Error(await parseApiError(response));
       }
-      setHealthSuccess("Dados de saude salvos. Redirecionando...");
+      setHealthSuccess("Dados de saúde salvos. Redirecionando...");
       showSaveFeedback(
         "success",
         "Saúde salva",
@@ -472,7 +472,7 @@ export default function CompleteProfilePage() {
       await redirectBasedOnRole(router);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Nao foi possivel salvar a saude.";
+        err instanceof Error ? err.message : "Não foi possível salvar a saúde.";
       setHealthError(message);
       showSaveFeedback("error", "Erro ao salvar saúde", message);
     } finally {
@@ -549,7 +549,7 @@ export default function CompleteProfilePage() {
                 autoComplete="name"
                 value={name}
                 onChange={(event) => {
-                  setName(event.target.value);
+                  setName(event.target.value.toLocaleUpperCase("pt-BR"));
                   setProfileFieldErrors((prev) => ({
                     ...prev,
                     name: undefined,
@@ -596,7 +596,7 @@ export default function CompleteProfilePage() {
             <input
               type="text"
               name="address"
-              placeholder="Rua, numero, bairro"
+              placeholder="Rua, número, bairro"
               autoComplete="street-address"
               value={address}
               onChange={(event) => setAddress(event.target.value)}
@@ -1046,7 +1046,7 @@ export default function CompleteProfilePage() {
               disabled={healthSubmitting}
               className="flex-1 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.18rem] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-70 sm:tracking-[0.4rem]"
             >
-              {healthSubmitting ? "Salvando..." : "Salvar saude"}
+              {healthSubmitting ? "Salvando..." : "Salvar saúde"}
             </button>
           </div>
         </form>

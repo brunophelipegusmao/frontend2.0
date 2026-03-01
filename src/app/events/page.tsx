@@ -395,19 +395,19 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
-                Aniversariantes do mes
+                Aniversariantes do mês
               </p>
               <h2 className="mt-1 text-xl font-semibold text-[var(--foreground)] sm:text-2xl">
                 Celebrando {birthdayMonthLabel}
               </h2>
               <p className="mt-1 text-[0.68rem] uppercase tracking-[0.12rem] text-[var(--muted-foreground)] sm:text-xs sm:tracking-[0.2rem]">
-                {birthdayEvents.length} aniversariantes neste mes
+                {birthdayEvents.length} aniversariantes neste mês
               </p>
             </div>
             <div className="flex w-full items-center justify-center gap-2 sm:w-auto sm:justify-end">
               <Link
                 href={`/events?birthMonth=${previousBirthMonthRef}`}
-                aria-label="Mes anterior"
+                aria-label="Mês anterior"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:w-auto sm:px-4 sm:text-xs"
               >
                 <ChevronLeft className="h-4 w-4 sm:hidden" />
@@ -418,7 +418,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
               </span>
               <Link
                 href={`/events?birthMonth=${nextBirthMonthRef}`}
-                aria-label="Próximo mes"
+                aria-label="Próximo mês"
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] sm:w-auto sm:px-4 sm:text-xs"
               >
                 <ChevronRight className="h-4 w-4 sm:hidden" />
@@ -429,7 +429,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
 
           {birthdayEvents.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
-              Nenhum aniversariante publicado para este mes.
+              Nenhum aniversariante publicado para este mês.
             </p>
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -474,7 +474,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             <div className="flex flex-col justify-between gap-4">
               <div>
                 <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.35rem]">
-                  Proximo em destaque
+                  Próximo em destaque
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold text-[var(--foreground)]">
                   {featuredEvent.title}
@@ -498,7 +498,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                   {formatEventPrice(featuredEvent)}
                 </p>
                 <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
-                  <span className="font-semibold">Inscricoes:</span>{" "}
+                  <span className="font-semibold">Inscrições:</span>{" "}
                   {featuredEvent.accessMode === "open"
                     ? "Acesso livre"
                     : `${Number(featuredEvent.confirmedRegistrations ?? 0)}${
@@ -509,7 +509,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                 </p>
                 <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2">
                   <span className="font-semibold">Local:</span>{" "}
-                  {featuredEvent.location || "Enviado apos confirmacao"}
+                  {featuredEvent.location || "Enviado após confirmação"}
                 </p>
               </div>
 
@@ -592,7 +592,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                   <div className="space-y-3 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--gold-tone-dark)]">
-                        {event.accessMode === "open" ? "Aberto" : "Inscricao"}
+                        {event.accessMode === "open" ? "Aberto" : "Inscrição"}
                       </span>
                       <span className="rounded-full border border-[color:var(--border-dim)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2rem] text-[var(--foreground)]">
                         {event.isPaid ? "Pago" : "Gratuito"}
@@ -616,7 +616,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                       <p>{formatEventDate(event)}</p>
                       <p>{formatEventTime(event)}</p>
                       <p>
-                        {event.location || "Local enviado apos confirmacao"}
+                        {event.location || "Local enviado após confirmação"}
                       </p>
                       <p>{formatEventPrice(event)}</p>
                       <p>

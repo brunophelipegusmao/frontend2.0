@@ -15,9 +15,9 @@ const buildAuthUrl = (path: string) => {
 const parseAuthError = async (response: Response) => {
   try {
     const data = (await response.json()) as { message?: string; error?: string };
-    return data?.message || data?.error || "Nao foi possivel completar a solicitacao.";
+    return data?.message || data?.error || "Não foi possível completar a solicitação.";
   } catch {
-    return "Nao foi possivel completar a solicitacao.";
+    return "Não foi possível completar a solicitação.";
   }
 };
 

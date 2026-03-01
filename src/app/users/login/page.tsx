@@ -96,11 +96,15 @@ function LoginPageContent() {
         if (response.status === 409) {
           const message = await parseApiError(
             response,
-            "Nao foi possivel concluir a inscricao no evento.",
+            "Não foi possível concluir a inscrição no evento.",
           );
+          const normalizedMessage = message
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
           const duplicateRegistration =
-            /ja esta inscrito/i.test(message) ||
-            /inscricao ja existente/i.test(message);
+            normalizedMessage.includes("ja esta inscrito") ||
+            normalizedMessage.includes("inscricao ja existente");
           if (duplicateRegistration) {
             router.replace(buildReturnPath("already"));
             return;
@@ -112,14 +116,14 @@ function LoginPageContent() {
           router.replace(
             buildReturnPath(
               "auth_error",
-              "Sessao expirada. Entre novamente para se inscrever.",
+              "Sessão expirada. Entre novamente para se inscrever.",
             ),
           );
           return;
         }
         const message = await parseApiError(
           response,
-          "Nao foi possivel concluir a inscricao no evento.",
+          "Não foi possível concluir a inscrição no evento.",
         );
         router.replace(buildReturnPath("error", message));
         return;
@@ -215,7 +219,7 @@ function LoginPageContent() {
     }
 
     if (shouldAutoRegisterEvent) {
-      setSuccess("Login realizado. Finalizando inscricao no evento...");
+      setSuccess("Login realizado. Finalizando inscrição no evento...");
       await completeEventRegistration();
       return;
     }
@@ -242,7 +246,7 @@ function LoginPageContent() {
     >
       {shouldAutoRegisterEvent && (
         <p className="mb-4 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-4 py-3 text-sm text-[var(--muted-foreground)]">
-          Entre na sua conta para concluir automaticamente a inscricao no evento.
+          Entre na sua conta para concluir automaticamente a inscrição no evento.
         </p>
       )}
 

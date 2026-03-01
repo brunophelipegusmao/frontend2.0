@@ -200,7 +200,7 @@ function CheckinPageContent() {
       if (!response.ok) {
         throw await parseApiError(
           response,
-          "Nao foi possivel registrar o check-in.",
+          "Não foi possível registrar o check-in.",
         );
       }
 
@@ -250,7 +250,7 @@ function CheckinPageContent() {
     });
 
     if (!result.ok) {
-      setStatusMessage(result.error || "Nao foi possivel iniciar o Google.");
+      setStatusMessage(result.error || "Não foi possível iniciar o Google.");
       setIsGoogleLoading(false);
     }
   };
@@ -262,7 +262,7 @@ function CheckinPageContent() {
       setAutoCheckinDone(true);
       setIsGoogleLoading(false);
       const message =
-        "Conta do Google nao autorizada. Use CPF/e-mail ou fale com um administrador.";
+        "Conta do Google não autorizada. Use CPF/e-mail ou fale com um administrador.";
       setStatusMessage(message);
       showCheckinFeedback(
         "error",
@@ -292,7 +292,7 @@ function CheckinPageContent() {
         if (!response.ok) {
           throw await parseApiError(
             response,
-            "Nao foi possivel concluir o check-in.",
+            "Não foi possível concluir o check-in.",
           );
         }
         setStatusMessage("Check-in confirmado com Google.");

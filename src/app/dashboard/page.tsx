@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 import { isHiddenPlanSlug } from "@/lib/plans";
+import { resolveUserDisplayName, toPtBrUpper } from "@/lib/userDisplay";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -101,7 +102,7 @@ const tabs: { id: TabId; label: string; description: string; icon: ReactNode }[]
   [
     {
       id: "users",
-      label: "Gerenciamento de Usuarios",
+      label: "Gerenciamento de Usuários",
       description: "Editar dados de todos os usuários.",
       icon: <Users className="h-4 w-4" />,
     },
@@ -188,12 +189,12 @@ const systemSections: Array<{
   {
     id: "studio",
     label: "Studio",
-    description: "Horarios, contatos e redes sociais.",
+    description: "Horários, contatos e redes sociais.",
   },
   {
     id: "system",
     label: "Sistema",
-    description: "Modo manutencao e mensagem de indisponibilidade.",
+    description: "Modo manutenção e mensagem de indisponibilidade.",
   },
   {
     id: "homepage",
@@ -825,7 +826,7 @@ const PLAN_REQUEST_STATUS_LABEL_MAP: Record<PlanRequestStatus, string> = {
 
 const PLAN_REQUEST_TYPE_LABEL_MAP: Record<PlanRequestType, string> = {
   plan_change: "Troca de plano",
-  plan_activation: "Ativacao de plano",
+  plan_activation: "Ativação de plano",
 };
 
 const FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP: Record<
@@ -838,7 +839,7 @@ const FINANCIAL_EXPENSE_CATEGORY_LABEL_MAP: Record<
   marketing: "Marketing",
   software: "Software",
   equipment: "Equipamentos",
-  maintenance: "Manutencao",
+  maintenance: "Manutenção",
   taxes: "Impostos",
   other: "Outros",
 };
@@ -884,7 +885,7 @@ const FINANCIAL_HELP_CONTENT: Record<
   subscriptions: {
     title: "Ajuda: Assinaturas",
     intro:
-      "Esta area gerencia a assinatura mensal do aluno e o ciclo de cobranca.",
+      "Esta área gerencia a assinatura mensal do aluno e o ciclo de cobrança.",
     cards: [
       {
         name: "Card de cadastro de assinatura",
@@ -894,15 +895,15 @@ const FINANCIAL_HELP_CONTENT: Record<
       {
         name: "Cards de assinaturas existentes",
         description:
-          "Mostram status, periodo e valor da assinatura, com acoes de ativar, pausar ou cancelar.",
+          "Mostram status, período e valor da assinatura, com ações de ativar, pausar ou cancelar.",
       },
     ],
     fields: [
-      { name: "Selecione o usuario", description: "Aluno dono da assinatura." },
+      { name: "Selecione o usuário", description: "Aluno dono da assinatura." },
       { name: "Selecione o plano", description: "Plano que define valor base." },
       {
-        name: "Data de inicio",
-        description: "Quando a assinatura comeca a valer.",
+        name: "Data de início",
+        description: "Quando a assinatura começa a valer.",
       },
       {
         name: "Modo de vencimento",
@@ -910,14 +911,14 @@ const FINANCIAL_HELP_CONTENT: Record<
       },
       {
         name: "Dia vencimento (1-31)",
-        description: "Dia cobrado em todo mes quando usar dia fixo.",
+        description: "Dia cobrado em todo mês quando usar dia fixo.",
       },
       {
         name: "Data customizada / dia customizado",
         description: "Alternativa ao dia fixo para regras especiais.",
       },
       {
-        name: "Observacoes da assinatura",
+        name: "Observações da assinatura",
         description: "Contexto interno para equipe financeira.",
       },
       {
@@ -933,12 +934,12 @@ const FINANCIAL_HELP_CONTENT: Record<
   expense_templates: {
     title: "Ajuda: Templates de despesas",
     intro:
-      "Templates padronizam despesas recorrentes para acelerar lancamentos mensais.",
+      "Templates padronizam despesas recorrentes para acelerar lançamentos mensais.",
     cards: [
       {
-        name: "Card de criacao de template",
+        name: "Card de criação de template",
         description:
-          "Define um modelo com categoria, valor padrao e dia de vencimento.",
+          "Define um modelo com categoria, valor padrão e dia de vencimento.",
       },
       {
         name: "Cards de templates cadastrados",
@@ -949,44 +950,44 @@ const FINANCIAL_HELP_CONTENT: Record<
     fields: [
       {
         name: "Nome do template",
-        description: "Identificacao do modelo (ex: Aluguel unidade centro).",
+        description: "Identificação do modelo (ex: Aluguel unidade centro).",
       },
       {
         name: "Categoria",
         description: "Classificacao contábil da despesa.",
       },
       {
-        name: "Valor padrao",
+        name: "Valor padrão",
         description: "Valor sugerido ao usar o template em uma despesa.",
       },
       {
         name: "Dia de vencimento (1-31)",
-        description: "Dia comum de pagamento para recorrencia mensal.",
+        description: "Dia comum de pagamento para recorrência mensal.",
       },
       {
-        name: "Observacoes do template",
-        description: "Instrucoes ou detalhes para o time.",
+        name: "Observações do template",
+        description: "Instruções ou detalhes para o time.",
       },
       {
         name: "Template ativo",
-        description: "Somente templates ativos aparecem para selecao nas despesas.",
+        description: "Somente templates ativos aparecem para seleção nas despesas.",
       },
     ],
   },
   competence_expenses: {
-    title: "Ajuda: Despesas da competencia",
+    title: "Ajuda: Despesas da competência",
     intro:
-      "Registra e acompanha despesas do mes de competencia selecionado no topo do financeiro.",
+      "Registra e acompanha despesas do mês de competência selecionado no topo do financeiro.",
     cards: [
       {
-        name: "Card de criacao de despesa",
+        name: "Card de criação de despesa",
         description:
-          "Lanca uma despesa avulsa ou baseada em template para a competencia atual.",
+          "Lança uma despesa avulsa ou baseada em template para a competência atual.",
       },
       {
         name: "Cards de despesas registradas",
         description:
-          "Mostram descricao, categoria, vencimento, valor e status com acoes de fluxo.",
+          "Mostram descrição, categoria, vencimento, valor e status com ações de fluxo.",
       },
     ],
     fields: [
@@ -1004,8 +1005,8 @@ const FINANCIAL_HELP_CONTENT: Record<
         description: "Planejada, aprovada, paga ou cancelada.",
       },
       {
-        name: "Descricao da despesa",
-        description: "Nome detalhado para identificacao no fechamento.",
+        name: "Descrição da despesa",
+        description: "Nome detalhado para identificação no fechamento.",
       },
       {
         name: "Data de vencimento",
@@ -1016,7 +1017,7 @@ const FINANCIAL_HELP_CONTENT: Record<
         description: "Valor total da despesa no formato decimal.",
       },
       {
-        name: "Observacoes",
+        name: "Observações",
         description: "Detalhes adicionais para controle interno.",
       },
       {
@@ -1024,8 +1025,8 @@ const FINANCIAL_HELP_CONTENT: Record<
         description: "Exibem apenas despesas do status selecionado.",
       },
       {
-        name: "Acoes dos cards",
-        description: "Aprovar, marcar paga, voltar para planejada ou cancelar.",
+        name: "Ações dos cards",
+        description: "Aprovar, marcar como paga, voltar para planejada ou cancelar.",
       },
     ],
   },
@@ -1225,7 +1226,7 @@ const calculateAgeFromBirthDate = (value: string) => {
 const formatCheckinDateTime = (value: string | Date) => {
   const parsed = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(parsed.getTime())) {
-    return "Data invalida";
+    return "Data inválida";
   }
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "medium",
@@ -1682,17 +1683,17 @@ export default function DashboardPage() {
       issues.push("Informe um nome com ao menos 2 caracteres.");
     }
     if (!generatedFinancialPlanSlug) {
-      issues.push("Nome do plano gera um slug invalido.");
+      issues.push("Nome do plano gera um slug inválido.");
     }
     if (financialPlanPriceCents === null) {
-      issues.push("Informe um valor valido para o preco do plano.");
+      issues.push("Informe um valor válido para o preço do plano.");
     }
     if (financialPlanDurationValue === null) {
-      issues.push("Duracao deve ser um numero inteiro maior que zero.");
+      issues.push("Duração deve ser um número inteiro maior que zero.");
     }
     if (financialPlanForm.promoActive) {
       if (financialPlanPromoPriceCents === null) {
-        issues.push("Informe o preco promocional para ativar a promocao.");
+        issues.push("Informe o preço promocional para ativar a promoção.");
       }
       if (
         financialPlanPromoPriceCents !== null &&
@@ -1700,7 +1701,7 @@ export default function DashboardPage() {
         financialPlanPromoPriceCents > financialPlanPriceCents
       ) {
         issues.push(
-          "Preco promocional deve ser menor ou igual ao preco base.",
+          "Preço promocional deve ser menor ou igual ao preço base.",
         );
       }
     }
@@ -1962,7 +1963,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel sair."),
+          await parseApiError(response, "Não foi possível sair."),
         );
       }
       window.location.href = "/users/login";
@@ -1984,7 +1985,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel carregar usuarios."),
+          await parseApiError(response, "Não foi possível carregar usuários."),
         );
       }
       const data = (await response.json()) as AdminUser[];
@@ -1994,7 +1995,7 @@ export default function DashboardPage() {
       setUsers([]);
       setUsersStatus("error");
       setUsersError(
-        err instanceof Error ? err.message : "Falha ao carregar usuarios.",
+        err instanceof Error ? err.message : "Falha ao carregar usuários.",
       );
     }
   }, []);
@@ -2011,7 +2012,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar os indicadores de check-in.",
+            "Não foi possível carregar os indicadores de check-in.",
           ),
         );
       }
@@ -2041,7 +2042,7 @@ export default function DashboardPage() {
       );
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel carregar planos."),
+          await parseApiError(response, "Não foi possível carregar planos."),
         );
       }
       const data = (await response.json()) as PlanOption[];
@@ -2069,7 +2070,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel carregar eventos."),
+          await parseApiError(response, "Não foi possível carregar eventos."),
         );
       }
       const data = (await response.json()) as EventApiRecord[];
@@ -2111,7 +2112,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               subscriptionsResponse,
-              "Nao foi possivel carregar assinaturas.",
+              "Não foi possível carregar assinaturas.",
             ),
           );
         }
@@ -2119,7 +2120,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               templatesResponse,
-              "Nao foi possivel carregar templates de despesas.",
+              "Não foi possível carregar templates de despesas.",
             ),
           );
         }
@@ -2127,7 +2128,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               expensesResponse,
-              "Nao foi possivel carregar despesas.",
+              "Não foi possível carregar despesas.",
             ),
           );
         }
@@ -2189,7 +2190,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             dashboardResponse,
-            "Nao foi possivel carregar o resumo financeiro.",
+            "Não foi possível carregar o resumo financeiro.",
           ),
         );
       }
@@ -2197,7 +2198,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             subscriptionsResponse,
-            "Nao foi possivel carregar assinaturas.",
+            "Não foi possível carregar assinaturas.",
           ),
         );
       }
@@ -2205,7 +2206,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             receivablesResponse,
-            "Nao foi possivel carregar recebiveis.",
+            "Não foi possível carregar recebiveis.",
           ),
         );
       }
@@ -2213,7 +2214,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             templatesResponse,
-            "Nao foi possivel carregar templates de despesas.",
+            "Não foi possível carregar templates de despesas.",
           ),
         );
       }
@@ -2221,7 +2222,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             expensesResponse,
-            "Nao foi possivel carregar despesas.",
+            "Não foi possível carregar despesas.",
           ),
         );
       }
@@ -2276,7 +2277,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar as configuracoes do sistema.",
+            "Não foi possível carregar as configurações do sistema.",
           ),
         );
       }
@@ -2288,7 +2289,7 @@ export default function DashboardPage() {
       setSystemSettingsError(
         err instanceof Error
           ? err.message
-          : "Falha ao carregar configuracoes do sistema.",
+          : "Falha ao carregar configurações do sistema.",
       );
     }
   }, []);
@@ -2304,7 +2305,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar solicitacoes de plano.",
+            "Não foi possível carregar solicitações de plano.",
           ),
         );
       }
@@ -2318,7 +2319,7 @@ export default function DashboardPage() {
       setPlanRequestsError(
         err instanceof Error
           ? err.message
-          : "Falha ao carregar solicitacoes de plano.",
+          : "Falha ao carregar solicitações de plano.",
       );
     }
   }, []);
@@ -2335,7 +2336,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar o historico de check-in.",
+            "Não foi possível carregar o histórico de check-in.",
           ),
         );
       }
@@ -2349,7 +2350,7 @@ export default function DashboardPage() {
       setCheckinHistoryError(
         err instanceof Error
           ? err.message
-          : "Falha ao carregar historico de check-in.",
+          : "Falha ao carregar histórico de check-in.",
       );
     }
   }, []);
@@ -2461,7 +2462,7 @@ export default function DashboardPage() {
     setIsLoadingUserBirthDate(true);
     setUserBirthDateError(null);
     setUserForm({
-      name: user.name ?? "",
+      name: toPtBrUpper(user.name),
       email: user.email ?? "",
       cpf: user.cpf ?? "",
       phone: user.phone ?? "",
@@ -2472,9 +2473,12 @@ export default function DashboardPage() {
       image: user.image ?? "",
       active: user.active ?? true,
     });
-    const display = user.name?.trim() || user.email || "usuario";
+    const display = resolveUserDisplayName({
+      name: user.name,
+      email: user.email,
+    });
     setMessageText(
-      `Ola ${display}, precisamos atualizar alguns dados do seu cadastro.`,
+      `Olá ${display}, precisamos atualizar alguns dados do seu cadastro.`,
     );
 
     void (async () => {
@@ -2486,7 +2490,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               response,
-              "Nao foi possivel carregar a data de nascimento.",
+              "Não foi possível carregar a data de nascimento.",
             ),
           );
         }
@@ -2535,7 +2539,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar os dados de saude.",
+            "Não foi possível carregar os dados de saúde.",
           ),
         );
       }
@@ -2547,7 +2551,7 @@ export default function DashboardPage() {
       const fallback =
         err instanceof Error
           ? err.message
-          : "Falha ao carregar dados de saude.";
+          : "Falha ao carregar dados de saúde.";
       setHealthError(fallback);
       setHealthForm(emptyHealthForm);
       setHealthInitial(emptyHealthForm);
@@ -2798,7 +2802,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel salvar os dados de saude.",
+            "Não foi possível salvar os dados de saúde.",
           ),
         );
       }
@@ -2816,7 +2820,7 @@ export default function DashboardPage() {
       const message =
         err instanceof Error
           ? err.message
-          : "Falha ao salvar dados de saude.";
+          : "Falha ao salvar dados de saúde.";
       setHealthError(message);
       showSaveFeedback("error", "Erro ao salvar saúde", message);
     } finally {
@@ -2856,7 +2860,7 @@ export default function DashboardPage() {
         throw new Error("CPF deve conter 11 digitos numericos.");
       }
       if (nextCpf && !isValidCpf(nextCpf)) {
-        throw new Error("CPF invalido.");
+        throw new Error("CPF inválido.");
       }
       if (nextCpf && nextCpf !== currentCpf) {
         payload.cpf = nextCpf;
@@ -2926,7 +2930,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               response,
-              "Nao foi possivel salvar as alteracoes.",
+              "Não foi possível salvar as alteracoes.",
             ),
           );
         }
@@ -2949,7 +2953,7 @@ export default function DashboardPage() {
         if (!healthResponse.ok) {
           const errorMessage = await parseApiError(
             healthResponse,
-            "Nao foi possivel atualizar a data de nascimento.",
+            "Não foi possível atualizar a data de nascimento.",
           );
           if (errorMessage.includes("Perfil de saúde não encontrado")) {
             throw new Error(
@@ -3105,8 +3109,11 @@ export default function DashboardPage() {
   const userNameById = useMemo(() => {
     const map = new Map<string, string>();
     users.forEach((user) => {
-      const display =
-        user.name?.trim() || user.email?.trim() || `Usuario ${user.id.slice(0, 8)}`;
+      const display = resolveUserDisplayName({
+        name: user.name,
+        email: user.email,
+        fallback: `Usuário ${user.id.slice(0, 8)}`,
+      });
       map.set(user.id, display);
     });
     return map;
@@ -3261,13 +3268,13 @@ export default function DashboardPage() {
       return "Titulo deve ter pelo menos 3 caracteres.";
     }
     if (payload.description.length < 3) {
-      return "Descricao deve ter pelo menos 3 caracteres.";
+      return "Descrição deve ter pelo menos 3 caracteres.";
     }
     if (!payload.date) {
-      return "Data obrigatoria.";
+      return "Data obrigatória.";
     }
     if (!payload.time) {
-      return "Horario obrigatorio.";
+      return "Horario obrigatório.";
     }
     if (payload.location.length < 3) {
       return "Local deve ter pelo menos 3 caracteres.";
@@ -3275,7 +3282,7 @@ export default function DashboardPage() {
 
     if (payload.accessMode === "registered_only") {
       if (!payload.capacity || payload.capacity < 1) {
-        return "Capacidade obrigatoria para eventos com inscricao.";
+        return "Capacidade obrigatória para eventos com inscrição.";
       }
     } else if (payload.capacity !== null) {
       return "Capacidade deve ser vazia para eventos abertos.";
@@ -3283,13 +3290,13 @@ export default function DashboardPage() {
 
     if (payload.isPaid) {
       if (!payload.priceCents || payload.priceCents < 1) {
-        return "Valor do evento e obrigatorio.";
+        return "Valor do evento é obrigatório.";
       }
       if (!payload.paymentMethod || payload.paymentMethod.trim().length < 2) {
-        return "Forma de pagamento e obrigatoria.";
+        return "Forma de pagamento é obrigatória.";
       }
       if (!payload.requiresConfirmation) {
-        return "Eventos pagos exigem confirmacao de presenca.";
+        return "Eventos pagos exigem confirmação de presença.";
       }
     }
 
@@ -3328,8 +3335,8 @@ export default function DashboardPage() {
           await parseApiError(
             response,
             isEditMode
-              ? "Nao foi possivel atualizar o evento."
-              : "Nao foi possivel criar o evento.",
+              ? "Não foi possível atualizar o evento."
+              : "Não foi possível criar o evento.",
           ),
         );
       }
@@ -3351,7 +3358,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               uploadResponse,
-              "Evento salvo, mas nao foi possivel enviar a imagem.",
+              "Evento salvo, mas não foi possível enviar a imagem.",
             ),
           );
         }
@@ -3374,7 +3381,7 @@ export default function DashboardPage() {
           throw new Error(
             await parseApiError(
               publishResponse,
-              `Evento salvo, mas nao foi possivel ${publishActionLabel}.`,
+              `Evento salvo, mas não foi possível ${publishActionLabel}.`,
             ),
           );
         }
@@ -3414,7 +3421,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel cancelar o evento."),
+          await parseApiError(response, "Não foi possível cancelar o evento."),
         );
       }
       await loadEvents();
@@ -3448,7 +3455,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel apagar o evento."),
+          await parseApiError(response, "Não foi possível apagar o evento."),
         );
       }
       const result = (await response.json()) as {
@@ -3464,7 +3471,7 @@ export default function DashboardPage() {
         "success",
         wasCancelled ? "Evento cancelado" : "Evento apagado",
         wasCancelled
-          ? "O evento ja foi publicado anteriormente e foi cancelado."
+          ? "O evento já foi publicado anteriormente e foi cancelado."
           : "O evento foi apagado com sucesso.",
       );
     } catch (err) {
@@ -3488,7 +3495,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            `Nao foi possivel ${actionLabel} o evento.`,
+            `Não foi possível ${actionLabel} o evento.`,
           ),
         );
       }
@@ -3562,7 +3569,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel gerar recebiveis."),
+          await parseApiError(response, "Não foi possível gerar recebiveis."),
         );
       }
       const payload = (await response.json()) as {
@@ -3576,7 +3583,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "success",
         "Recebiveis gerados",
-        `${createdCount} recebiveis criados. ${Number(payload.skipped ?? 0)} ja existiam.`,
+        `${createdCount} recebiveis criados. ${Number(payload.skipped ?? 0)} já existiam.`,
       );
     } catch (err) {
       const message =
@@ -3603,7 +3610,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel gerar despesas."),
+          await parseApiError(response, "Não foi possível gerar despesas."),
         );
       }
       const payload = (await response.json()) as {
@@ -3617,7 +3624,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "success",
         "Despesas geradas",
-        `${createdCount} despesas criadas. ${Number(payload.skipped ?? 0)} ja existiam.`,
+        `${createdCount} despesas criadas. ${Number(payload.skipped ?? 0)} já existiam.`,
       );
     } catch (err) {
       const message =
@@ -3643,7 +3650,7 @@ export default function DashboardPage() {
     }
 
     if (financialPlanFormIssues.length > 0) {
-      showSaveFeedback("error", "Dados invalidos", financialPlanFormIssues[0]);
+      showSaveFeedback("error", "Dados inválidos", financialPlanFormIssues[0]);
       return;
     }
 
@@ -3657,7 +3664,7 @@ export default function DashboardPage() {
     if (priceCents === null || durationDays === null) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Revise os campos obrigatorios do plano.",
       );
       return;
@@ -3686,7 +3693,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel criar o plano."),
+          await parseApiError(response, "Não foi possível criar o plano."),
         );
       }
 
@@ -3721,7 +3728,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "error",
         "Dados incompletos",
-        "Selecione o usuario da assinatura.",
+        "Selecione o usuário da assinatura.",
       );
       return;
     }
@@ -3741,7 +3748,7 @@ export default function DashboardPage() {
     ) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Informe o dia de vencimento entre 1 e 31.",
       );
       return;
@@ -3753,7 +3760,7 @@ export default function DashboardPage() {
     ) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Informe uma data customizada ou dia customizado (1 a 31).",
       );
       return;
@@ -3794,7 +3801,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel criar a assinatura financeira.",
+            "Não foi possível criar a assinatura financeira.",
           ),
         );
       }
@@ -3808,7 +3815,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "success",
         "Assinatura criada",
-        "A assinatura foi criada e vinculada ao usuario.",
+        "A assinatura foi criada e vinculada ao usuário.",
       );
     } catch (err) {
       const message =
@@ -3841,7 +3848,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel atualizar status da assinatura.",
+            "Não foi possível atualizar status da assinatura.",
           ),
         );
       }
@@ -3871,8 +3878,8 @@ export default function DashboardPage() {
     if (!amountCents || amountCents < 1) {
       showSaveFeedback(
         "error",
-        "Pagamento invalido",
-        "Informe um valor de pagamento valido.",
+        "Pagamento inválido",
+        "Informe um valor de pagamento válido.",
       );
       return;
     }
@@ -3893,7 +3900,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel registrar pagamento do recebivel.",
+            "Não foi possível registrar pagamento do recebivel.",
           ),
         );
       }
@@ -3928,7 +3935,7 @@ export default function DashboardPage() {
     if (name.length < 2) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Informe um nome para o template.",
       );
       return;
@@ -3936,15 +3943,15 @@ export default function DashboardPage() {
     if (defaultAmount === null) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
-        "Valor padrao do template e invalido.",
+        "Dados inválidos",
+        "Valor padrão do template é inválido.",
       );
       return;
     }
     if (!Number.isFinite(billingDay) || billingDay < 1 || billingDay > 31) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Dia de vencimento deve estar entre 1 e 31.",
       );
       return;
@@ -3969,7 +3976,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel criar o template de despesa.",
+            "Não foi possível criar o template de despesa.",
           ),
         );
       }
@@ -4019,7 +4026,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel atualizar o template de despesa.",
+            "Não foi possível atualizar o template de despesa.",
           ),
         );
       }
@@ -4050,15 +4057,15 @@ export default function DashboardPage() {
     if (financialExpenseForm.description.trim().length < 2) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
-        "Informe a descricao da despesa.",
+        "Dados inválidos",
+        "Informe a descrição da despesa.",
       );
       return;
     }
     if (!financialExpenseForm.dueDate) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
+        "Dados inválidos",
         "Informe a data de vencimento da despesa.",
       );
       return;
@@ -4066,8 +4073,8 @@ export default function DashboardPage() {
     if (amount === null) {
       showSaveFeedback(
         "error",
-        "Dados invalidos",
-        "Valor da despesa invalido.",
+        "Dados inválidos",
+        "Valor da despesa inválido.",
       );
       return;
     }
@@ -4091,7 +4098,7 @@ export default function DashboardPage() {
       });
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel criar a despesa."),
+          await parseApiError(response, "Não foi possível criar a despesa."),
         );
       }
       await loadFinancial();
@@ -4141,7 +4148,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel atualizar status da despesa.",
+            "Não foi possível atualizar status da despesa.",
           ),
         );
       }
@@ -4171,7 +4178,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel carregar os inscritos do evento.",
+            "Não foi possível carregar os inscritos do evento.",
           ),
         );
       }
@@ -4261,7 +4268,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel confirmar o pagamento do inscrito.",
+            "Não foi possível confirmar o pagamento do inscrito.",
           ),
         );
       }
@@ -4391,7 +4398,7 @@ export default function DashboardPage() {
         throw new Error(
           await parseApiError(
             response,
-            "Nao foi possivel atualizar a solicitacao de plano.",
+            "Não foi possível atualizar a solicitação de plano.",
           ),
         );
       }
@@ -4403,10 +4410,10 @@ export default function DashboardPage() {
       }));
       showSaveFeedback(
         "success",
-        status === "approved" ? "Solicitacao aprovada" : "Solicitacao recusada",
+        status === "approved" ? "Solicitação aprovada" : "Solicitação recusada",
         status === "approved"
-          ? "A solicitacao de plano foi aprovada com sucesso."
-          : "A solicitacao de plano foi recusada com sucesso.",
+          ? "A solicitação de plano foi aprovada com sucesso."
+          : "A solicitação de plano foi recusada com sucesso.",
       );
     } catch (err) {
       showSaveFeedback(
@@ -4463,7 +4470,7 @@ export default function DashboardPage() {
     try {
       parsed = new URL(trimmed);
     } catch {
-      throw new Error(`${fieldLabel}: URL invalida.`);
+      throw new Error(`${fieldLabel}: URL inválida.`);
     }
 
     if (parsed.hostname !== "res.cloudinary.com") {
@@ -4568,14 +4575,14 @@ export default function DashboardPage() {
       throw new Error(
         await parseApiError(
           response,
-          "Nao foi possivel enviar a imagem do carrossel.",
+          "Não foi possível enviar a imagem do carrossel.",
         ),
       );
     }
     const payload = (await response.json()) as { imageUrl?: string | null };
     const imageUrl = payload.imageUrl?.trim() ?? "";
     if (!imageUrl) {
-      throw new Error("Cloudinary nao retornou a URL da imagem.");
+      throw new Error("Cloudinary não retornou a URL da imagem.");
     }
     return imageUrl;
   };
@@ -4595,8 +4602,8 @@ export default function DashboardPage() {
     if (invalidHour) {
       showSaveFeedback(
         "error",
-        "Horario invalido",
-        `${systemDayLabel[invalidHour.day]}: use HH:MM com inicio menor que fim.`,
+        "Horário inválido",
+        `${systemDayLabel[invalidHour.day]}: use HH:MM com início menor que fim.`,
       );
       return;
     }
@@ -4634,8 +4641,8 @@ export default function DashboardPage() {
       );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Uma URL informada e invalida.";
-      showSaveFeedback("error", "Dados invalidos", message);
+        err instanceof Error ? err.message : "Uma URL informada é inválida.";
+      showSaveFeedback("error", "Dados inválidos", message);
       return;
     }
 
@@ -4674,12 +4681,12 @@ export default function DashboardPage() {
     try {
       await patchSystemSettings(
         payload,
-        "Nao foi possivel salvar as configuracoes do studio.",
+        "Não foi possível salvar as configurações do studio.",
       );
       showSaveFeedback(
         "success",
         "Studio atualizado",
-        "Horarios, contatos e redes sociais foram salvos.",
+        "Horários, contatos e redes sociais foram salvos.",
       );
     } catch (err) {
       const message =
@@ -4696,7 +4703,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "error",
         "Permissao insuficiente",
-        "Somente MASTER pode ativar o modo manutencao.",
+        "Somente MASTER pode ativar o modo manutenção.",
       );
       return;
     }
@@ -4711,18 +4718,18 @@ export default function DashboardPage() {
           maintenanceMode: systemSettingsForm.maintenanceMode,
           maintenanceMessage: systemSettingsForm.maintenanceMessage.trim() || null,
         },
-        "Nao foi possivel salvar o modo manutencao.",
+        "Não foi possível salvar o modo manutenção.",
       );
       showSaveFeedback(
         "success",
         "Sistema atualizado",
-        "Configuracoes de manutencao foram salvas.",
+        "Configurações de manutenção foram salvas.",
       );
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "Falha ao salvar configuracoes do sistema.";
+          : "Falha ao salvar configurações do sistema.";
       showSaveFeedback("error", "Erro ao salvar", message);
     } finally {
       setIsSavingMaintenanceSettings(false);
@@ -4735,7 +4742,7 @@ export default function DashboardPage() {
       showSaveFeedback(
         "error",
         "Permissao insuficiente",
-        "Somente MASTER ou ADMIN podem desativar o modo manutencao.",
+        "Somente MASTER ou ADMIN podem desativar o modo manutenção.",
       );
       return;
     }
@@ -4750,16 +4757,16 @@ export default function DashboardPage() {
           maintenanceMode: false,
           maintenanceMessage: systemSettingsForm.maintenanceMessage.trim() || null,
         },
-        "Nao foi possivel desativar o modo manutencao.",
+        "Não foi possível desativar o modo manutenção.",
       );
       showSaveFeedback(
         "success",
-        "Manutencao desativada",
-        "Sistema liberado novamente para todos os usuarios.",
+        "Manutenção desativada",
+        "Sistema liberado novamente para todos os usuários.",
       );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Falha ao desativar manutencao.";
+        err instanceof Error ? err.message : "Falha ao desativar manutenção.";
       showSaveFeedback("error", "Erro ao desativar", message);
     } finally {
       setIsSavingMaintenanceSettings(false);
@@ -4802,8 +4809,8 @@ export default function DashboardPage() {
           const message =
             err instanceof Error
               ? err.message
-              : `Slide ${index + 1}: URL invalida.`;
-          showSaveFeedback("error", "Imagem invalida", message);
+              : `Slide ${index + 1}: URL inválida.`;
+          showSaveFeedback("error", "Imagem inválida", message);
           return;
         } finally {
           setUploadingCarouselSlot(null);
@@ -4812,7 +4819,7 @@ export default function DashboardPage() {
 
       await patchSystemSettings(
         { carouselImages: normalizedImages },
-        "Nao foi possivel salvar o carrossel da homepage.",
+        "Não foi possível salvar o carrossel da homepage.",
       );
       setCarouselImageFiles(
         Array.from(
@@ -4863,10 +4870,11 @@ export default function DashboardPage() {
     setSelectedUser(null);
   };
 
-  const displayName =
-    currentUser?.name?.trim() ||
-    currentUser?.email?.split("@")[0] ||
-    "Visitante";
+  const displayName = resolveUserDisplayName({
+    name: currentUser?.name,
+    email: currentUser?.email?.split("@")[0] ?? null,
+    fallback: "VISITANTE",
+  });
   const displayRole = dashboardRoleLabelMap[currentDashboardRole];
   const avatarSrc = currentUser?.avatarUrl || currentUser?.image || "";
   const avatarLabel =
@@ -4881,17 +4889,20 @@ export default function DashboardPage() {
     : "#";
   const whatsappDisabled = !whatsappNumber;
   const selectedUserDisplayName = selectedUser
-    ? userForm.name?.trim() ||
-      selectedUser.name?.trim() ||
-      selectedUser.email ||
-      "Usuário"
+    ? resolveUserDisplayName({
+        name: userForm.name || selectedUser.name,
+        email: selectedUser.email,
+      })
     : "";
   const selectedUserAvatar = selectedUser
     ? userForm.image || selectedUser.avatarUrl || selectedUser.image || ""
     : "";
   const selectedUserEmail = selectedUser ? selectedUser.email : "";
   const healthUserDisplayName = healthUser
-    ? healthUser.name?.trim() || healthUser.email || "Usuário"
+    ? resolveUserDisplayName({
+        name: healthUser.name,
+        email: healthUser.email,
+      })
     : "";
   const healthUserAvatar = healthUser
     ? healthUser.avatarUrl || healthUser.image || ""
@@ -4940,7 +4951,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[0.65rem] uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                    Usuario autenticado
+                    Usuário autenticado
                   </p>
                   <p className="mt-1 truncate text-base font-semibold text-[var(--foreground)]">
                     {currentUserStatus === "loading"
@@ -4949,7 +4960,7 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-[var(--muted-foreground)]">
                     {currentUserStatus === "error"
-                      ? "Sessao indisponivel"
+                      ? "Sessão indisponivel"
                       : displayRole}
                   </p>
                 </div>
@@ -4982,7 +4993,7 @@ export default function DashboardPage() {
                   aria-label="Abrir solicitações de plano"
                 >
                   <Clock className="h-4 w-4" />
-                  <span className="hidden sm:inline">Solicitacoes</span>
+                  <span className="hidden sm:inline">Solicitações</span>
                   <span
                     className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[0.62rem] font-semibold tracking-normal ${
                       pendingPlanRequestsCount > 0
@@ -5003,7 +5014,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[0.65rem] uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                  Visualizacao do dashboard
+                  Visualização do dashboard
                 </p>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   MASTER pode simular os perfis existentes para validar o acesso.
@@ -5141,7 +5152,7 @@ export default function DashboardPage() {
                       {usersAnalyticsStatus === "error" && (
                         <p className="text-sm text-[color:var(--danger)]">
                           {usersAnalyticsError ??
-                            "Nao foi possivel carregar o gráfico de check-ins."}
+                            "Não foi possível carregar o gráfico de check-ins."}
                         </p>
                       )}
                       {usersAnalyticsStatus === "ready" && usersAnalytics && (
@@ -5174,7 +5185,7 @@ export default function DashboardPage() {
                       {usersAnalyticsStatus === "error" && (
                         <p className="text-sm text-[color:var(--danger)]">
                           {usersAnalyticsError ??
-                            "Nao foi possivel carregar o gráfico mensal."}
+                            "Não foi possível carregar o gráfico mensal."}
                         </p>
                       )}
                       {usersAnalyticsStatus === "ready" && usersAnalytics && (
@@ -5205,10 +5216,10 @@ export default function DashboardPage() {
             className={`${showUsersListOnMobile ? "block" : "hidden"} space-y-6 sm:block`}
           >
             <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-              <h2 className="text-2xl font-semibold">Usuarios cadastrados</h2>
+              <h2 className="text-2xl font-semibold">Usuários cadastrados</h2>
               {!isCoachDashboard && (
                 <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-                  Novo usuario
+                  Novo usuário
                 </button>
               )}
             </div>
@@ -5241,17 +5252,17 @@ export default function DashboardPage() {
               <div className="divide-y divide-[color:var(--border-dim)]">
                 {usersStatus === "loading" && (
                   <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                    Carregando usuarios...
+                    Carregando usuários...
                   </div>
                 )}
                 {usersStatus === "error" && (
                   <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                    {usersError || "Nao foi possivel carregar usuarios."}
+                    {usersError || "Não foi possível carregar usuários."}
                   </div>
                 )}
                 {usersStatus === "ready" && users.length === 0 && (
                   <div className="bg-[color:var(--card)] px-4 py-6 text-sm text-[var(--muted-foreground)]">
-                    Nenhum usuario encontrado.
+                    Nenhum usuário encontrado.
                   </div>
                 )}
                 {users
@@ -5265,8 +5276,11 @@ export default function DashboardPage() {
                     return user.role === userFilter;
                   })
                   .map((user) => {
-                    const displayName =
-                      user.name?.trim() || user.email || "Sem nome";
+                    const displayName = resolveUserDisplayName({
+                      name: user.name,
+                      email: user.email,
+                      fallback: "SEM NOME",
+                    });
                     const avatarUrl = user.avatarUrl || user.image || "";
                     const roleLabel = roleLabelMap[user.role];
                     return (
@@ -5329,7 +5343,7 @@ export default function DashboardPage() {
                               className="inline-flex items-center gap-2 rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-3 py-2 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--gold-tone)]"
                             >
                               <Stethoscope className="h-3.5 w-3.5" />
-                              Saude
+                              Saúde
                             </button>
                           ) : (
                             <button
@@ -5398,7 +5412,7 @@ export default function DashboardPage() {
           )}
           {eventsStatus === "error" && (
             <p className="text-sm text-[color:var(--danger)]">
-              {eventsError ?? "Nao foi possivel carregar eventos."}
+              {eventsError ?? "Não foi possível carregar eventos."}
             </p>
           )}
 
@@ -5581,7 +5595,7 @@ export default function DashboardPage() {
                           <strong className="text-[var(--foreground)]">
                             {event.access === "open"
                               ? "Aberto"
-                              : "Com inscricao"}
+                              : "Com inscrição"}
                           </strong>
                         </span>
                         <span>
@@ -5601,9 +5615,9 @@ export default function DashboardPage() {
                           </strong>
                         </span>
                         <span>
-                          Confirmacao:{" "}
+                          Confirmação:{" "}
                           <strong className="text-[var(--foreground)]">
-                            {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
+                            {event.requiresConfirmation ? "Obrigatória" : "Não"}
                           </strong>
                         </span>
                         <span>
@@ -5629,7 +5643,7 @@ export default function DashboardPage() {
                         <span>
                           Destaque:{" "}
                           <strong className="text-[var(--foreground)]">
-                            {event.isFeatured ? "Sim" : "Nao"}
+                            {event.isFeatured ? "Sim" : "Não"}
                           </strong>
                         </span>
                       </div>
@@ -5735,10 +5749,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
                       <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                        Confirmacao
+                        Confirmação
                       </p>
                       <p className="mt-1 text-[var(--foreground)]">
-                        {event.requiresConfirmation ? "Obrigatoria" : "Nao"}
+                        {event.requiresConfirmation ? "Obrigatória" : "Não"}
                       </p>
                     </div>
                     <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-sm">
@@ -5800,12 +5814,12 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-2xl font-semibold">Gerenciamento financeiro</h2>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                  Assinaturas, recebiveis, pagamentos e despesas por competencia.
+                  Assinaturas, recebiveis, pagamentos e despesas por competência.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <label className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                  Competencia
+                  Competência
                 </label>
                 <input
                   type="month"
@@ -5841,7 +5855,7 @@ export default function DashboardPage() {
                 {isGeneratingExpenses ? "Gerando..." : "Gerar despesas"}
               </button>
               <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
-                Competencia ativa: {formatDatePtBr(toCompetenceDateValue(financialCompetenceMonth))}
+                Competência ativa: {formatDatePtBr(toCompetenceDateValue(financialCompetenceMonth))}
               </span>
             </div>
           </section>
@@ -5869,7 +5883,7 @@ export default function DashboardPage() {
             {financialStatus === "error" && (
               <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
                 <p className="text-sm text-[color:var(--danger)]">
-                  {financialError ?? "Nao foi possivel carregar o financeiro."}
+                  {financialError ?? "Não foi possível carregar o financeiro."}
                 </p>
                 <button
                   onClick={() => void loadFinancial()}
@@ -5888,7 +5902,7 @@ export default function DashboardPage() {
                     <div className="space-y-1">
                       <h3 className="text-xl font-semibold">Cadastro de planos</h3>
                       <p className="text-sm text-[var(--muted-foreground)]">
-                        Preencha os dados principais, revise a promocao e confira o
+                        Preencha os dados principais, revise a promoção e confira o
                         resumo antes de criar.
                       </p>
                     </div>
@@ -5916,7 +5930,7 @@ export default function DashboardPage() {
                         </label>
 
                         <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Slug (automatico)
+                          Slug (automático)
                           <input
                             value={generatedFinancialPlanSlug}
                             readOnly
@@ -5929,7 +5943,7 @@ export default function DashboardPage() {
 
                       <div className="grid gap-3 md:grid-cols-3">
                         <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Preco base (R$) *
+                          Preço base (R$) *
                           <input
                             value={financialPlanForm.price}
                             onChange={(event) =>
@@ -5945,7 +5959,7 @@ export default function DashboardPage() {
                         </label>
 
                         <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Duracao (dias) *
+                          Duração (dias) *
                           <input
                             value={financialPlanForm.durationDays}
                             onChange={(event) =>
@@ -5961,10 +5975,10 @@ export default function DashboardPage() {
                         </label>
 
                         <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Previa do valor
+                          Prévia do valor
                           <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm font-semibold normal-case tracking-normal text-[var(--foreground)]">
                             {financialPlanPriceCents === null
-                              ? "Informe o preco"
+                              ? "Informe o preço"
                               : formatCurrencyFromCents(financialPlanPriceCents)}
                           </div>
                         </div>
@@ -5972,7 +5986,7 @@ export default function DashboardPage() {
 
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Duracoes rapidas
+                          Durações rápidas
                         </span>
                         {[30, 90, 180, 365].map((days) => (
                           <button
@@ -5996,7 +6010,7 @@ export default function DashboardPage() {
                       </div>
 
                       <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                        Descricao (opcional)
+                        Descrição (opcional)
                         <textarea
                           value={financialPlanForm.description}
                           onChange={(event) =>
@@ -6046,7 +6060,7 @@ export default function DashboardPage() {
                     <aside className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)]/35 p-4">
                       <div>
                         <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gold-tone-dark)]">
-                          Status e promocao
+                          Status e promoção
                         </h4>
                         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                           Defina visibilidade e campanha de venda do plano.
@@ -6097,7 +6111,7 @@ export default function DashboardPage() {
                               }))
                             }
                           />
-                          Promocao ativa
+                          Promoção ativa
                         </label>
                       </div>
 
@@ -6105,7 +6119,7 @@ export default function DashboardPage() {
                         className={`grid gap-2 ${!financialPlanForm.promoActive ? "opacity-60" : ""}`}
                       >
                         <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Preco promocional (R$)
+                          Preço promocional (R$)
                           <input
                             value={financialPlanForm.promoPrice}
                             onChange={(event) =>
@@ -6121,7 +6135,7 @@ export default function DashboardPage() {
                           />
                         </label>
                         <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                          Fim da promocao (opcional)
+                          Fim da promoção (opcional)
                           <input
                             type="date"
                             value={financialPlanForm.promoEndsAt}
@@ -6139,7 +6153,7 @@ export default function DashboardPage() {
 
                       <div className="space-y-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-xs text-[var(--muted-foreground)]">
                         <div className="flex items-center justify-between gap-3">
-                          <span>Preco base</span>
+                          <span>Preço base</span>
                           <strong className="text-[var(--foreground)]">
                             {financialPlanPriceCents === null
                               ? "-"
@@ -6147,7 +6161,7 @@ export default function DashboardPage() {
                           </strong>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <span>Preco promocional</span>
+                          <span>Preço promocional</span>
                           <strong className="text-[var(--foreground)]">
                             {financialPlanForm.promoActive &&
                             financialPlanPromoPriceCents !== null
@@ -6262,7 +6276,7 @@ export default function DashboardPage() {
                           outstanding > 0;
                         const userLabel =
                           userNameById.get(receivable.userId) ||
-                          `Usuario ${receivable.userId.slice(0, 8)}`;
+                          `Usuário ${receivable.userId.slice(0, 8)}`;
                         return (
                           <article
                             key={receivable.id}
@@ -6327,7 +6341,7 @@ export default function DashboardPage() {
                                     })
                                   }
                                   rows={2}
-                                  placeholder="Observacoes do pagamento (opcional)"
+                                  placeholder="Observações do pagamento (opcional)"
                                   className="mt-2 w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                                 />
                                 <button
@@ -6391,10 +6405,13 @@ export default function DashboardPage() {
                       }
                       className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                     >
-                      <option value="">Selecione o usuario</option>
+                      <option value="">Selecione o usuário</option>
                       {users.map((user) => (
                         <option key={user.id} value={user.id}>
-                          {user.name?.trim() || user.email}
+                          {resolveUserDisplayName({
+                            name: user.name,
+                            email: user.email,
+                          })}
                         </option>
                       ))}
                     </select>
@@ -6489,7 +6506,7 @@ export default function DashboardPage() {
                       }))
                     }
                     rows={2}
-                    placeholder="Observacoes da assinatura"
+                    placeholder="Observações da assinatura"
                     className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                   />
                   <label className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
@@ -6543,7 +6560,7 @@ export default function DashboardPage() {
                     {filteredFinancialSubscriptions.map((subscription) => {
                       const userLabel =
                         userNameById.get(subscription.userId) ||
-                        `Usuario ${subscription.userId.slice(0, 8)}`;
+                        `Usuário ${subscription.userId.slice(0, 8)}`;
                       const planLabel =
                         subscription.planNameSnapshot ||
                         planNameById.get(subscription.planId) ||
@@ -6676,7 +6693,7 @@ export default function DashboardPage() {
                           defaultAmount: event.target.value,
                         }))
                       }
-                      placeholder="Valor padrao (ex: 100.00)"
+                      placeholder="Valor padrão (ex: 100.00)"
                       className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                     />
                     <input
@@ -6700,7 +6717,7 @@ export default function DashboardPage() {
                       }))
                     }
                     rows={2}
-                    placeholder="Observacoes do template"
+                    placeholder="Observações do template"
                     className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)]"
                   />
                   <label className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
@@ -6767,7 +6784,7 @@ export default function DashboardPage() {
 
               <section className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-xl font-semibold">Despesas da competencia</h3>
+                  <h3 className="text-xl font-semibold">Despesas da competência</h3>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
@@ -6873,7 +6890,7 @@ export default function DashboardPage() {
                         description: event.target.value,
                       }))
                     }
-                    placeholder="Descricao da despesa"
+                    placeholder="Descrição da despesa"
                     className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] md:col-span-2"
                   />
                   <input
@@ -6907,7 +6924,7 @@ export default function DashboardPage() {
                       }))
                     }
                     rows={2}
-                    placeholder="Observacoes"
+                    placeholder="Observações"
                     className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm text-[var(--foreground)] md:col-span-2"
                   />
                   <button
@@ -6986,7 +7003,7 @@ export default function DashboardPage() {
                   ))}
                   {filteredFinancialExpenses.length === 0 && (
                     <p className="text-sm text-[var(--muted-foreground)]">
-                      Nenhuma despesa cadastrada na competencia.
+                      Nenhuma despesa cadastrada na competência.
                     </p>
                   )}
                 </div>
@@ -7077,9 +7094,9 @@ export default function DashboardPage() {
       {activeTab === "admin" && availableTabs.some((tab) => tab.id === "admin") && (
         <div className="space-y-6">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-2xl font-semibold">Relatorios administrativos</h2>
+            <h2 className="text-2xl font-semibold">Relatórios administrativos</h2>
             <button className="rounded-full border border-[var(--gold-tone)]/40 bg-[var(--gold-tone)]/10 px-4 py-2 text-xs uppercase tracking-[0.3em] text-[var(--gold-tone)]">
-              Gerar relatorios
+              Gerar relatórios
             </button>
           </div>
 
@@ -7101,10 +7118,10 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                  Solicitacoes de plano
+                  Solicitações de plano
                 </p>
                 <h3 className="mt-1 text-lg font-semibold">
-                  Aprovacao de trocas e ativacoes
+                  Aprovação de trocas e ativacoes
                 </h3>
                 <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                   {pendingPlanRequestsCount} pendentes • {reviewedPlanRequestsCount} revisadas
@@ -7129,7 +7146,7 @@ export default function DashboardPage() {
             {planRequestsStatus === "error" && (
               <div className="mt-4 space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
                 <p className="text-sm text-[color:var(--danger)]">
-                  {planRequestsError ?? "Nao foi possivel carregar solicitacoes de plano."}
+                  {planRequestsError ?? "Não foi possível carregar solicitações de plano."}
                 </p>
                 <button
                   type="button"
@@ -7143,7 +7160,7 @@ export default function DashboardPage() {
 
             {planRequestsStatus === "ready" && planRequests.length === 0 && (
               <p className="mt-4 text-sm text-[var(--muted-foreground)]">
-                Nenhuma solicitacao de plano encontrada.
+                Nenhuma solicitação de plano encontrada.
               </p>
             )}
 
@@ -7166,9 +7183,11 @@ export default function DashboardPage() {
                           </p>
                           <p className="text-xs text-[var(--muted-foreground)]">
                             Solicitante:{" "}
-                            {request.requestedByName?.trim() ||
-                              request.requestedByEmail?.trim() ||
-                              request.requestedByUserId}
+                            {resolveUserDisplayName({
+                              name: request.requestedByName,
+                              email: request.requestedByEmail,
+                              fallback: request.requestedByUserId,
+                            })}
                           </p>
                           <p className="text-xs text-[var(--muted-foreground)]">
                             Criada em {formatDateTimePtBr(request.createdAt)}
@@ -7245,10 +7264,11 @@ export default function DashboardPage() {
                         <div className="mt-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
                           <p>
                             Revisada por{" "}
-                            {request.reviewedByName?.trim() ||
-                              request.reviewedByEmail?.trim() ||
-                              request.reviewedByUserId ||
-                              "-"}{" "}
+                            {resolveUserDisplayName({
+                              name: request.reviewedByName,
+                              email: request.reviewedByEmail,
+                              fallback: request.reviewedByUserId || "-",
+                            })}{" "}
                             em{" "}
                             {request.reviewedAt
                               ? formatDateTimePtBr(request.reviewedAt)
@@ -7269,13 +7289,13 @@ export default function DashboardPage() {
 
             <div className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
             <p className="text-xs uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-              Selecione os relatorios
+              Selecione os relatórios
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {[
-                "Faturamento por periodo",
+                "Faturamento por período",
                 "Recebiveis pendentes",
-                "Check-ins por usuario",
+                "Check-ins por usuário",
                 "Frequencia mensal",
                 "Eventos pagos",
                 "Planos ativos vs inativos",
@@ -7311,7 +7331,7 @@ export default function DashboardPage() {
                 Gerar agora
               </button>
               <button className="inline-flex h-11 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-5 text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
-                Limpar selecao
+                Limpar seleção
               </button>
             </div>
             </div>
@@ -7368,7 +7388,7 @@ export default function DashboardPage() {
             <div className="space-y-3 rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4">
               <p className="text-sm text-[color:var(--danger)]">
                 {systemSettingsError ??
-                  "Nao foi possivel carregar as configuracoes do sistema."}
+                  "Não foi possível carregar as configurações do sistema."}
               </p>
               <button
                 onClick={() => void loadSystemSettings()}
@@ -7386,7 +7406,7 @@ export default function DashboardPage() {
                 <section className="grid gap-4 lg:grid-cols-2">
                   <article className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
                     <div className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-[var(--muted-foreground)]">
-                      <Clock className="h-4 w-4" /> Horarios de operacao
+                      <Clock className="h-4 w-4" /> Horários de operação
                     </div>
                     <div className="mt-3 grid gap-3">
                       {systemSettingsForm.operatingHours.map((entry) => (
@@ -7455,7 +7475,7 @@ export default function DashboardPage() {
                         onChange={(event) =>
                           handleSystemContactChange("address", event.target.value)
                         }
-                        placeholder="Endereco"
+                        placeholder="Endereço"
                         className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-[var(--foreground)] md:col-span-2"
                       />
                       <input
@@ -7539,7 +7559,7 @@ export default function DashboardPage() {
 
               {systemSection === "system" && effectiveDashboardRole === "MASTER" && (
                 <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-                  <h3 className="text-xl font-semibold">Modo manutencao</h3>
+                  <h3 className="text-xl font-semibold">Modo manutenção</h3>
                   <p className="mt-2 text-sm text-[var(--muted-foreground)]">
                     Quando ativo, o backend aplica as regras de manutenção para as
                     rotas configuradas.
@@ -7602,7 +7622,7 @@ export default function DashboardPage() {
                   >
                     {isSavingMaintenanceSettings
                       ? "Desativando..."
-                      : "Desativar manutencao"}
+                      : "Desativar manutenção"}
                   </button>
                 </section>
               )}
@@ -7818,14 +7838,13 @@ export default function DashboardPage() {
             {eventRegistrationsStatus === "ready" && eventRegistrations.length > 0 && (
               <div className="mt-4 grid gap-3">
                 {eventRegistrations.map((registration) => {
-                  const displayName =
-                    registration.name?.trim() ||
-                    registration.userName?.trim() ||
-                    registration.userEmail?.trim() ||
-                    registration.email?.trim() ||
-                    (registration.userId
+                  const displayName = resolveUserDisplayName({
+                    name: registration.name || registration.userName,
+                    email: registration.userEmail || registration.email,
+                    fallback: registration.userId
                       ? `Usuário ${registration.userId.slice(0, 8)}`
-                      : "Inscrito");
+                      : "INSCRITO",
+                  });
                   const displayEmail =
                     registration.email?.trim() || registration.userEmail?.trim() || "-";
                   const registrationStatusLabel =
@@ -7992,7 +8011,7 @@ export default function DashboardPage() {
                   onChange={(event) =>
                     setUserForm((prev) => ({
                       ...prev,
-                      name: event.target.value,
+                      name: toPtBrUpper(event.target.value),
                     }))
                   }
                   className={modalInputClass}
@@ -8252,7 +8271,10 @@ export default function DashboardPage() {
                   Histórico de check-in
                 </p>
                 <h3 className="text-2xl font-semibold">
-                  {checkinUser.name || checkinUser.email || "Usuário"}
+                  {resolveUserDisplayName({
+                    name: checkinUser.name,
+                    email: checkinUser.email,
+                  })}
                 </h3>
               </div>
               <button
@@ -8344,7 +8366,7 @@ export default function DashboardPage() {
                   {checkinHistoryStatus === "error" && (
                     <p className="text-sm text-[color:var(--danger)]">
                       {checkinHistoryError ??
-                        "Nao foi possivel carregar o historico."}
+                        "Não foi possível carregar o histórico."}
                     </p>
                   )}
                   {checkinHistoryStatus === "ready" &&

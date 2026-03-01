@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { isHiddenPlanSlug } from "@/lib/plans";
 import { API_BASE_URL } from "@/lib/roleRedirect";
+import { toPtBrUpper } from "@/lib/userDisplay";
 
 type DashboardUser = {
   id: string;
@@ -259,7 +260,7 @@ export default function UserDashboardPage() {
           return;
         }
         if (!meResponse.ok) {
-          throw new Error(await parseApiError(meResponse, "Falha ao carregar usuario."));
+          throw new Error(await parseApiError(meResponse, "Falha ao carregar usuário."));
         }
 
         const me = (await meResponse.json()) as DashboardUser;
@@ -363,7 +364,7 @@ export default function UserDashboardPage() {
         setMyEvents(myEventsPayload);
         setAvailableEvents(nextAvailable);
         setProfileForm({
-          name: me.name ?? "",
+          name: toPtBrUpper(me.name),
           email: me.email ?? "",
           phone: me.phone ?? "",
           address: me.address ?? "",
@@ -406,7 +407,10 @@ export default function UserDashboardPage() {
     field: "name" | "email" | "phone" | "address",
     value: string,
   ) => {
-    setProfileForm((prev) => ({ ...prev, [field]: value }));
+    setProfileForm((prev) => ({
+      ...prev,
+      [field]: field === "name" ? toPtBrUpper(value) : value,
+    }));
   };
 
   const handleSaveProfile = async (event: FormEvent<HTMLFormElement>) => {
@@ -423,21 +427,21 @@ export default function UserDashboardPage() {
     if (!trimmedName || trimmedName.length < 2) {
       setFeedback({
         tone: "error",
-        message: "Informe um nome valido.",
+        message: "Informe um nome válido.",
       });
       return;
     }
     if (!trimmedEmail || !trimmedEmail.includes("@")) {
       setFeedback({
         tone: "error",
-        message: "Informe um e-mail valido.",
+        message: "Informe um e-mail válido.",
       });
       return;
     }
     if (!trimmedPhone || trimmedPhone.length < 8) {
       setFeedback({
         tone: "error",
-        message: "Informe um telefone valido.",
+        message: "Informe um telefone válido.",
       });
       return;
     }
@@ -462,13 +466,13 @@ export default function UserDashboardPage() {
         return;
       }
       if (!response.ok) {
-        throw new Error(await parseApiError(response, "Nao foi possivel salvar o perfil."));
+        throw new Error(await parseApiError(response, "Não foi possível salvar o perfil."));
       }
 
       const updatedUser = (await response.json()) as DashboardUser;
       setUser(updatedUser);
       setProfileForm({
-        name: updatedUser.name ?? "",
+        name: toPtBrUpper(updatedUser.name),
         email: updatedUser.email ?? "",
         phone: updatedUser.phone ?? "",
         address: updatedUser.address ?? "",
@@ -479,7 +483,7 @@ export default function UserDashboardPage() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel salvar o perfil.";
+        error instanceof Error ? error.message : "Não foi possível salvar o perfil.";
       setFeedback({ tone: "error", message });
     } finally {
       setSavingProfile(false);
@@ -555,7 +559,7 @@ export default function UserDashboardPage() {
     if (newPassword !== confirmPassword) {
       setFeedback({
         tone: "error",
-        message: "A confirmacao de senha nao confere.",
+        message: "A confirmação de senha não confere.",
       });
       return;
     }
@@ -575,7 +579,7 @@ export default function UserDashboardPage() {
         return;
       }
       if (!response.ok) {
-        throw new Error(await parseApiError(response, "Nao foi possivel alterar a senha."));
+        throw new Error(await parseApiError(response, "Não foi possível alterar a senha."));
       }
 
       setPasswordForm({ newPassword: "", confirmPassword: "" });
@@ -585,7 +589,7 @@ export default function UserDashboardPage() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel alterar a senha.";
+        error instanceof Error ? error.message : "Não foi possível alterar a senha.";
       setFeedback({ tone: "error", message });
     } finally {
       setSavingPassword(false);
@@ -625,7 +629,7 @@ export default function UserDashboardPage() {
       }
       if (!response.ok) {
         throw new Error(
-          await parseApiError(response, "Nao foi possivel enviar a solicitacao."),
+          await parseApiError(response, "Não foi possível enviar a solicitação."),
         );
       }
 
@@ -634,13 +638,13 @@ export default function UserDashboardPage() {
         tone: "success",
         message:
           type === "plan_change"
-            ? "Solicitacao de troca de plano enviada para analise."
-            : "Solicitacao de ativacao enviada para analise.",
+            ? "Solicitação de troca de plano enviada para análise."
+            : "Solicitação de ativação enviada para análise.",
       });
       setPlanForm((prev) => ({ ...prev, notes: "" }));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel enviar a solicitacao.";
+        error instanceof Error ? error.message : "Não foi possível enviar a solicitação.";
       setFeedback({ tone: "error", message });
     } finally {
       setSendingPlanRequest(false);
@@ -659,7 +663,7 @@ export default function UserDashboardPage() {
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error(await parseApiError(response, "Nao foi possivel sair."));
+        throw new Error(await parseApiError(response, "Não foi possível sair."));
       }
       router.replace("/users/login");
     } catch (error) {
@@ -686,15 +690,15 @@ export default function UserDashboardPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.3rem]">
-              Area do aluno
+              Área do aluno
             </p>
             <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
               {isMasterPreview ? "Preview do dashboard do aluno" : "Meu dashboard"}
             </h1>
             <p className="mt-3 text-sm text-[var(--muted-foreground)]">
               {isMasterPreview
-                ? "Visualizacao MASTER do painel de aluno para validar experiencia e regras."
-                : "Aqui voce gerencia seus dados pessoais, plano, historico de check-ins e participacao em eventos."}
+                ? "Visualização MASTER do painel de aluno para validar experiência e regras."
+                : "Aqui você gerencia seus dados pessoais, plano, histórico de check-ins e participação em eventos."}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -720,7 +724,7 @@ export default function UserDashboardPage() {
 
       {isMasterPreview ? (
         <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4 text-sm text-[var(--muted-foreground)]">
-          Modo preview ativo para MASTER. Esta tela usa os seus proprios dados da conta
+          Modo preview ativo para MASTER. Esta tela usa os seus próprios dados da conta
           autenticada.
         </section>
       ) : null}
@@ -754,7 +758,7 @@ export default function UserDashboardPage() {
             <div className="flex flex-wrap items-center gap-3">
               <Image
                 src={user?.avatarUrl || user?.image || "/images/icon-wt.png"}
-                alt="Avatar do usuario"
+                alt="Avatar do usuário"
                 width={64}
                 height={64}
                 className="h-16 w-16 rounded-full border border-[color:var(--border-dim)] object-cover"
@@ -798,7 +802,7 @@ export default function UserDashboardPage() {
                 />
               </label>
               <label className="text-sm">
-                CPF (nao editavel)
+                CPF (não editável)
                 <input
                   value={user?.cpf ?? ""}
                   disabled
@@ -806,7 +810,7 @@ export default function UserDashboardPage() {
                 />
               </label>
               <label className="text-sm sm:col-span-2">
-                Endereco
+                Endereço
                 <input
                   value={profileForm.address}
                   onChange={(event) => handleProfileChange("address", event.target.value)}
@@ -832,7 +836,7 @@ export default function UserDashboardPage() {
           <div className="mt-4 space-y-2 text-sm text-[var(--muted-foreground)]">
             <p>
               <span className="font-semibold text-[var(--foreground)]">Plano:</span>{" "}
-              {user?.planName || "Nao informado"}
+              {user?.planName || "Não informado"}
             </p>
             <p>
               <span className="font-semibold text-[var(--foreground)]">Slug do plano:</span>{" "}
@@ -840,15 +844,15 @@ export default function UserDashboardPage() {
             </p>
             <p>
               <span className="font-semibold text-[var(--foreground)]">Nascimento (health):</span>{" "}
-              {healthBirthDate ? formatDate(healthBirthDate) : "Nao informado"}
+              {healthBirthDate ? formatDate(healthBirthDate) : "Não informado"}
             </p>
             <p>
-              <span className="font-semibold text-[var(--foreground)]">Status saude:</span>{" "}
+              <span className="font-semibold text-[var(--foreground)]">Status saúde:</span>{" "}
               {status?.healthFilled ? "Completo" : "Pendente"}
             </p>
             <p>
               <span className="font-semibold text-[var(--foreground)]">Senha configurada:</span>{" "}
-              {status?.hasPassword ? "Sim" : "Nao"}
+              {status?.hasPassword ? "Sim" : "Não"}
             </p>
           </div>
 
@@ -856,7 +860,7 @@ export default function UserDashboardPage() {
             href="/complete-profile"
             className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-xs font-semibold uppercase tracking-[0.22rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
           >
-            Atualizar saude
+            Atualizar saúde
           </Link>
         </article>
       </section>
@@ -907,7 +911,7 @@ export default function UserDashboardPage() {
             Planos
           </h2>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            Solicite troca de plano ou ativacao para analise da equipe.
+            Solicite troca de plano ou ativação para análise da equipe.
           </p>
           <div className="mt-4 space-y-3">
             <label className="block text-sm">
@@ -931,7 +935,7 @@ export default function UserDashboardPage() {
               </select>
             </label>
             <label className="block text-sm">
-              Observacoes (opcional)
+              Observações (opcional)
               <textarea
                 value={planForm.notes}
                 onChange={(event) =>
@@ -956,7 +960,7 @@ export default function UserDashboardPage() {
                 disabled={sendingPlanRequest}
                 className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-transparent px-4 text-xs font-semibold uppercase tracking-[0.2rem] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Solicitar ativacao
+                Solicitar ativação
               </button>
             </div>
           </div>
@@ -966,7 +970,7 @@ export default function UserDashboardPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 sm:p-6">
           <h2 className="text-sm font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:tracking-[0.28rem]">
-            Historico de check-in
+            Histórico de check-in
           </h2>
           <div className="mt-4 max-h-96 space-y-2 overflow-auto pr-1">
             {checkins.length === 0 ? (
@@ -996,7 +1000,7 @@ export default function UserDashboardPage() {
           <div className="mt-4 max-h-96 space-y-3 overflow-auto pr-1">
             {myEvents.length === 0 ? (
               <p className="text-sm text-[var(--muted-foreground)]">
-                Voce ainda nao possui inscricoes em eventos.
+                Você ainda não possui inscrições em eventos.
               </p>
             ) : (
               myEvents.map((event) => (
@@ -1017,7 +1021,7 @@ export default function UserDashboardPage() {
                   </p>
                   <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                     {formatEventPrice(event)} •{" "}
-                    {event.accessMode === "open" ? "Aberto" : "Com inscricao"}
+                    {event.accessMode === "open" ? "Aberto" : "Com inscrição"}
                   </p>
                   <Link
                     href={event.path}
@@ -1053,7 +1057,7 @@ export default function UserDashboardPage() {
                 </p>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                   {formatEventPrice(event)} •{" "}
-                  {event.accessMode === "open" ? "Aberto" : "Com inscricao"}
+                  {event.accessMode === "open" ? "Aberto" : "Com inscrição"}
                 </p>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                   Confirmadas: {Number(event.confirmedRegistrations ?? 0)}

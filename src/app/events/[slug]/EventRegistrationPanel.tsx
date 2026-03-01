@@ -98,30 +98,30 @@ export function EventRegistrationPanel({
     if (status === "confirmed") {
       return {
         tone: "success" as const,
-        message: message || "Inscricao confirmada com sucesso.",
+        message: message || "Inscrição confirmada com sucesso.",
       };
     }
     if (status === "pending") {
       return {
         tone: "success" as const,
-        message: message || "Inscricao realizada. Aguardando confirmacao.",
+        message: message || "Inscrição realizada. Aguardando confirmação.",
       };
     }
     if (status === "waitlisted") {
       return {
         tone: "info" as const,
-        message: message || "Inscricao realizada. Voce entrou na lista de espera.",
+        message: message || "Inscrição realizada. Você entrou na lista de espera.",
       };
     }
     if (status === "already") {
       return {
         tone: "info" as const,
-        message: message || "Voce ja esta inscrito neste evento.",
+        message: message || "Você já está inscrito neste evento.",
       };
     }
     return {
       tone: "error" as const,
-      message: message || "Nao foi possivel concluir a inscricao.",
+      message: message || "Não foi possível concluir a inscrição.",
     };
   };
 
@@ -175,7 +175,7 @@ export function EventRegistrationPanel({
     const name = guestForm.name.trim();
 
     if (!email || !email.includes("@")) {
-      setGuestFormError("Informe um e-mail valido.");
+      setGuestFormError("Informe um e-mail válido.");
       return;
     }
     if (cpf.length !== 11) {
@@ -183,11 +183,11 @@ export function EventRegistrationPanel({
       return;
     }
     if (!isValidCpf(cpf)) {
-      setGuestFormError("CPF invalido.");
+      setGuestFormError("CPF inválido.");
       return;
     }
     if (phone.length < 8) {
-      setGuestFormError("Informe um telefone valido.");
+      setGuestFormError("Informe um telefone válido.");
       return;
     }
     if (name && name.length < 2) {
@@ -237,11 +237,15 @@ export function EventRegistrationPanel({
         if (response.status === 409) {
           const message = await parseApiError(
             response,
-            "Nao foi possivel concluir a inscricao.",
+            "Não foi possível concluir a inscrição.",
           );
+          const normalizedMessage = message
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
           const duplicateRegistration =
-            /ja esta inscrito/i.test(message) ||
-            /inscricao ja existente/i.test(message);
+            normalizedMessage.includes("ja esta inscrito") ||
+            normalizedMessage.includes("inscricao ja existente");
           setFeedback({
             tone: duplicateRegistration ? "info" : "error",
             message,
@@ -251,7 +255,7 @@ export function EventRegistrationPanel({
         }
         const message = await parseApiError(
           response,
-          "Nao foi possivel concluir a inscricao de convidado.",
+          "Não foi possível concluir a inscrição de convidado.",
         );
         setFeedback({ tone: "error", message });
         return;
@@ -261,17 +265,17 @@ export function EventRegistrationPanel({
       if (registration.status === "pending") {
         setFeedback({
           tone: "success",
-          message: "Inscricao realizada. Aguardando confirmacao.",
+          message: "Inscrição realizada. Aguardando confirmação.",
         });
       } else if (registration.status === "waitlisted") {
         setFeedback({
           tone: "info",
-          message: "Inscricao realizada. Voce entrou na lista de espera.",
+          message: "Inscrição realizada. Você entrou na lista de espera.",
         });
       } else {
         setFeedback({
           tone: "success",
-          message: "Inscricao confirmada com sucesso.",
+          message: "Inscrição confirmada com sucesso.",
         });
       }
 
@@ -316,11 +320,15 @@ export function EventRegistrationPanel({
         if (response.status === 409) {
           const message = await parseApiError(
             response,
-            "Nao foi possivel concluir a inscricao.",
+            "Não foi possível concluir a inscrição.",
           );
+          const normalizedMessage = message
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase();
           const duplicateRegistration =
-            /ja esta inscrito/i.test(message) ||
-            /inscricao ja existente/i.test(message);
+            normalizedMessage.includes("ja esta inscrito") ||
+            normalizedMessage.includes("inscricao ja existente");
           setFeedback({
             tone: duplicateRegistration ? "info" : "error",
             message,
@@ -332,14 +340,14 @@ export function EventRegistrationPanel({
           setIsLoggedIn(false);
           setFeedback({
             tone: "error",
-            message: "Sessao expirada. Entre novamente para se inscrever.",
+            message: "Sessão expirada. Entre novamente para se inscrever.",
           });
           return;
         }
 
         const message = await parseApiError(
           response,
-          "Nao foi possivel concluir a inscricao.",
+          "Não foi possível concluir a inscrição.",
         );
         setFeedback({ tone: "error", message });
         return;
@@ -351,7 +359,7 @@ export function EventRegistrationPanel({
       if (status === "pending") {
         setFeedback({
           tone: "success",
-          message: "Inscricao realizada. Aguardando confirmacao.",
+          message: "Inscrição realizada. Aguardando confirmação.",
         });
         return;
       }
@@ -359,14 +367,14 @@ export function EventRegistrationPanel({
       if (status === "waitlisted") {
         setFeedback({
           tone: "info",
-          message: "Inscricao realizada. Voce entrou na lista de espera.",
+          message: "Inscrição realizada. Você entrou na lista de espera.",
         });
         return;
       }
 
       setFeedback({
         tone: "success",
-        message: "Inscricao confirmada com sucesso.",
+        message: "Inscrição confirmada com sucesso.",
       });
     } catch {
       setFeedback({
@@ -381,7 +389,7 @@ export function EventRegistrationPanel({
   if (isCancelled) {
     return (
       <section className="rounded-2xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] p-4 text-sm text-[color:var(--danger)]">
-        Este evento esta cancelado e nao aceita novas inscricoes.
+        Este evento está cancelado e não aceita novas inscrições.
       </section>
     );
   }
@@ -389,7 +397,7 @@ export function EventRegistrationPanel({
   if (accessMode === "open") {
     return (
       <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-        Evento aberto: inscricao previa nao e obrigatoria.
+        Evento aberto: inscrição prévia não é obrigatória.
       </section>
     );
   }
@@ -397,7 +405,7 @@ export function EventRegistrationPanel({
   if (isAtCapacity) {
     return (
       <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 text-sm text-[var(--muted-foreground)]">
-        Evento lotado. O limite de inscricoes confirmadas foi atingido.
+        Evento lotado. O limite de inscrições confirmadas foi atingido.
       </section>
     );
   }
@@ -405,11 +413,11 @@ export function EventRegistrationPanel({
   return (
     <section className="rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4">
       <h2 className="text-sm font-semibold uppercase tracking-[0.28rem] text-[var(--gold-tone-dark)]">
-        Inscricao
+        Inscrição
       </h2>
 
       <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-        Para participar deste evento, confirme sua inscricao abaixo.
+        Para participar deste evento, confirme sua inscrição abaixo.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -420,7 +428,7 @@ export function EventRegistrationPanel({
             disabled={isSubmitting}
             className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-5 text-sm font-semibold text-[var(--background)] transition hover:bg-[var(--gold-tone-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Enviando..." : "Confirmar inscricao"}
+            {isSubmitting ? "Enviando..." : "Confirmar inscrição"}
           </button>
         ) : (
           <button
@@ -447,7 +455,10 @@ export function EventRegistrationPanel({
             <input
               value={guestForm.name}
               onChange={(event) =>
-                setGuestForm((prev) => ({ ...prev, name: event.target.value }))
+                setGuestForm((prev) => ({
+                  ...prev,
+                  name: event.target.value.toLocaleUpperCase("pt-BR"),
+                }))
               }
               className="mt-1 h-10 w-full rounded-lg border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 text-sm text-[var(--foreground)]"
             />
@@ -518,7 +529,7 @@ export function EventRegistrationPanel({
       {guestStep === "confirm" && (
         <div className="mt-4 space-y-3 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] p-4">
           <p className="text-sm text-[var(--foreground)]">
-            Confirmar inscricao como convidado neste evento?
+            Confirmar inscrição como convidado neste evento?
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -527,7 +538,7 @@ export function EventRegistrationPanel({
               disabled={isSubmitting}
               className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs font-semibold uppercase tracking-[0.14rem] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60 sm:tracking-[0.2rem]"
             >
-              {isSubmitting ? "Confirmando..." : "Confirmar inscricao"}
+              {isSubmitting ? "Confirmando..." : "Confirmar inscrição"}
             </button>
             <button
               type="button"
@@ -559,13 +570,13 @@ export function EventRegistrationPanel({
         <div className="app-modal-backdrop bg-black/60">
           <div className="app-modal-panel-scroll max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_24px_60px_-24px_var(--shadow)] sm:p-5">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.3rem]">
-              Tipo de inscricao
+              Tipo de inscrição
             </p>
             <h3 className="mt-2 text-lg font-semibold text-[var(--foreground)]">
-              Voce e aluno ou convidado?
+              Você e aluno ou convidado?
             </h3>
             <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              Escolha uma opcao para continuar a inscricao no evento.
+              Escolha uma opção para continuar a inscrição no evento.
             </p>
             <div className="mt-4 flex flex-col gap-2">
               <button

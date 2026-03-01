@@ -24,12 +24,12 @@ function ResetPasswordPageContent() {
     setSuccess(null);
 
     if (!token) {
-      setError("Token invalido ou expirado.");
+      setError("Token inválido ou expirado.");
       return;
     }
 
     if (!password || password !== confirmPassword) {
-      setError("As senhas nao conferem.");
+      setError("As senhas não conferem.");
       return;
     }
 

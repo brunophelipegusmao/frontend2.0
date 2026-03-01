@@ -320,10 +320,10 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </p>
             <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm">
               <span className="font-semibold">Acesso:</span>{" "}
-              {event.accessMode === "open" ? "Aberto" : "Com inscricao"}
+              {event.accessMode === "open" ? "Aberto" : "Com inscrição"}
             </p>
             <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm">
-              <span className="font-semibold">Inscricoes:</span>{" "}
+              <span className="font-semibold">Inscrições:</span>{" "}
               {event.accessMode === "open"
                 ? "Acesso livre"
                 : `${Number(event.confirmedRegistrations ?? 0)}${
@@ -338,11 +338,11 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
             </p>
             <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm">
               <span className="font-semibold">Convidados:</span>{" "}
-              {event.allowGuests ? "Permitidos" : "Nao permitidos"}
+              {event.allowGuests ? "Permitidos" : "Não permitidos"}
             </p>
             <p className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm">
               <span className="font-semibold">Local:</span>{" "}
-              {event.location || "Enviado apos confirmacao"}
+              {event.location || "Enviado após confirmação"}
             </p>
           </div>
         </article>

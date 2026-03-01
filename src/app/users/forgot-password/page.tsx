@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard
       title="Recuperar senha"
-      description="Informe seu email para receber o link de redefinicao."
+      description="Informe seu e-mail para receber o link de redefinição."
       footer={
         <>
           Lembrou da senha?{" "}

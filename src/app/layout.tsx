@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     "check-in fitness",
     "estudio de treino",
     "academia boutique",
-    "saude e bem-estar",
+    "saúde e bem-estar",
   ],
   openGraph: {
     title: `${SITE_NAME} | Estúdio de Saúde e Bem-Estar`,

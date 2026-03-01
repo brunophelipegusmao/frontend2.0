@@ -48,7 +48,7 @@ export function MobileAppDock({
   return (
     <nav
       className="app-mobile-dock md:hidden"
-      aria-label="Navegacao rapida"
+      aria-label="Navegação rápida"
       style={{ gridTemplateColumns: `repeat(${dockLinks.length}, minmax(0, 1fr))` }}
     >
       {dockLinks.map(({ href, label, Icon }) => {
