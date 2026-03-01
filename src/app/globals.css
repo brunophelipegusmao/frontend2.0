@@ -25,6 +25,11 @@
   --danger: #f2a3a3;
   --danger-soft: rgba(239, 68, 68, 0.12);
   --danger-border: rgba(239, 68, 68, 0.45);
+  --dock-border: rgba(181, 140, 33, 0.24);
+  --dock-bg-top: rgba(12, 12, 12, 0.94);
+  --dock-bg-bottom: rgba(8, 8, 8, 0.94);
+  --dock-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  --dock-active-bg: rgba(181, 140, 33, 0.13);
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-left: env(safe-area-inset-left);
@@ -55,6 +60,11 @@
   --danger: #b91c1c;
   --danger-soft: rgba(185, 28, 28, 0.12);
   --danger-border: rgba(185, 28, 28, 0.4);
+  --dock-border: rgba(140, 109, 22, 0.3);
+  --dock-bg-top: rgba(255, 251, 243, 0.95);
+  --dock-bg-bottom: rgba(242, 234, 217, 0.96);
+  --dock-shadow: 0 14px 35px rgba(58, 46, 24, 0.18);
+  --dock-active-bg: rgba(181, 140, 33, 0.2);
 }
 
 @media (min-width: 768px) {
@@ -510,15 +520,15 @@ html.to-circle .transition-reveal.is-next-container {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   padding: 0.42rem;
-  border: 1px solid rgba(181, 140, 33, 0.24);
+  border: 1px solid var(--dock-border);
   border-radius: 1.1rem;
   background: linear-gradient(
     180deg,
-    rgba(12, 12, 12, 0.94),
-    rgba(8, 8, 8, 0.94)
+    var(--dock-bg-top),
+    var(--dock-bg-bottom)
   );
   backdrop-filter: blur(12px);
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--dock-shadow);
 }
 
 .app-mobile-dock__item {
@@ -543,7 +553,7 @@ html.to-circle .transition-reveal.is-next-container {
 
 .app-mobile-dock__item--active {
   color: var(--gold-tone-dark);
-  background: rgba(181, 140, 33, 0.13);
+  background: var(--dock-active-bg);
   transform: translateY(-1px);
 }
 
