@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Sparkles, UserCheck } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { startSocialSignIn } from "@/lib/auth";
@@ -68,7 +68,6 @@ const buildCheckinErrorFeedback = (message: string, code?: string) => {
 };
 
 function CheckinPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusMessage, setStatusMessage] = useState(
@@ -89,32 +88,47 @@ function CheckinPageContent() {
     title: "",
     message: "",
   });
-  const [checkinFeedbackTimer, setCheckinFeedbackTimer] =
-    useState<NodeJS.Timeout | null>(null);
+  const checkinFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
-  const showCheckinFeedback = (
+  const clearAutoCheckinParam = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const currentUrl = new URL(window.location.href);
+    if (!currentUrl.searchParams.has("autoCheckin")) {
+      return;
+    }
+    currentUrl.searchParams.delete("autoCheckin");
+    const query = currentUrl.searchParams.toString();
+    const nextPath = `${currentUrl.pathname}${query ? `?${query}` : ""}${currentUrl.hash}`;
+    window.history.replaceState(window.history.state, "", nextPath);
+  }, []);
+
+  const showCheckinFeedback = useCallback((
     status: "success" | "error",
     title: string,
     message: string,
   ) => {
-    if (checkinFeedbackTimer) {
-      clearTimeout(checkinFeedbackTimer);
+    if (checkinFeedbackTimerRef.current) {
+      clearTimeout(checkinFeedbackTimerRef.current);
+      checkinFeedbackTimerRef.current = null;
     }
     setCheckinFeedback({ open: true, status, title, message });
-    setCheckinFeedbackTimer(
-      setTimeout(() => {
-        setCheckinFeedback((prev) => ({ ...prev, open: false }));
-      }, 5000),
-    );
-  };
+    checkinFeedbackTimerRef.current = setTimeout(() => {
+      setCheckinFeedback((prev) => ({ ...prev, open: false }));
+      checkinFeedbackTimerRef.current = null;
+    }, 5000);
+  }, []);
 
-  const closeCheckinFeedback = () => {
-    if (checkinFeedbackTimer) {
-      clearTimeout(checkinFeedbackTimer);
-      setCheckinFeedbackTimer(null);
+  const closeCheckinFeedback = useCallback(() => {
+    if (checkinFeedbackTimerRef.current) {
+      clearTimeout(checkinFeedbackTimerRef.current);
+      checkinFeedbackTimerRef.current = null;
     }
     setCheckinFeedback((prev) => ({ ...prev, open: false }));
-  };
+  }, []);
 
   const parseApiError = async (
     response: Response,
@@ -157,11 +171,12 @@ function CheckinPageContent() {
 
   useEffect(() => {
     return () => {
-      if (checkinFeedbackTimer) {
-        clearTimeout(checkinFeedbackTimer);
+      if (checkinFeedbackTimerRef.current) {
+        clearTimeout(checkinFeedbackTimerRef.current);
+        checkinFeedbackTimerRef.current = null;
       }
     };
-  }, [checkinFeedbackTimer]);
+  }, []);
 
   const handleCheckin = async () => {
     if (!searchTerm.trim()) {
@@ -254,7 +269,7 @@ function CheckinPageContent() {
         "Erro no check-in",
         `${message}. Direcione-se a um funcionário (staff).`,
       );
-      router.replace("/checkin");
+      clearAutoCheckinParam();
       return;
     }
     if (!shouldAutoCheckin || autoCheckinDone) {
@@ -304,12 +319,12 @@ function CheckinPageContent() {
         );
       } finally {
         setIsGoogleLoading(false);
-        router.replace("/checkin");
+        clearAutoCheckinParam();
       }
     };
     run();
     return;
-  }, [autoCheckinDone, router, searchParams]);
+  }, [autoCheckinDone, clearAutoCheckinParam, searchParams, showCheckinFeedback]);
 
   return (
     <section className="min-h-[100dvh] bg-gradient-to-br from-[var(--gradient-top)] via-[var(--background)] to-[var(--gradient-bottom)] px-4 py-6 text-[var(--foreground)] sm:px-8 sm:py-8">

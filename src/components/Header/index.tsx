@@ -20,7 +20,7 @@ const navItems = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   return (
     <header
@@ -66,11 +66,8 @@ export function Header() {
               className="flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] bg-[color:var(--card)] text-[var(--foreground)] transition hover:border-[var(--gold-tone-dark)] sm:h-10 sm:w-10"
             >
               <span className="sr-only">Alternar tema</span>
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 text-[var(--gold-tone-dark)]" />
-              ) : (
-                <Moon className="h-4 w-4 text-[var(--gold-tone-dark)]" />
-              )}
+              <Sun className="theme-toggle-icon theme-toggle-icon--sun h-4 w-4 text-[var(--gold-tone-dark)]" />
+              <Moon className="theme-toggle-icon theme-toggle-icon--moon h-4 w-4 text-[var(--gold-tone-dark)]" />
             </button>
 
             <motion.button
