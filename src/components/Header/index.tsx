@@ -23,7 +23,10 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="safe-area-top fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border-dim)] bg-[color:var(--card)] font-[var(--font-roboto)] backdrop-blur-xl">
+    <header
+      data-app-header
+      className="safe-area-top fixed inset-x-0 top-0 z-50 border-b border-[color:var(--border-dim)] bg-[color:var(--card)] font-[var(--font-roboto)] backdrop-blur-xl"
+    >
       <div className="safe-area-x mx-auto flex w-full max-w-6xl items-center gap-3 py-2 text-[0.65rem] uppercase tracking-[0.16rem] text-[var(--foreground)] sm:gap-4 sm:py-3 sm:text-sm sm:tracking-[0.3rem]">
         <Link
           href="/"

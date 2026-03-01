@@ -186,6 +186,38 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
     progress.stopShowingProgress();
   }, [ensureSwupProgress]);
 
+  const syncViewportOffsets = useCallback(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+
+    const root = document.documentElement;
+    const header = document.querySelector<HTMLElement>("[data-app-header]");
+    const headerHeight = header ? Math.ceil(header.getBoundingClientRect().height) : 72;
+    root.style.setProperty("--app-header-offset", `${headerHeight}px`);
+
+    const isMobileViewport = window.matchMedia("(max-width: 767px)").matches;
+    const baseFooterOffset = isMobileViewport ? 99 : 40;
+    let nextFooterOffset = baseFooterOffset;
+
+    const mobileDock = document.querySelector<HTMLElement>(".app-mobile-dock");
+    if (mobileDock) {
+      const dockStyles = window.getComputedStyle(mobileDock);
+      const dockVisible =
+        dockStyles.display !== "none" &&
+        dockStyles.visibility !== "hidden" &&
+        dockStyles.opacity !== "0";
+
+      if (dockVisible) {
+        const dockBottom = Number.parseFloat(dockStyles.bottom || "0") || 0;
+        const dockHeight = Math.ceil(mobileDock.getBoundingClientRect().height);
+        nextFooterOffset = Math.max(baseFooterOffset, Math.ceil(dockHeight + dockBottom + 10));
+      }
+    }
+
+    root.style.setProperty("--app-footer-offset", `${nextFooterOffset}px`);
+  }, []);
+
   useLayoutEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -302,6 +334,23 @@ export function AppExperienceLayer({ children }: { children: ReactNode }) {
       controller.abort();
     };
   }, [pathname]);
+
+  useEffect(() => {
+    const sync = () => {
+      window.requestAnimationFrame(() => {
+        syncViewportOffsets();
+      });
+    };
+
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+    };
+  }, [isAuthenticated, pathname, syncViewportOffsets]);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {

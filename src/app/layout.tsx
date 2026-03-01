@@ -124,7 +124,7 @@ export default function RootLayout({
           <ThemeProvider>
             <ServiceWorkerRegister />
             <Header />
-            <main className="safe-area-x flex flex-1 flex-col pt-[calc(4.5rem+env(safe-area-inset-top))] pb-[calc(6.2rem+env(safe-area-inset-bottom))] md:pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+            <main className="safe-area-x flex flex-1 flex-col pt-[calc(var(--app-header-offset)+env(safe-area-inset-top))] pb-[calc(var(--app-footer-offset)+env(safe-area-inset-bottom))]">
               <AppExperienceLayer>{children}</AppExperienceLayer>
             </main>
             <Footer />

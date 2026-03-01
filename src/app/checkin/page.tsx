@@ -384,12 +384,12 @@ function CheckinPageContent() {
         </div>
       </div>
       {checkinFeedback.open && (
-        <div className="checkin-feedback-backdrop fixed inset-0 z-[70] flex items-center justify-center bg-black/65 px-4 py-6">
+        <div className="checkin-feedback-backdrop app-modal-backdrop bg-black/65">
           <div
             role="dialog"
             aria-modal="true"
             aria-live="polite"
-            className={`checkin-feedback-modal relative w-full max-w-md overflow-hidden rounded-3xl border bg-[color:var(--card)] p-5 text-[var(--foreground)] shadow-[0_30px_90px_-35px_var(--shadow)] sm:p-6 ${
+            className={`checkin-feedback-modal app-modal-panel-scroll relative max-w-md overflow-y-auto rounded-3xl border bg-[color:var(--card)] p-5 text-[var(--foreground)] shadow-[0_30px_90px_-35px_var(--shadow)] sm:p-6 ${
               checkinFeedback.status === "success"
                 ? "border-emerald-400/35"
                 : "border-red-400/35"

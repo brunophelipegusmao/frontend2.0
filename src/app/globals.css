@@ -29,6 +29,8 @@
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-left: env(safe-area-inset-left);
   --safe-right: env(safe-area-inset-right);
+  --app-header-offset: 4.5rem;
+  --app-footer-offset: 6.2rem;
 }
 
 [data-theme="light"] {
@@ -53,6 +55,12 @@
   --danger: #b91c1c;
   --danger-soft: rgba(185, 28, 28, 0.12);
   --danger-border: rgba(185, 28, 28, 0.4);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --app-footer-offset: 2.5rem;
+  }
 }
 
 * {
@@ -114,7 +122,7 @@ h6 {
 }
 
 ::selection {
-  background: var(--gold);
+  background: var(--gold-tone);
   color: #0b0b0b;
 }
 
@@ -211,17 +219,64 @@ h6 {
   box-shadow: 0 0 20px var(--border-glow);
 }
 
-::-webkit-scrollbar {
-  width: 8px;
+html,
+body,
+.app-modal-backdrop,
+.app-modal-panel-scroll {
+  scrollbar-gutter: stable;
 }
 
-::-webkit-scrollbar-track {
-  background: #050505;
+*:not(.scrollbar-none) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(181, 140, 33, 0.92) rgba(18, 18, 18, 0.92);
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--gold), var(--accent));
-  border-radius: 100px;
+*:not(.scrollbar-none)::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+*:not(.scrollbar-none)::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0.94),
+    rgba(16, 16, 16, 0.94)
+  );
+  border: 1px solid rgba(181, 140, 33, 0.18);
+}
+
+*:not(.scrollbar-none)::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid rgba(8, 8, 8, 0.9);
+  background: linear-gradient(
+    180deg,
+    rgba(205, 163, 48, 0.98),
+    rgba(181, 140, 33, 0.98) 56%,
+    rgba(140, 109, 22, 0.98)
+  );
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+*:not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(222, 181, 58, 1),
+    rgba(194, 152, 38, 1) 56%,
+    rgba(155, 121, 28, 1)
+  );
+}
+
+@media (max-width: 768px) {
+  *:not(.scrollbar-none) {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(181, 140, 33, 0.78) rgba(14, 14, 14, 0.68);
+  }
+
+  *:not(.scrollbar-none)::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 .scrollbar-none {
@@ -245,6 +300,78 @@ h6 {
 
 .safe-area-bottom {
   padding-bottom: var(--safe-bottom);
+}
+
+.app-modal-backdrop {
+  position: fixed;
+  inset: calc(var(--app-header-offset) + var(--safe-top))
+    0
+    calc(var(--app-footer-offset) + var(--safe-bottom))
+    0;
+  z-index: 95;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: max(1rem, calc(var(--safe-top) + 0.75rem));
+  padding-bottom: max(1rem, calc(var(--safe-bottom) + 0.75rem));
+}
+
+.app-modal-panel-scroll {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-height: calc(100% - 0.1rem);
+  min-height: 0;
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .app-modal-panel-scroll::before,
+  .app-modal-panel-scroll::after {
+    content: "";
+    position: sticky;
+    left: 0;
+    right: 0;
+    display: block;
+    pointer-events: none;
+    z-index: 2;
+    height: 14px;
+  }
+
+  .app-modal-panel-scroll::before {
+    top: 0;
+    margin-bottom: -14px;
+    background: linear-gradient(180deg, rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--card) 98%, #000 2%),
+      rgba(0, 0, 0, 0)
+    );
+  }
+
+  .app-modal-panel-scroll::after {
+    bottom: 0;
+    margin-top: -14px;
+    background: linear-gradient(0deg, rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0));
+    background: linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--card) 98%, #000 2%),
+      rgba(0, 0, 0, 0)
+    );
+  }
+}
+
+html:has(.app-modal-backdrop),
+body:has(.app-modal-backdrop) {
+  overflow: hidden;
 }
 
 .checkin-feedback-backdrop {

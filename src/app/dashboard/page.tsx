@@ -451,6 +451,42 @@ type FinancialExpenseForm = {
   notes: string;
 };
 
+type FinancialHelpSectionId =
+  | "subscriptions"
+  | "expense_templates"
+  | "competence_expenses";
+
+type FinancialHelpContent = {
+  title: string;
+  intro: string;
+  cards: Array<{ name: string; description: string }>;
+  fields: Array<{ name: string; description: string }>;
+};
+
+type FinancialPlanForm = {
+  name: string;
+  description: string;
+  price: string;
+  durationDays: string;
+  active: boolean;
+  popular: boolean;
+  promoActive: boolean;
+  promoPrice: string;
+  promoEndsAt: string;
+};
+
+const createDefaultFinancialPlanForm = (): FinancialPlanForm => ({
+  name: "",
+  description: "",
+  price: "",
+  durationDays: "30",
+  active: true,
+  popular: false,
+  promoActive: false,
+  promoPrice: "",
+  promoEndsAt: "",
+});
+
 type AdminUser = {
   id: string;
   name: string | null;
@@ -841,6 +877,160 @@ const FINANCIAL_EXPENSE_STATUS_OPTIONS: FinancialExpenseStatus[] = [
   "cancelled",
 ];
 
+const FINANCIAL_HELP_CONTENT: Record<
+  FinancialHelpSectionId,
+  FinancialHelpContent
+> = {
+  subscriptions: {
+    title: "Ajuda: Assinaturas",
+    intro:
+      "Esta area gerencia a assinatura mensal do aluno e o ciclo de cobranca.",
+    cards: [
+      {
+        name: "Card de cadastro de assinatura",
+        description:
+          "Cria uma nova assinatura financeira para um aluno e vincula ao plano selecionado.",
+      },
+      {
+        name: "Cards de assinaturas existentes",
+        description:
+          "Mostram status, periodo e valor da assinatura, com acoes de ativar, pausar ou cancelar.",
+      },
+    ],
+    fields: [
+      { name: "Selecione o usuario", description: "Aluno dono da assinatura." },
+      { name: "Selecione o plano", description: "Plano que define valor base." },
+      {
+        name: "Data de inicio",
+        description: "Quando a assinatura comeca a valer.",
+      },
+      {
+        name: "Modo de vencimento",
+        description: "Dia fixo mensal ou data customizada.",
+      },
+      {
+        name: "Dia vencimento (1-31)",
+        description: "Dia cobrado em todo mes quando usar dia fixo.",
+      },
+      {
+        name: "Data customizada / dia customizado",
+        description: "Alternativa ao dia fixo para regras especiais.",
+      },
+      {
+        name: "Observacoes da assinatura",
+        description: "Contexto interno para equipe financeira.",
+      },
+      {
+        name: "Substituir assinatura ativa automaticamente",
+        description: "Encerra a assinatura ativa anterior ao criar nova.",
+      },
+      {
+        name: "Filtros de status",
+        description: "Refinam a listagem por ativa, pausada, cancelada e finalizada.",
+      },
+    ],
+  },
+  expense_templates: {
+    title: "Ajuda: Templates de despesas",
+    intro:
+      "Templates padronizam despesas recorrentes para acelerar lancamentos mensais.",
+    cards: [
+      {
+        name: "Card de criacao de template",
+        description:
+          "Define um modelo com categoria, valor padrao e dia de vencimento.",
+      },
+      {
+        name: "Cards de templates cadastrados",
+        description:
+          "Exibem resumo do template e permitem ativar ou desativar uso futuro.",
+      },
+    ],
+    fields: [
+      {
+        name: "Nome do template",
+        description: "Identificacao do modelo (ex: Aluguel unidade centro).",
+      },
+      {
+        name: "Categoria",
+        description: "Classificacao contábil da despesa.",
+      },
+      {
+        name: "Valor padrao",
+        description: "Valor sugerido ao usar o template em uma despesa.",
+      },
+      {
+        name: "Dia de vencimento (1-31)",
+        description: "Dia comum de pagamento para recorrencia mensal.",
+      },
+      {
+        name: "Observacoes do template",
+        description: "Instrucoes ou detalhes para o time.",
+      },
+      {
+        name: "Template ativo",
+        description: "Somente templates ativos aparecem para selecao nas despesas.",
+      },
+    ],
+  },
+  competence_expenses: {
+    title: "Ajuda: Despesas da competencia",
+    intro:
+      "Registra e acompanha despesas do mes de competencia selecionado no topo do financeiro.",
+    cards: [
+      {
+        name: "Card de criacao de despesa",
+        description:
+          "Lanca uma despesa avulsa ou baseada em template para a competencia atual.",
+      },
+      {
+        name: "Cards de despesas registradas",
+        description:
+          "Mostram descricao, categoria, vencimento, valor e status com acoes de fluxo.",
+      },
+    ],
+    fields: [
+      {
+        name: "Sem template / Template",
+        description:
+          "Escolhe despesa avulsa ou preenche automaticamente dados do template ativo.",
+      },
+      {
+        name: "Categoria",
+        description: "Categoria financeira da despesa.",
+      },
+      {
+        name: "Status inicial",
+        description: "Planejada, aprovada, paga ou cancelada.",
+      },
+      {
+        name: "Descricao da despesa",
+        description: "Nome detalhado para identificacao no fechamento.",
+      },
+      {
+        name: "Data de vencimento",
+        description: "Quando a despesa deve ser paga.",
+      },
+      {
+        name: "Valor",
+        description: "Valor total da despesa no formato decimal.",
+      },
+      {
+        name: "Observacoes",
+        description: "Detalhes adicionais para controle interno.",
+      },
+      {
+        name: "Filtros de status",
+        description: "Exibem apenas despesas do status selecionado.",
+      },
+      {
+        name: "Acoes dos cards",
+        description: "Aprovar, marcar paga, voltar para planejada ou cancelar.",
+      },
+    ],
+  },
+};
+
 const toMonthValue = (value: Date) => {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -957,6 +1147,15 @@ const parseReaisToCents = (value: string) => {
   }
   return Math.round(parsed * 100);
 };
+
+const buildSlugFromName = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const toLocalDateKey = (value: Date) => {
   const year = value.getFullYear();
@@ -1242,6 +1441,7 @@ export default function DashboardPage() {
   const [updatingExpenseId, setUpdatingExpenseId] = useState<string | null>(
     null,
   );
+  const [isSavingFinancialPlan, setIsSavingFinancialPlan] = useState(false);
   const [financialSubscriptionStatusFilter, setFinancialSubscriptionStatusFilter] =
     useState<FinancialSubscriptionStatus | "all">("all");
   const [financialReceivableStatusFilter, setFinancialReceivableStatusFilter] =
@@ -1289,6 +1489,9 @@ export default function DashboardPage() {
       status: "planned",
       notes: "",
     });
+  const [financialPlanForm, setFinancialPlanForm] = useState<FinancialPlanForm>(
+    () => createDefaultFinancialPlanForm(),
+  );
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const [planRequests, setPlanRequests] = useState<PlanRequestRecord[]>([]);
   const [planRequestsStatus, setPlanRequestsStatus] = useState<
@@ -1325,6 +1528,8 @@ export default function DashboardPage() {
   const [showEventsListOnMobile, setShowEventsListOnMobile] = useState(false);
   const [showFinancialDetailsOnMobile, setShowFinancialDetailsOnMobile] =
     useState(false);
+  const [financialHelpModalSection, setFinancialHelpModalSection] =
+    useState<FinancialHelpSectionId | null>(null);
   const [showAdminDetailsOnMobile, setShowAdminDetailsOnMobile] =
     useState(false);
   const [showSystemSectionOnMobile, setShowSystemSectionOnMobile] =
@@ -1430,6 +1635,95 @@ export default function DashboardPage() {
   const canSeeUsersAnalytics = ["MASTER", "ADMIN", "COACH"].includes(
     effectiveDashboardRole,
   );
+  const canCreatePlansCatalog = ["MASTER", "ADMIN", "STAFF"].includes(
+    effectiveDashboardRole,
+  );
+  const generatedFinancialPlanSlug = useMemo(
+    () => buildSlugFromName(financialPlanForm.name),
+    [financialPlanForm.name],
+  );
+  const financialPlanPriceValue = useMemo(
+    () => parseNonNegative(financialPlanForm.price),
+    [financialPlanForm.price],
+  );
+  const financialPlanPriceCents = useMemo(
+    () =>
+      financialPlanPriceValue === null
+        ? null
+        : Math.round(financialPlanPriceValue * 100),
+    [financialPlanPriceValue],
+  );
+  const financialPlanPromoPriceValue = useMemo(
+    () => parseNonNegative(financialPlanForm.promoPrice),
+    [financialPlanForm.promoPrice],
+  );
+  const financialPlanPromoPriceCents = useMemo(
+    () =>
+      financialPlanPromoPriceValue === null
+        ? null
+        : Math.round(financialPlanPromoPriceValue * 100),
+    [financialPlanPromoPriceValue],
+  );
+  const financialPlanDurationValue = useMemo(() => {
+    const raw = financialPlanForm.durationDays.trim();
+    if (!raw) {
+      return null;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
+      return null;
+    }
+    return parsed;
+  }, [financialPlanForm.durationDays]);
+  const financialPlanFormIssues = useMemo(() => {
+    const issues: string[] = [];
+    const name = financialPlanForm.name.trim();
+    if (name.length < 2) {
+      issues.push("Informe um nome com ao menos 2 caracteres.");
+    }
+    if (!generatedFinancialPlanSlug) {
+      issues.push("Nome do plano gera um slug invalido.");
+    }
+    if (financialPlanPriceCents === null) {
+      issues.push("Informe um valor valido para o preco do plano.");
+    }
+    if (financialPlanDurationValue === null) {
+      issues.push("Duracao deve ser um numero inteiro maior que zero.");
+    }
+    if (financialPlanForm.promoActive) {
+      if (financialPlanPromoPriceCents === null) {
+        issues.push("Informe o preco promocional para ativar a promocao.");
+      }
+      if (
+        financialPlanPromoPriceCents !== null &&
+        financialPlanPriceCents !== null &&
+        financialPlanPromoPriceCents > financialPlanPriceCents
+      ) {
+        issues.push(
+          "Preco promocional deve ser menor ou igual ao preco base.",
+        );
+      }
+    }
+    return issues;
+  }, [
+    financialPlanForm.name,
+    financialPlanForm.promoActive,
+    generatedFinancialPlanSlug,
+    financialPlanPriceCents,
+    financialPlanPromoPriceCents,
+    financialPlanDurationValue,
+  ]);
+  const financialPlanSavingsCents =
+    financialPlanPriceCents !== null &&
+    financialPlanPromoPriceCents !== null &&
+    financialPlanPromoPriceCents <= financialPlanPriceCents
+      ? financialPlanPriceCents - financialPlanPromoPriceCents
+      : null;
+  const canSubmitFinancialPlan =
+    canCreatePlansCatalog && financialPlanFormIssues.length === 0;
+  const financialHelpContent = financialHelpModalSection
+    ? FINANCIAL_HELP_CONTENT[financialHelpModalSection]
+    : null;
   const availableTabs = useMemo(
     () =>
       tabs.filter((tab) =>
@@ -1626,6 +1920,7 @@ export default function DashboardPage() {
     setShowEventsCalendarOnMobile(false);
     setShowEventsListOnMobile(false);
     setShowFinancialDetailsOnMobile(false);
+    setFinancialHelpModalSection(null);
     setShowAdminDetailsOnMobile(false);
     setShowSystemSectionOnMobile(false);
   }, [activeTab]);
@@ -3331,6 +3626,91 @@ export default function DashboardPage() {
     } finally {
       setIsGeneratingExpenses(false);
     }
+  };
+
+  const handleCreateFinancialPlan = async () => {
+    if (isSavingFinancialPlan) {
+      return;
+    }
+
+    if (!canCreatePlansCatalog) {
+      showSaveFeedback(
+        "error",
+        "Acesso negado",
+        "Apenas MASTER, ADMIN e STAFF podem cadastrar planos.",
+      );
+      return;
+    }
+
+    if (financialPlanFormIssues.length > 0) {
+      showSaveFeedback("error", "Dados invalidos", financialPlanFormIssues[0]);
+      return;
+    }
+
+    const name = financialPlanForm.name.trim();
+    const slug = buildSlugFromName(name);
+    const description = financialPlanForm.description.trim();
+    const promoEndsAt = financialPlanForm.promoEndsAt.trim();
+    const priceCents = financialPlanPriceCents;
+    const durationDays = financialPlanDurationValue;
+    const promoPriceCents = financialPlanPromoPriceCents;
+    if (priceCents === null || durationDays === null) {
+      showSaveFeedback(
+        "error",
+        "Dados invalidos",
+        "Revise os campos obrigatorios do plano.",
+      );
+      return;
+    }
+
+    setIsSavingFinancialPlan(true);
+    try {
+      const payload: Record<string, unknown> = {
+        name,
+        slug,
+        description: description || null,
+        priceCents,
+        durationDays,
+        active: financialPlanForm.active,
+        popular: financialPlanForm.popular,
+        promoActive: financialPlanForm.promoActive,
+        promoPriceCents,
+        promoEndsAt: promoEndsAt || null,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/plans`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await parseApiError(response, "Nao foi possivel criar o plano."),
+        );
+      }
+
+      await loadPlans();
+      setFinancialPlanForm(createDefaultFinancialPlanForm());
+      showSaveFeedback(
+        "success",
+        "Plano criado",
+        "Plano cadastrado com sucesso no catalogo.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Falha ao cadastrar plano.";
+      showSaveFeedback("error", "Erro ao cadastrar plano", message);
+    } finally {
+      setIsSavingFinancialPlan(false);
+    }
+  };
+
+  const handleResetFinancialPlanForm = () => {
+    if (isSavingFinancialPlan) {
+      return;
+    }
+    setFinancialPlanForm(createDefaultFinancialPlanForm());
   };
 
   const handleSaveFinancialSubscription = async () => {
@@ -5502,6 +5882,293 @@ export default function DashboardPage() {
 
             {financialStatus === "ready" && (
               <>
+              {canCreatePlansCatalog && (
+                <section className="space-y-5 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-semibold">Cadastro de planos</h3>
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        Preencha os dados principais, revise a promocao e confira o
+                        resumo antes de criar.
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                      MASTER / ADMIN / STAFF
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
+                    <div className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Nome do plano *
+                          <input
+                            value={financialPlanForm.name}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                name: event.target.value,
+                              }))
+                            }
+                            placeholder="Ex: Plano Mensal JM"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)]"
+                          />
+                        </label>
+
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Slug (automatico)
+                          <input
+                            value={generatedFinancialPlanSlug}
+                            readOnly
+                            aria-readonly
+                            placeholder="Slug gerado automaticamente"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--muted-foreground)]"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Preco base (R$) *
+                          <input
+                            value={financialPlanForm.price}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                price: event.target.value,
+                              }))
+                            }
+                            inputMode="decimal"
+                            placeholder="Ex: 199.90"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)]"
+                          />
+                        </label>
+
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Duracao (dias) *
+                          <input
+                            value={financialPlanForm.durationDays}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                durationDays: event.target.value,
+                              }))
+                            }
+                            inputMode="numeric"
+                            placeholder="Ex: 30"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)]"
+                          />
+                        </label>
+
+                        <div className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Previa do valor
+                          <div className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-2 text-sm font-semibold normal-case tracking-normal text-[var(--foreground)]">
+                            {financialPlanPriceCents === null
+                              ? "Informe o preco"
+                              : formatCurrencyFromCents(financialPlanPriceCents)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Duracoes rapidas
+                        </span>
+                        {[30, 90, 180, 365].map((days) => (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                durationDays: String(days),
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] ${
+                              financialPlanForm.durationDays === String(days)
+                                ? "border-[var(--gold-tone)] bg-[var(--gold-tone)]/10 text-[var(--gold-tone-dark)]"
+                                : "border-[color:var(--border-dim)] text-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            {days}d
+                          </button>
+                        ))}
+                      </div>
+
+                      <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                        Descricao (opcional)
+                        <textarea
+                          value={financialPlanForm.description}
+                          onChange={(event) =>
+                            setFinancialPlanForm((prev) => ({
+                              ...prev,
+                              description: event.target.value,
+                            }))
+                          }
+                          rows={2}
+                          placeholder="Descreva para quem este plano foi pensado."
+                          className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)]"
+                        />
+                      </label>
+
+                      {financialPlanFormIssues.length > 0 && (
+                        <div className="rounded-xl border border-[color:var(--danger-border)] bg-[color:var(--danger-soft)] px-4 py-3">
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--danger)]">
+                            Antes de criar, revise:
+                          </p>
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-[color:var(--danger)]">
+                            {financialPlanFormIssues.map((issue, index) => (
+                              <li key={`${issue}-${index}`}>{issue}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => void handleCreateFinancialPlan()}
+                          disabled={!canSubmitFinancialPlan || isSavingFinancialPlan}
+                          className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--gold-tone)] bg-[var(--gold-tone)] px-4 text-xs uppercase tracking-[0.3em] text-[var(--background)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isSavingFinancialPlan ? "Salvando..." : "Criar plano"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResetFinancialPlanForm}
+                          disabled={isSavingFinancialPlan}
+                          className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Limpar
+                        </button>
+                      </div>
+                    </div>
+
+                    <aside className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)]/35 p-4">
+                      <div>
+                        <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--gold-tone-dark)]">
+                          Status e promocao
+                        </h4>
+                        <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                          Defina visibilidade e campanha de venda do plano.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm text-[var(--foreground)]">
+                          <input
+                            type="checkbox"
+                            checked={financialPlanForm.active}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                active: event.target.checked,
+                              }))
+                            }
+                          />
+                          Plano ativo
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-[var(--foreground)]">
+                          <input
+                            type="checkbox"
+                            checked={financialPlanForm.popular}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                popular: event.target.checked,
+                              }))
+                            }
+                          />
+                          Marcar como popular
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-[var(--foreground)]">
+                          <input
+                            type="checkbox"
+                            checked={financialPlanForm.promoActive}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                promoActive: event.target.checked,
+                                promoPrice: event.target.checked
+                                  ? prev.promoPrice
+                                  : "",
+                                promoEndsAt: event.target.checked
+                                  ? prev.promoEndsAt
+                                  : "",
+                              }))
+                            }
+                          />
+                          Promocao ativa
+                        </label>
+                      </div>
+
+                      <div
+                        className={`grid gap-2 ${!financialPlanForm.promoActive ? "opacity-60" : ""}`}
+                      >
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Preco promocional (R$)
+                          <input
+                            value={financialPlanForm.promoPrice}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                promoPrice: event.target.value,
+                              }))
+                            }
+                            inputMode="decimal"
+                            disabled={!financialPlanForm.promoActive}
+                            placeholder="Ex: 149.90"
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-70"
+                          />
+                        </label>
+                        <label className="space-y-1 text-xs uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                          Fim da promocao (opcional)
+                          <input
+                            type="date"
+                            value={financialPlanForm.promoEndsAt}
+                            onChange={(event) =>
+                              setFinancialPlanForm((prev) => ({
+                                ...prev,
+                                promoEndsAt: event.target.value,
+                              }))
+                            }
+                            disabled={!financialPlanForm.promoActive}
+                            className="w-full rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] px-3 py-2 text-sm normal-case tracking-normal text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-70"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="space-y-2 rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3 text-xs text-[var(--muted-foreground)]">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Preco base</span>
+                          <strong className="text-[var(--foreground)]">
+                            {financialPlanPriceCents === null
+                              ? "-"
+                              : formatCurrencyFromCents(financialPlanPriceCents)}
+                          </strong>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Preco promocional</span>
+                          <strong className="text-[var(--foreground)]">
+                            {financialPlanForm.promoActive &&
+                            financialPlanPromoPriceCents !== null
+                              ? formatCurrencyFromCents(financialPlanPromoPriceCents)
+                              : "-"}
+                          </strong>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Economia</span>
+                          <strong className="text-[var(--gold-tone-dark)]">
+                            {financialPlanSavingsCents !== null
+                              ? formatCurrencyFromCents(financialPlanSavingsCents)
+                              : "-"}
+                          </strong>
+                        </div>
+                      </div>
+                    </aside>
+                  </div>
+                </section>
+              )}
+
               {!isStaffFinancialRestricted && (
                 <>
                   <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
@@ -5697,9 +6364,20 @@ export default function DashboardPage() {
                 <article className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-xl font-semibold">Assinaturas</h3>
-                    <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
-                      Ativas: {activeSubscriptionsCount}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFinancialHelpModalSection("subscriptions")
+                        }
+                        className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                      >
+                        AJUDA
+                      </button>
+                      <span className="rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                        Ativas: {activeSubscriptionsCount}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid gap-2 md:grid-cols-2">
@@ -5950,7 +6628,18 @@ export default function DashboardPage() {
                 </article>
 
                 <article className="space-y-4 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5">
-                  <h3 className="text-xl font-semibold">Templates de despesas</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-xl font-semibold">Templates de despesas</h3>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFinancialHelpModalSection("expense_templates")
+                      }
+                      className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                    >
+                      AJUDA
+                    </button>
+                  </div>
                   <div className="grid gap-2 md:grid-cols-2">
                     <input
                       value={financialExpenseTemplateForm.name}
@@ -6080,6 +6769,15 @@ export default function DashboardPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-xl font-semibold">Despesas da competencia</h3>
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFinancialHelpModalSection("competence_expenses")
+                      }
+                      className="inline-flex h-9 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-3 text-[0.6rem] uppercase tracking-[0.25em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+                    >
+                      AJUDA
+                    </button>
                     <button
                       onClick={() => setFinancialExpenseStatusFilter("all")}
                       className={`rounded-full border px-3 py-2 text-[0.6rem] uppercase tracking-[0.25em] ${
@@ -6295,6 +6993,83 @@ export default function DashboardPage() {
               </section>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {financialHelpContent && (
+        <div
+          className="app-modal-backdrop bg-black/40"
+          onClick={() => setFinancialHelpModalSection(null)}
+        >
+          <div
+            className="app-modal-panel-scroll max-w-3xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted-foreground)]">
+                  Ajuda do financeiro
+                </p>
+                <h3 className="mt-1 text-xl font-semibold">
+                  {financialHelpContent.title}
+                </h3>
+                <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                  {financialHelpContent.intro}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFinancialHelpModalSection(null)}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--border-dim)] px-4 text-xs uppercase tracking-[0.25em] text-[var(--muted-foreground)] transition hover:border-[var(--gold-tone-dark)] hover:text-[var(--gold-tone-dark)]"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <section className="space-y-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)]/30 p-4">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--gold-tone-dark)]">
+                  Cards
+                </h4>
+                <ul className="space-y-3">
+                  {financialHelpContent.cards.map((item) => (
+                    <li
+                      key={item.name}
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3"
+                    >
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
+                        {item.name}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        {item.description}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="space-y-3 rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--muted)]/30 p-4">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--gold-tone-dark)]">
+                  Campos
+                </h4>
+                <ul className="space-y-3">
+                  {financialHelpContent.fields.map((field) => (
+                    <li
+                      key={field.name}
+                      className="rounded-xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-3"
+                    >
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
+                        {field.name}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        {field.description}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </div>
           </div>
         </div>
       )}
@@ -6968,8 +7743,8 @@ export default function DashboardPage() {
       )}
 
       {managedEvent && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
+        <div className="app-modal-backdrop bg-black/30">
+          <div className="app-modal-panel-scroll max-w-5xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold text-[var(--muted-foreground)]">
@@ -7169,8 +7944,8 @@ export default function DashboardPage() {
       )}
 
       {selectedUser && !isCoachDashboard && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
+        <div className="app-modal-backdrop bg-black/30">
+          <div className="app-modal-panel-scroll max-w-2xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] shadow-[0_8px_18px_-10px_var(--shadow)]">
@@ -7469,8 +8244,8 @@ export default function DashboardPage() {
       )}
 
       {checkinUser && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
+        <div className="app-modal-backdrop bg-black/30">
+          <div className="app-modal-panel-scroll max-w-4xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold text-[var(--muted-foreground)]">
@@ -7613,8 +8388,8 @@ export default function DashboardPage() {
       )}
 
       {healthUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:w-[80%] sm:max-w-none sm:p-6 scrollbar-none">
+        <div className="app-modal-backdrop bg-black/30">
+          <div className="app-modal-panel-scroll max-w-2xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:w-[80%] sm:max-w-none sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[color:var(--border-dim)] bg-[color:var(--muted)] text-sm font-semibold text-[var(--foreground)] shadow-[0_8px_18px_-10px_var(--shadow)]">
@@ -8253,8 +9028,8 @@ export default function DashboardPage() {
       )}
 
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6 scrollbar-none">
+        <div className="app-modal-backdrop bg-black/30">
+          <div className="app-modal-panel-scroll max-w-3xl rounded-3xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-5 shadow-[0_20px_60px_var(--shadow)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold text-[var(--muted-foreground)]">
@@ -8570,8 +9345,8 @@ export default function DashboardPage() {
       )}
 
       {saveFeedback.open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
+        <div className="app-modal-backdrop bg-black/60">
+          <div className="app-modal-panel-scroll max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
             <div className="flex items-center gap-3">
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-full border ${

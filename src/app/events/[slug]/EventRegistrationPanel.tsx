@@ -556,8 +556,8 @@ export function EventRegistrationPanel({
       )}
 
       {isChoosingProfile && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_24px_60px_-24px_var(--shadow)] sm:p-5">
+        <div className="app-modal-backdrop bg-black/60">
+          <div className="app-modal-panel-scroll max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-4 shadow-[0_24px_60px_-24px_var(--shadow)] sm:p-5">
             <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16rem] text-[var(--gold-tone-dark)] sm:text-xs sm:tracking-[0.3rem]">
               Tipo de inscricao
             </p>

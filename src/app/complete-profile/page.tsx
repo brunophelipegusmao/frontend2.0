@@ -1053,8 +1053,8 @@ export default function CompleteProfilePage() {
       ) : null}
       </AuthCard>
       {saveFeedback.open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
+        <div className="app-modal-backdrop bg-black/60">
+          <div className="app-modal-panel-scroll max-w-md rounded-2xl border border-[color:var(--border-dim)] bg-[color:var(--card)] p-6 text-[var(--foreground)] shadow-[0_24px_60px_-24px_var(--shadow)]">
             <div className="flex items-center gap-3">
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-full border ${
